@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "346765064484",
+    "project_id": "medi-internal",
+    "storage_bucket": "medi-internal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:346765064484:android:21b92e0f40a5cb536e1bb1",
+        "android_client_info": {
+          "package_name": "com.mediconsult.mediconsult_internal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3l9N-kqnS3KDJ2f5Q7wEkYFBoRU0OkXE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
