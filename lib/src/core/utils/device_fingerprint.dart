@@ -25,74 +25,142 @@ class DeviceFingerprintService {
   bool _isInitialized = false;
   Completer<void>? _initCompleter;
 
+  // ─── DIAGNOSTIC HELPERS ───────────────────────────────────────────────────
+
+  /// Log a diagnostic line with a consistent prefix so it's easy to grep.
+  void _diag(String msg) => debugPrint('[FP_DIAG] $msg');
+
+  /// Log an exception with full stack trace so nothing is silently swallowed.
+  void _diagException(String site, Object e, StackTrace st) {
+    _diag('EXCEPTION in $site');
+    _diag('  Type      : ${e.runtimeType}');
+    _diag('  Message   : $e');
+    _diag('  StackTrace:\n$st');
+  }
+
+  // ─── INITIALIZATION ───────────────────────────────────────────────────────
+
   /// Initialize the service (call at app startup)
   Future<void> initialize() async {
+    _diag('initialize() called — _isInitialized=$_isInitialized');
+
     if (_isInitialized) {
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
+        _diag('initialize() — already in-flight, awaiting existing Completer');
         await _initCompleter!.future;
+      } else {
+        _diag('initialize() — already done, returning cached value');
       }
       return;
     }
 
     _initCompleter = Completer<void>();
     try {
-      debugPrint('[DeviceFingerprintService] Initializing...');
+      _diag('--- BEGIN FINGERPRINT INITIALIZATION ---');
 
-      // First, try to load from storage
-      final stored = await _storage.read(key: _keyDeviceFingerprint);
-      final storedSource = await _storage.read(key: _keySource);
-      final storedGeneratedAt = await _storage.read(key: _keyGeneratedAt);
+      // ── Step 1: Try to load from secure storage ──────────────────────────
+      _diag(
+        'STEP 1: Reading FlutterSecureStorage key "$_keyDeviceFingerprint"',
+      );
+      String? stored;
+      String? storedSource;
+      String? storedGeneratedAt;
+
+      try {
+        stored = await _storage.read(key: _keyDeviceFingerprint);
+        storedSource = await _storage.read(key: _keySource);
+        storedGeneratedAt = await _storage.read(key: _keyGeneratedAt);
+      } catch (e, st) {
+        _diagException('_storage.read() in initialize()', e, st);
+        rethrow;
+      }
+
+      _diag(
+        '  stored value       : ${stored == null ? 'NULL' : (stored.isEmpty ? 'EMPTY STRING' : '"$stored"')}',
+      );
+      _diag('  stored source      : ${storedSource ?? 'NULL'}');
+      _diag('  stored generatedAt : ${storedGeneratedAt ?? 'NULL'}');
 
       if (stored != null && stored.isNotEmpty) {
-        // Load existing
+        // ── Path A: Load existing ─────────────────────────────────────────
+        _diag('PATH: Loaded from SecureStorage (no generation needed)');
         _cachedFingerprint = stored;
         _cachedSource = storedSource ?? 'stored_secure_storage';
         if (storedGeneratedAt != null) {
           try {
             _cachedGeneratedAt = DateTime.parse(storedGeneratedAt);
-          } catch (_) {}
+          } catch (e, st) {
+            _diagException('DateTime.parse(storedGeneratedAt)', e, st);
+          }
         }
-        debugPrint(
-            '[DeviceFingerprintService] Loaded existing fingerprint from $_cachedSource: ${_cachedFingerprint!.substring(0, 10)}...');
+        _diag('  RESULT fingerprint : $_cachedFingerprint');
+        _diag('  RESULT source      : $_cachedSource');
+        _diag('  RESULT generatedAt : $_cachedGeneratedAt');
       } else {
-        // Try to migrate from old per-user fingerprints first
+        // ── Step 2: Try migration ─────────────────────────────────────────
+        _diag(
+          'STEP 2: SecureStorage empty — attempting migration from old per-user keys',
+        );
         final oldFingerprint = await _tryMigrateOldFingerprint();
+
         if (oldFingerprint != null) {
-          // Use migrated
+          // ── Path B: Migrated ──────────────────────────────────────────
+          _diag('PATH: Migrated from old per-user key');
+          _diag('  Migrated value : $oldFingerprint');
           _cachedFingerprint = oldFingerprint;
           _cachedSource = 'migrated_per_user';
           _cachedGeneratedAt = DateTime.now();
-          await _saveToStorage();
-          debugPrint(
-              '[DeviceFingerprintService] Migrated old fingerprint: ${_cachedFingerprint!.substring(0, 10)}...');
+          try {
+            await _saveToStorage();
+          } catch (e, st) {
+            _diagException('_saveToStorage() after migration', e, st);
+            rethrow;
+          }
+          _diag('  RESULT fingerprint : $_cachedFingerprint');
+          _diag('  RESULT source      : $_cachedSource');
         } else {
-          // Generate new, try to use device identifiers first
+          // ── Step 3: Generate new ──────────────────────────────────────
+          _diag('STEP 3: No migration found — generating new fingerprint');
           final (fingerprint, source) = await _generateNewFingerprint();
           _cachedFingerprint = fingerprint;
           _cachedSource = source;
           _cachedGeneratedAt = DateTime.now();
-          await _saveToStorage();
-          debugPrint(
-              '[DeviceFingerprintService] Generated new fingerprint from $_cachedSource: ${_cachedFingerprint!.substring(0, 10)}...');
+          try {
+            await _saveToStorage();
+          } catch (e, st) {
+            _diagException('_saveToStorage() after generation', e, st);
+            rethrow;
+          }
+          _diag('  RESULT fingerprint : $_cachedFingerprint');
+          _diag('  RESULT source      : $_cachedSource');
+          _diag('  RESULT generatedAt : $_cachedGeneratedAt');
         }
       }
 
       _isInitialized = true;
       _initCompleter?.complete();
-    } catch (e) {
-      debugPrint('[DeviceFingerprintService] Initialization error: $e');
+      _diag('--- END FINGERPRINT INITIALIZATION (success) ---');
+    } catch (e, st) {
+      _diagException('initialize()', e, st);
       _initCompleter?.completeError(e);
       rethrow;
     }
   }
 
+  // ─── PUBLIC API ───────────────────────────────────────────────────────────
+
   /// Get the stable device fingerprint
   Future<String> getFingerprint() async {
     await initialize();
     if (_cachedFingerprint == null) {
-      // Fallback (should not happen if initialize succeeded)
+      _diag(
+        'ERROR: getFingerprint() — _cachedFingerprint is null after initialization',
+      );
       throw StateError('Device fingerprint not initialized');
     }
+    _diag(
+      'getFingerprint() returning: $_cachedFingerprint (source: $_cachedSource)',
+    );
     return _cachedFingerprint!;
   }
 
@@ -107,74 +175,205 @@ class DeviceFingerprintService {
     };
   }
 
+  // ─── PRIVATE: MIGRATION ───────────────────────────────────────────────────
+
   /// Try to migrate an old per-user fingerprint if exists
   Future<String?> _tryMigrateOldFingerprint() async {
+    _diag('_tryMigrateOldFingerprint() — reading all secure storage keys');
     try {
       final allKeys = await _storage.readAll();
       final oldKeys = allKeys.keys
           .where((key) => key.startsWith(StorageKeys.fingerprintPrefix))
           .toList();
 
+      _diag('  Keys with prefix "${StorageKeys.fingerprintPrefix}": $oldKeys');
+
       if (oldKeys.isNotEmpty) {
         // Take the first one (any of them is fine since we just need a stable value)
-        final oldValue = allKeys[oldKeys.first];
+        final pickedKey = oldKeys.first;
+        final oldValue = allKeys[pickedKey];
+        _diag('  Picked key : $pickedKey');
+        _diag(
+          '  Picked value: ${oldValue == null ? 'NULL' : (oldValue.isEmpty ? 'EMPTY' : '"$oldValue"')}',
+        );
         if (oldValue != null && oldValue.isNotEmpty) {
           return oldValue;
         }
+      } else {
+        _diag('  No old per-user keys found');
       }
-    } catch (e) {
-      debugPrint('[DeviceFingerprintService] Migration error: $e');
+    } catch (e, st) {
+      _diagException('_tryMigrateOldFingerprint()', e, st);
     }
     return null;
   }
 
+  // ─── PRIVATE: GENERATION ─────────────────────────────────────────────────
+
   /// Generate a new fingerprint, preferring stable device identifiers
   Future<(String fingerprint, String source)> _generateNewFingerprint() async {
-    try {
-      final deviceInfoPlugin = DeviceInfoPlugin();
+    _diag('_generateNewFingerprint() — platform: $defaultTargetPlatform');
 
-      if (defaultTargetPlatform == TargetPlatform.android) {
+    // ── Android ────────────────────────────────────────────────────────────
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final deviceInfoPlugin = DeviceInfoPlugin();
         final androidInfo = await deviceInfoPlugin.androidInfo;
+
+        // Log every field that could affect uniqueness
+        _diag('--- ANDROID DEVICE INFO ---');
+        _diag('  Android ID          : "${androidInfo.id}"');
+        _diag('  Manufacturer        : "${androidInfo.manufacturer}"');
+        _diag('  Brand               : "${androidInfo.brand}"');
+        _diag('  Device              : "${androidInfo.device}"');
+        _diag('  Model               : "${androidInfo.model}"');
+        _diag('  Hardware            : "${androidInfo.hardware}"');
+        _diag('  Product             : "${androidInfo.product}"');
+        _diag('  Board               : "${androidInfo.board}"');
+        _diag('  Build Fingerprint   : "${androidInfo.fingerprint}"');
+        _diag('  SDK Version         : ${androidInfo.version.sdkInt}');
+        _diag('--- END ANDROID DEVICE INFO ---');
+
         final androidId = androidInfo.id;
+
+        // ── Warn about known problematic Android ID values ──────────────
+        if (androidId.isEmpty) {
+          _diag('WARNING: androidInfo.id is EMPTY — falling back to UUID');
+        } else if (androidId == '9774d56d682e549c') {
+          _diag(
+            'WARNING: androidInfo.id is the well-known default "9774d56d682e549c" — '
+            'this value is shared by many old/emulator devices and will cause collisions',
+          );
+        } else if (androidId.toLowerCase() == 'unknown' ||
+            androidId.toLowerCase() == 'null' ||
+            androidId == '0000000000000000') {
+          _diag(
+            'WARNING: androidInfo.id is a known placeholder value: "$androidId" — '
+            'this may be shared across devices and cause collisions',
+          );
+        } else {
+          _diag(
+            '  Android ID appears unique (no known placeholder pattern detected)',
+          );
+        }
+
         if (androidId.isNotEmpty) {
-          // Use Android ID (stable for same device)
-          return (
-            _formatFingerprint('$androidId-${androidInfo.model}'),
-            'android_id'
-          );
+          final rawInput = '$androidId-${androidInfo.model}';
+          _diag('  Raw fingerprint input : "$rawInput"');
+          final formatted = _formatFingerprint(rawInput);
+          _diag('  Formatted fingerprint : "$formatted"');
+          _diag('  Generation source     : android_id');
+          return (formatted, 'android_id');
         }
-      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-        final iosInfo = await deviceInfoPlugin.iosInfo;
-        final identifierForVendor = iosInfo.identifierForVendor;
-        if (identifierForVendor != null && identifierForVendor.isNotEmpty) {
-          // Use iOS identifierForVendor (stable for same device)
-          return (
-            _formatFingerprint('$identifierForVendor-${iosInfo.model}'),
-            'ios_identifier_for_vendor'
-          );
-        }
+      } catch (e, st) {
+        _diagException(
+          '_generateNewFingerprint() — Android DeviceInfoPlugin',
+          e,
+          st,
+        );
+        // fall through to UUID fallback below
       }
-    } catch (e) {
-      debugPrint('[DeviceFingerprintService] Error getting device info: $e');
+    }
+    // ── iOS ────────────────────────────────────────────────────────────────
+    else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        final deviceInfoPlugin = DeviceInfoPlugin();
+        final iosInfo = await deviceInfoPlugin.iosInfo;
+
+        _diag('--- IOS DEVICE INFO ---');
+        _diag('  identifierForVendor : "${iosInfo.identifierForVendor}"');
+        _diag('  Model               : "${iosInfo.model}"');
+        _diag('  Name                : "${iosInfo.name}"');
+        _diag('  System Version      : "${iosInfo.systemVersion}"');
+        _diag('--- END IOS DEVICE INFO ---');
+
+        final identifierForVendor = iosInfo.identifierForVendor;
+
+        if (identifierForVendor == null || identifierForVendor.isEmpty) {
+          _diag(
+            'WARNING: identifierForVendor is ${identifierForVendor == null ? 'NULL' : 'EMPTY'} — '
+            'this happens after app uninstall+reinstall on iOS. Falling back to UUID.',
+          );
+        } else {
+          final rawInput = '$identifierForVendor-${iosInfo.model}';
+          _diag('  Raw fingerprint input : "$rawInput"');
+          final formatted = _formatFingerprint(rawInput);
+          _diag('  Formatted fingerprint : "$formatted"');
+          _diag('  Generation source     : ios_identifier_for_vendor');
+          return (formatted, 'ios_identifier_for_vendor');
+        }
+      } catch (e, st) {
+        _diagException(
+          '_generateNewFingerprint() — iOS DeviceInfoPlugin',
+          e,
+          st,
+        );
+        // fall through to UUID fallback below
+      }
+    } else {
+      _diag(
+        'Platform is neither Android nor iOS ($defaultTargetPlatform) — skipping device info',
+      );
     }
 
-    // Fallback: generate a stable UUID (random but persistent once stored)
+    // ── UUID Fallback ──────────────────────────────────────────────────────
+    _diag('PATH: UUID fallback — generating Uuid().v4()');
     final uuid = const Uuid().v4();
-    return (_formatFingerprint(uuid), 'generated_uuid');
+    _diag('  Raw UUID              : "$uuid"');
+    final formatted = _formatFingerprint(uuid);
+    _diag('  Formatted fingerprint : "$formatted"');
+    _diag('  Generation source     : generated_uuid');
+    return (formatted, 'generated_uuid');
   }
 
-  /// Format the fingerprint consistently
+  // ─── PRIVATE: FORMAT ─────────────────────────────────────────────────────
+
+  /// Format the fingerprint consistently.
+  ///
+  /// ⚠ DIAGNOSTIC NOTE: This method uses `raw.length` (the original input
+  /// length) as the substring limit, but it operates on the already-stripped
+  /// string. If the stripped string is shorter than `raw.length` this will
+  /// throw a RangeError, which in _generateNewFingerprint is caught and causes
+  /// a silent fallback to UUID. Log output below will reveal if this happens.
   String _formatFingerprint(String raw) {
-    return raw
-        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')
-        .toUpperCase()
-        .substring(0, raw.length > 16 ? 16 : raw.length)
-        .padLeft(16, '0');
+    final stripped = raw.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
+    final substringEnd = raw.length > 16 ? 16 : raw.length;
+
+    _diag('  _formatFingerprint() ---');
+    _diag('    raw input        : "$raw" (length=${raw.length})');
+    _diag('    stripped         : "$stripped" (length=${stripped.length})');
+    _diag(
+      '    substringEnd     : $substringEnd  ← uses raw.length, NOT stripped.length',
+    );
+
+    if (substringEnd > stripped.length) {
+      _diag(
+        '    ⚠ BUG TRIGGERED: substringEnd ($substringEnd) > stripped.length (${stripped.length})',
+      );
+      _diag(
+        '    ⚠ This will throw RangeError — causing silent UUID fallback in _generateNewFingerprint()',
+      );
+    }
+
+    final truncated = stripped.substring(0, substringEnd);
+    final padded = truncated.padLeft(16, '0');
+
+    _diag('    truncated        : "$truncated"');
+    _diag('    final (padded)   : "$padded"');
+    _diag('  --- end _formatFingerprint()');
+
+    return padded;
   }
+
+  // ─── PRIVATE: STORAGE ─────────────────────────────────────────────────────
 
   /// Save fingerprint to secure storage
   Future<void> _saveToStorage() async {
-    if (_cachedFingerprint == null) return;
+    if (_cachedFingerprint == null) {
+      _diag('_saveToStorage() skipped — _cachedFingerprint is null');
+      return;
+    }
+    _diag('_saveToStorage() writing fingerprint to SecureStorage...');
     await _storage.write(key: _keyDeviceFingerprint, value: _cachedFingerprint);
     if (_cachedSource != null) {
       await _storage.write(key: _keySource, value: _cachedSource);
@@ -185,11 +384,13 @@ class DeviceFingerprintService {
         value: _cachedGeneratedAt!.toUtc().toIso8601String(),
       );
     }
+    _diag('_saveToStorage() done');
   }
 
   /// Clear fingerprint (ONLY for TESTING/DIAGNOSTIC USE!)
   /// This will generate a new fingerprint next time initialize() is called
   Future<void> clearFingerprint() async {
+    _diag('clearFingerprint() called — wiping all cached + stored values');
     await _storage.delete(key: _keyDeviceFingerprint);
     await _storage.delete(key: _keySource);
     await _storage.delete(key: _keyGeneratedAt);
@@ -198,6 +399,7 @@ class DeviceFingerprintService {
     _cachedGeneratedAt = null;
     _isInitialized = false;
     _initCompleter = null;
+    _diag('clearFingerprint() done — next initialize() will regenerate');
   }
 }
 
@@ -211,12 +413,16 @@ class DeviceFingerprint {
   @Deprecated('Use DeviceFingerprintService() instead')
   static Future<void> clearFingerprint(String userId) async {
     // No-op for backward compatibility
-    debugPrint('[DeviceFingerprint] Ignoring clearFingerprint call (deprecated)');
+    debugPrint(
+      '[DeviceFingerprint] Ignoring clearFingerprint call (deprecated)',
+    );
   }
 
   @Deprecated('Use DeviceFingerprintService() instead')
   static Future<void> clearAllFingerprints() async {
     // No-op for backward compatibility
-    debugPrint('[DeviceFingerprint] Ignoring clearAllFingerprints call (deprecated)');
+    debugPrint(
+      '[DeviceFingerprint] Ignoring clearAllFingerprints call (deprecated)',
+    );
   }
 }
