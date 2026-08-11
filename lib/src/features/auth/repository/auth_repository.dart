@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mediconsult_internal/src/core/services/push_notification_service.dart';
+import 'package:mediconsult_internal/src/core/utils/device_fingerprint.dart';
 import '../services/auth_api_service.dart';
 import '../services/auth_storage_service.dart';
 import '../cubit/auth_state.dart';
@@ -91,6 +92,21 @@ class AuthRepository {
 
   /// Logout - clear auth state
   Future<void> logout() async {
+    // Capture userId before clearing auth data (for fingerprint invalidation)
+    final userId = await AuthStorageService.loadUserId();
+
+    // ── Invalidate in-memory fingerprint cache (cross-user leakage prevention)
+    try {
+      await DeviceFingerprintService().clearFingerprint(userId: userId);
+      if (kDebugMode) {
+        debugPrint('[FP_AUDIT] In-memory fingerprint cache invalidated for userId=$userId on logout');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[FP_AUDIT] Warning: failed to invalidate fingerprint cache on logout: $e');
+      }
+    }
+
     await AuthStorageService.clearAuthState();
   }
 

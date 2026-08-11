@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/account_status.dart';
@@ -147,6 +148,24 @@ class AuthStorageService {
 
   /// Clear auth state from secure storage
   static Future<void> clearAuthState() async {
+    // Capture userId BEFORE deleting auth data so we can clean user-scoped fingerprint
+    final userId = await _secureStorage.read(key: StorageKeys.authUserId);
+
+    // ── Clean user-scoped fingerprint storage key (no DeviceFingerprintService call to avoid circular import)
+    if (userId != null && userId.isNotEmpty) {
+      try {
+        final userScopedKey = '${StorageKeys.fingerprintPrefix}_$userId';
+        await _secureStorage.delete(key: userScopedKey);
+        if (kDebugMode) {
+          debugPrint('[FP_AUDIT] User-scoped fingerprint storage deleted for userId=$userId on logout');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[FP_AUDIT] Warning: failed to delete user-scoped fp storage on logout: $e');
+        }
+      }
+    }
+
     // Delete the token to invalidate session
     await _secureStorage.delete(key: StorageKeys.authToken);
     // Delete other auth data
@@ -157,6 +176,18 @@ class AuthStorageService {
     await _secureStorage.delete(key: StorageKeys.authUserPhone);
     await _secureStorage.delete(key: StorageKeys.authExpiresAt);
     // Note: We don't remove accountStatus to maintain the approval state
+  }
+
+  static Future<String?> loadUserId() async {
+    final token = await _secureStorage.read(key: StorageKeys.authToken);
+    var userId = await _secureStorage.read(key: StorageKeys.authUserId);
+
+    final tokenUserId = extractUserIdFromToken(token);
+    if (!_looksLikeGuid(userId) && tokenUserId != null) {
+      userId = tokenUserId;
+      await _secureStorage.write(key: StorageKeys.authUserId, value: userId);
+    }
+    return userId;
   }
 
   static Future<String?> getToken() async {

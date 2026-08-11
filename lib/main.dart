@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mediconsult_internal/firebase_options.dart';
 import 'package:mediconsult_internal/src/core/services/push_notification_service.dart';
-import 'package:mediconsult_internal/src/core/utils/device_fingerprint.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'src/core/services/service_locator.dart';
 import 'src/core/routing/app_router.dart';
@@ -26,8 +25,8 @@ Future<void> main() async {
 
       await setupServiceLocator();
 
-      // Initialize device fingerprint service first
-      await DeviceFingerprintService().initialize();
+      // Note: DeviceFingerprintService no longer requires startup init.
+      // Fingerprint is generated lazily from authenticated User ID + Phone on first use.
 
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,

@@ -40,14 +40,14 @@ class ProfileSettingsSection extends StatelessWidget {
         final authState = await AuthStorageService.loadAuthState();
         final userId = authState.userId ?? '';
 
+        if (userId.isNotEmpty) {
+          await DeviceFingerprintService().clearFingerprint(userId: userId);
+        }
+
         await authCubit.logout();
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(StorageKeys.userProfile);
-
-        if (userId.isNotEmpty) {
-          await DeviceFingerprint.clearFingerprint(userId);
-        }
       } catch (_) {
         if (!context.mounted) return;
         CustomToast.showError('حدث خطأ أثناء تسجيل الخروج');

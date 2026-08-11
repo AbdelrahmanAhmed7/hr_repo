@@ -46,7 +46,9 @@ class _DeviceFingerprintDiagnosticScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('تأكيد'),
-        content: const Text('هل تريد حقًا إعادة تعيين بصمة الجهاز؟ سيتغير معرف الجهاز!'),
+        content: const Text(
+          'هل تريد إعادة تعيين البصمة لهذا المستخدم؟ سيتم إنشاؤها مجددًا من User ID + رقم الموبايل.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -64,7 +66,8 @@ class _DeviceFingerprintDiagnosticScreenState
     );
 
     if (confirm == true) {
-      await DeviceFingerprintService().clearFingerprint();
+      final userId = _diagnostics?['userId']?.toString();
+      await DeviceFingerprintService().clearFingerprint(userId: userId);
       await _loadDiagnostics();
     }
   }
@@ -73,7 +76,7 @@ class _DeviceFingerprintDiagnosticScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تشخيص بصمة الجهاز'),
+        title: const Text('تشخيص بصمة المستخدم'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -96,7 +99,7 @@ class _DeviceFingerprintDiagnosticScreenState
           onPressed: _resetFingerprint,
           icon: const Icon(Icons.restart_alt, color: Colors.white),
           label: const Text(
-            'إعادة تعيين بصمة الجهاز',
+            'إعادة تعيين بصمة المستخدم الحالي',
             style: TextStyle(color: Colors.white),
           ),
           style: ElevatedButton.styleFrom(
@@ -149,24 +152,36 @@ class _DeviceFingerprintDiagnosticScreenState
   }
 
   Widget _buildContent() {
+    final d = _diagnostics!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'معلومات بصمة الجهاز',
+            'معلومات بصمة المستخدم',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'الصيغة: ${d['fingerprintFormat'] ?? '{userId}_{phone}'}',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 24),
-          _buildCard('البصمة', _diagnostics!['fingerprint']),
-          _buildCard('المصدر', _diagnostics!['source']),
-          _buildCard('تاريخ الإنشاء', _diagnostics!['generatedAt']),
-          _buildCard('مُهيأ', _diagnostics!['isInitialized'] ? 'نعم' : 'لا'),
+          _buildCard('البصمة', d['fingerprint']),
+          _buildCard('المصدر', d['source']),
+          _buildCard('User ID', d['userId']),
+          _buildCard('رقم الموبايل (مخفي)', d['phone']),
+          _buildCard('مستخدم مسجل؟', d['isAuthenticated'] == true ? 'نعم' : 'لا'),
+          _buildCard('تاريخ الإنشاء', d['generatedAt']),
         ],
       ),
     );
