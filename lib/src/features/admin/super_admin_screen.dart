@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mediconsult_internal/src/features/admin/admin_statistics_screen.dart';
 import 'package:mediconsult_internal/src/features/admin/super_admin_attendance_screen.dart';
+import 'package:mediconsult_internal/src/features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
+import 'package:mediconsult_internal/src/features/employee_of_month/presentation/screens/super_admin_employee_of_month_screen.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import 'cubit/super_admin_dashboard_cubit.dart';
@@ -25,7 +26,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
     const SuperAdminHomeScreen(),
     const SuperAdminAttendanceScreen(),
     const PendingRequestsScreen(),
-    const AdminStatisticsScreen(),
+    BlocProvider(
+      create: (_) => getIt<SuperAdminEmployeeOfMonthCubit>(),
+      child: const SuperAdminEmployeeOfMonthScreen(),
+    ),
     const SystemSettingsScreen(),
   ];
 
@@ -109,11 +113,31 @@ class _SuperAdminScreenBody extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _buildNavItem(context, 0, Icons.dashboard_outlined, 'لوحة التحكم'),
+                  _buildNavItem(
+                    context,
+                    0,
+                    Icons.dashboard_outlined,
+                    'لوحة التحكم',
+                  ),
                   _buildNavItem(context, 1, Icons.how_to_reg_rounded, 'الحضور'),
-                  _buildNavItem(context, 2, Icons.pending_actions_outlined, 'الطلبات'),
-                  _buildNavItem(context, 3, Icons.analytics_outlined, 'الإحصائيات'),
-                  _buildNavItem(context, 4, Icons.settings_outlined, 'الإعدادات'),
+                  _buildNavItem(
+                    context,
+                    2,
+                    Icons.pending_actions_outlined,
+                    'الطلبات',
+                  ),
+                  _buildNavItem(
+                    context,
+                    3,
+                    Icons.emoji_events_rounded,
+                    'موظف الشهر',
+                  ),
+                  _buildNavItem(
+                    context,
+                    4,
+                    Icons.settings_outlined,
+                    'الإعدادات',
+                  ),
                 ],
               ),
             ),
@@ -123,7 +147,12 @@ class _SuperAdminScreenBody extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
+  Widget _buildNavItem(
+    BuildContext context,
+    int index,
+    IconData icon,
+    String label,
+  ) {
     final isSelected = currentIndex == index;
     return Expanded(
       child: InkWell(
@@ -132,9 +161,11 @@ class _SuperAdminScreenBody extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon,
-                color: isSelected ? AppColors.primary : AppColors.textTertiary,
-                size: 22),
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+              size: 22,
+            ),
             const SizedBox(height: 4),
             Text(
               label,

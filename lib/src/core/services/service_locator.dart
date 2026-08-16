@@ -71,6 +71,10 @@ import '../../features/payslip/cubit/payslip_cubit.dart';
 import '../../features/employee_history/services/employee_history_service.dart';
 import '../../features/employee_history/repository/employee_history_repository.dart';
 import '../../features/employee_history/cubit/employee_history_cubit.dart';
+import '../../features/employee_of_month/data/datasources/employee_of_month_service.dart';
+import '../../features/employee_of_month/data/repositories/employee_of_month_repository_impl.dart';
+import '../../features/employee_of_month/domain/repositories/employee_of_month_repository.dart';
+import '../../features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -80,47 +84,33 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<DioClient>(() => DioClient());
 
   // API Services (Retrofit)
-  getIt.registerFactory<AuthApi>(
-    () => AuthApi(getIt<DioClient>().dio),
-  );
+  getIt.registerFactory<AuthApi>(() => AuthApi(getIt<DioClient>().dio));
   getIt.registerFactory<AssignmentApi>(
     () => AssignmentApi(getIt<DioClient>().dio),
   );
   getIt.registerFactory<PermissionApi>(
     () => PermissionApi(getIt<DioClient>().dio),
   );
-  getIt.registerFactory<LeavesApi>(
-    () => LeavesApi(getIt<DioClient>().dio),
-  );
+  getIt.registerFactory<LeavesApi>(() => LeavesApi(getIt<DioClient>().dio));
   getIt.registerFactory<AttendanceApi>(
     () => AttendanceApi(getIt<DioClient>().dio),
   );
-  getIt.registerFactory<OvertimeApi>(
-    () => OvertimeApi(getIt<DioClient>().dio),
-  );
-  getIt.registerFactory<HomeApi>(
-    () => HomeApi(getIt<DioClient>().dio),
-  );
+  getIt.registerFactory<OvertimeApi>(() => OvertimeApi(getIt<DioClient>().dio));
+  getIt.registerFactory<HomeApi>(() => HomeApi(getIt<DioClient>().dio));
   getIt.registerFactory<PublicHolidayApi>(
     () => PublicHolidayApi(getIt<DioClient>().dio),
   );
-  getIt.registerFactory<HrHomeApi>(
-    () => HrHomeApi(getIt<DioClient>().dio),
-  );
+  getIt.registerFactory<HrHomeApi>(() => HrHomeApi(getIt<DioClient>().dio));
   getIt.registerFactory<SuperAdminDashboardApi>(
     () => SuperAdminDashboardApi(getIt<DioClient>().dio),
   );
   getIt.registerFactory<AdminDashboardApi>(
     () => AdminDashboardApi(getIt<DioClient>().dio),
   );
-  getIt.registerFactory<ProfileApi>(
-    () => ProfileApi(getIt<DioClient>().dio),
-  );
+  getIt.registerFactory<ProfileApi>(() => ProfileApi(getIt<DioClient>().dio));
 
   // Feature Services (API Service Layer)
-  getIt.registerFactory<AuthApiService>(
-    () => AuthApiService(getIt<AuthApi>()),
-  );
+  getIt.registerFactory<AuthApiService>(() => AuthApiService(getIt<AuthApi>()));
   getIt.registerFactory<AssignmentApiService>(
     () => AssignmentApiService(getIt<AssignmentApi>()),
   );
@@ -136,15 +126,11 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<OvertimeApiService>(
     () => OvertimeApiService(getIt<OvertimeApi>()),
   );
-  getIt.registerFactory<HomeApiService>(
-    () => HomeApiService(getIt<HomeApi>()),
-  );
+  getIt.registerFactory<HomeApiService>(() => HomeApiService(getIt<HomeApi>()));
   getIt.registerFactory<PublicHolidayService>(
     () => PublicHolidayService(getIt<PublicHolidayApi>()),
   );
-  getIt.registerFactory<HrHomeService>(
-    () => HrHomeService(getIt<HrHomeApi>()),
-  );
+  getIt.registerFactory<HrHomeService>(() => HrHomeService(getIt<HrHomeApi>()));
   getIt.registerFactory<EmployeesApiService>(
     () => EmployeesApiService(getIt<DioClient>()),
   );
@@ -172,12 +158,13 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<EmployeeHistoryService>(
     () => EmployeeHistoryService(getIt<DioClient>()),
   );
+  getIt.registerFactory<EmployeeOfMonthService>(
+    () => EmployeeOfMonthService(getIt<DioClient>().dio),
+  );
 
   // Repositories
   getIt.registerFactory<AuthRepository>(
-    () => AuthRepository(
-      authApiService: getIt<AuthApiService>(),
-    ),
+    () => AuthRepository(authApiService: getIt<AuthApiService>()),
   );
   getIt.registerFactory<AssignmentRepository>(
     () => AssignmentRepository(
@@ -190,19 +177,13 @@ Future<void> setupServiceLocator() async {
     ),
   );
   getIt.registerFactory<LeavesRepository>(
-    () => LeavesRepository(
-      leavesApiService: getIt<LeavesApiService>(),
-    ),
+    () => LeavesRepository(leavesApiService: getIt<LeavesApiService>()),
   );
   getIt.registerFactory<AttendanceRepository>(
-    () => AttendanceRepository(
-      service: getIt<AttendanceApiService>(),
-    ),
+    () => AttendanceRepository(service: getIt<AttendanceApiService>()),
   );
   getIt.registerFactory<OvertimeRepository>(
-    () => OvertimeRepository(
-      overtimeApiService: getIt<OvertimeApiService>(),
-    ),
+    () => OvertimeRepository(overtimeApiService: getIt<OvertimeApiService>()),
   );
   getIt.registerFactory<HomeRepository>(
     () => HomeRepository(getIt<HomeApiService>(), getIt<DioClient>()),
@@ -256,11 +237,11 @@ Future<void> setupServiceLocator() async {
   // Register as singleton (not lazy) to ensure it loads state immediately
   final authCubit = AuthCubit(getIt<AuthRepository>());
   getIt.registerSingleton<AuthCubit>(authCubit);
-  
+
   // Wait for auth state to load from storage
   // This ensures the state is ready before the app starts
   await Future.delayed(const Duration(milliseconds: 200));
-  
+
   getIt.registerFactory<AssignmentCubit>(
     () => AssignmentCubit(getIt<AssignmentRepository>()),
   );
@@ -270,9 +251,7 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<OvertimeCubit>(
     () => OvertimeCubit(getIt<OvertimeRepository>()),
   );
-  getIt.registerFactory<AdminRequestsCubit>(
-    () => AdminRequestsCubit(),
-  );
+  getIt.registerFactory<AdminRequestsCubit>(() => AdminRequestsCubit());
   getIt.registerFactory<SuperAdminDashboardCubit>(
     () => SuperAdminDashboardCubit(getIt<SuperAdminDashboardRepository>()),
   );
@@ -288,20 +267,13 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<AdminAssignmentsCubit>(
     () => AdminAssignmentsCubit(getIt<AdminAssignmentsRepository>()),
   );
-  getIt.registerFactory<OrganizationChartCubit>(
-    () => OrganizationChartCubit(),
-  );
-  getIt.registerFactory<HomeCubit>(
-    () => HomeCubit(getIt<HomeRepository>()),
-  );
+  getIt.registerFactory<OrganizationChartCubit>(() => OrganizationChartCubit());
+  getIt.registerFactory<HomeCubit>(() => HomeCubit(getIt<HomeRepository>()));
   getIt.registerFactory<EmployeesCubit>(
     () => EmployeesCubit(getIt<EmployeesRepository>()),
   );
   getIt.registerFactory<HrHomeCubit>(
-    () => HrHomeCubit(
-      getIt<HrHomeRepository>(),
-      getIt<EmployeesRepository>(),
-    ),
+    () => HrHomeCubit(getIt<HrHomeRepository>(), getIt<EmployeesRepository>()),
   );
   // LeavesCubit as singleton to share leave types across screens (caching)
   getIt.registerLazySingleton<LeavesCubit>(
@@ -324,5 +296,16 @@ Future<void> setupServiceLocator() async {
   // NotificationsCubit as singleton so badge count is shared across the app
   getIt.registerLazySingleton<NotificationsCubit>(
     () => NotificationsCubit(getIt<NotificationsRepository>()),
+  );
+
+  // Employee of the Month
+  getIt.registerLazySingleton<EmployeeOfMonthRepository>(
+    () => EmployeeOfMonthRepositoryImpl(getIt<EmployeeOfMonthService>()),
+  );
+  getIt.registerFactory<EmployeeOfMonthCubit>(
+    () => EmployeeOfMonthCubit(getIt<EmployeeOfMonthRepository>()),
+  );
+  getIt.registerFactory<SuperAdminEmployeeOfMonthCubit>(
+    () => SuperAdminEmployeeOfMonthCubit(getIt<EmployeeOfMonthRepository>()),
   );
 }

@@ -35,6 +35,8 @@ import '../../features/payslip/cubit/payslip_cubit.dart';
 import '../../features/payslip/payslip_screen.dart';
 import '../../features/employee_history/cubit/employee_history_cubit.dart';
 import '../../features/employee_history/employee_history_screen.dart';
+import '../../features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
+import '../../features/employee_of_month/presentation/screens/employee_of_month_screen.dart';
 import '../../features/leaves/leaves_screen.dart';
 import '../../features/requests/all_requests_screen.dart';
 import '../../features/requests/requests_screen.dart';
@@ -91,10 +93,7 @@ class AppRouter {
         builder: (context, state) {
           final phone = state.uri.queryParameters['phone'] ?? '';
           final otp = state.uri.queryParameters['otp'] ?? '';
-          return ResetPasswordScreen(
-            phone: phone,
-            otp: otp,
-          );
+          return ResetPasswordScreen(phone: phone, otp: otp);
         },
       ),
 
@@ -285,7 +284,8 @@ class AppRouter {
         path: '/requests',
         name: 'requests',
         builder: (context, state) {
-          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
+          final tab =
+              int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
           return BlocProvider.value(
             value: getIt<AuthCubit>(),
             child: RequestsScreen(initialTab: tab),
@@ -296,7 +296,8 @@ class AppRouter {
         path: '/all-requests',
         name: 'all-requests',
         builder: (context, state) {
-          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
+          final tab =
+              int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0;
           return BlocProvider.value(
             value: getIt<AuthCubit>(),
             child: AllRequestsScreen(initialTab: tab),
@@ -311,7 +312,7 @@ class AppRouter {
           child: const OvertimeScreen(),
         ),
       ),
-      
+
       // Holidays Route
       GoRoute(
         path: '/holidays',
@@ -342,6 +343,13 @@ class AppRouter {
         builder: (context, state) => const DeviceFingerprintDiagnosticScreen(),
       ),
 
+      // Change Password Route
+      GoRoute(
+        path: '/change-password',
+        name: 'change-password',
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
+
       // Profile Settings Routes
       GoRoute(
         path: '/about',
@@ -353,10 +361,15 @@ class AppRouter {
         name: 'help',
         builder: (context, state) => const HelpSupportScreen(),
       ),
+
+      // Employee of the Month
       GoRoute(
-        path: '/change-password',
-        name: 'change-password',
-        builder: (context, state) => const ChangePasswordScreen(),
+        path: '/employee-of-month',
+        name: 'employee-of-month',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<EmployeeOfMonthCubit>()..loadData(),
+          child: const EmployeeOfMonthScreen(),
+        ),
       ),
     ],
   );
@@ -370,7 +383,10 @@ class AppRouter {
     final isOnOtpVerification = state.uri.path == '/otp-verification';
 
     // Allow splash, forgot password, reset password, and OTP pages
-    if (isOnSplashPage || isOnForgotPassword || isOnResetPassword || isOnOtpVerification) {
+    if (isOnSplashPage ||
+        isOnForgotPassword ||
+        isOnResetPassword ||
+        isOnOtpVerification) {
       return null;
     }
 
@@ -395,7 +411,7 @@ class AppRouter {
     if (!isAuthenticated) {
       return '/login';
     }
-    
+
     return null;
   }
 }
