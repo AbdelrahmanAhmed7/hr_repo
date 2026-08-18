@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../data/models/nominee_model.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../data/models/nominee_model.dart';
 
 class NomineeCard extends StatelessWidget {
   final NomineeModel nominee;
@@ -154,7 +155,7 @@ class _Avatar extends StatelessWidget {
               child: Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _Initials(initial: _initial),
+                errorBuilder: (_, _, _) => _Initials(initial: _initial),
               ),
             )
           : _Initials(initial: _initial),

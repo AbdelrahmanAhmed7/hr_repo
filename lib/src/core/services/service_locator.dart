@@ -75,6 +75,11 @@ import '../../features/employee_of_month/data/datasources/employee_of_month_serv
 import '../../features/employee_of_month/data/repositories/employee_of_month_repository_impl.dart';
 import '../../features/employee_of_month/domain/repositories/employee_of_month_repository.dart';
 import '../../features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
+import '../../features/attendance/services/sa_attendance_service.dart';
+import '../../features/attendance/repository/sa_attendance_repository.dart';
+import '../../features/attendance/repository/sa_attendance_repository_impl.dart';
+import '../../features/attendance/cubit/sa_attendance_cubit.dart';
+import '../../features/attendance/cubit/punch_pairs_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -248,6 +253,15 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<AttendanceCubit>(
     () => AttendanceCubit(getIt<AttendanceRepository>()),
   );
+  getIt.registerFactory<SAAttendanceService>(
+    () => SAAttendanceService(getIt<DioClient>()),
+  );
+  getIt.registerFactory<SAAttendanceRepository>(
+    () => SAAttendanceRepositoryImpl(getIt<SAAttendanceService>()),
+  );
+  getIt.registerFactory<SAAttendanceCubit>(
+    () => SAAttendanceCubit(getIt<SAAttendanceRepository>(), dio: getIt<DioClient>().dio),
+  );
   getIt.registerFactory<OvertimeCubit>(
     () => OvertimeCubit(getIt<OvertimeRepository>()),
   );
@@ -307,5 +321,11 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<SuperAdminEmployeeOfMonthCubit>(
     () => SuperAdminEmployeeOfMonthCubit(getIt<EmployeeOfMonthRepository>()),
+  );
+  getIt.registerFactory<PunchPairsCubit>(
+    () => PunchPairsCubit(
+      getIt<SAAttendanceRepository>(),
+      getIt<EmployeesRepository>(),
+    ),
   );
 }

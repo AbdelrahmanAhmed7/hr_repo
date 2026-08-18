@@ -1,481 +1,589 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 
+import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
-import 'cubit/super_admin_dashboard_cubit.dart';
-import 'cubit/super_admin_dashboard_state.dart';
-import 'models/super_admin_dashboard_response.dart';
+import '../../shared/widgets/error_state_widget.dart';
+import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/shimmer_loading.dart';
+import '../attendance/cubit/sa_attendance_cubit.dart';
+import '../attendance/cubit/sa_attendance_state.dart';
+import '../attendance/widgets/sa_attendance_date_navigator.dart';
+import '../attendance/widgets/sa_attendance_stats_strip.dart';
+import '../attendance/widgets/sa_attendance_filter_bar.dart';
+import '../attendance/widgets/sa_attendance_search_bar.dart';
+import '../attendance/widgets/sa_attendance_employee_row.dart';
 
 class SuperAdminAttendanceScreen extends StatelessWidget {
   const SuperAdminAttendanceScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const _AttendanceContent();
+    return BlocProvider(
+      create: (context) => getIt<SAAttendanceCubit>()..loadAttendance(),
+      child: const _SAAttendanceContent(),
+    );
   }
 }
 
-class _AttendanceContent extends StatelessWidget {
-  const _AttendanceContent();
+class _SAAttendanceContent extends StatefulWidget {
+  const _SAAttendanceContent();
+
+  @override
+  State<_SAAttendanceContent> createState() => _SAAttendanceContentState();
+}
+
+class _SAAttendanceContentState extends State<_SAAttendanceContent> {
+  @override
+  void initState() {
+    super.initState();
+    final cubit = context.read<SAAttendanceCubit>();
+    cubit.loadDepartments();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SuperAdminDashboardCubit, SuperAdminDashboardState>(
+    return BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
       builder: (context, state) {
         return Scaffold(
           backgroundColor: AppColors.backgroundSecondary,
-          body: RefreshIndicator(
-            onRefresh: () =>
-                context.read<SuperAdminDashboardCubit>().refresh(),
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // ── Header ──────────────────────────────────────────────
-                SliverToBoxAdapter(
-                  child: _buildHeader(state),
-                ),
-
-                // ── Content ─────────────────────────────────────────────
-                if (state.isLoading && state.data == null)
-                  const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (state.error != null && state.data == null)
-                  SliverFillRemaining(
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline_rounded,
-                              size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(
-                            state.error!.replaceFirst('Exception: ', ''),
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.bodyMedium
-                                .copyWith(color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () => context
-                                .read<SuperAdminDashboardCubit>()
-                                .loadDashboard(),
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('إعادة المحاولة'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else if (state.data != null) ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    sliver: SliverList.separated(
-                      itemCount: state.data!.departments.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, i) =>
-                          _DepartmentAttendanceCard(
-                        department: state.data!.departments[i],
-                      ),
+          appBar: AppBar(
+            title: const Text('سجل الحضور والانصراف'),
+            centerTitle: true,
+            actions: [
+              if (state.isExportingPdf)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
                     ),
                   ),
-                ],
-
-                const SliverToBoxAdapter(child: SizedBox(height: 32)),
-              ],
-            ),
+                )
+              else
+                IconButton(
+                  onPressed: () =>
+                      context.read<SAAttendanceCubit>().exportPdf(),
+                  icon: const Icon(Icons.picture_as_pdf_rounded),
+                  tooltip: 'تصدير PDF',
+                ),
+              _buildFilterButton(context, state),
+            ],
+          ),
+          body: Column(
+            children: [
+              SAAttendanceDateNavigator(
+                selectedDate: state.selectedDate,
+                onPrevious: () =>
+                    context.read<SAAttendanceCubit>().goToPreviousDay(),
+                onNext: () =>
+                    context.read<SAAttendanceCubit>().goToNextDay(),
+                onToday: () =>
+                    context.read<SAAttendanceCubit>().goToToday(),
+              ),
+              _DepartmentFilterBar(
+                departments: state.departments,
+                selectedDepartmentId: state.selectedDepartmentId,
+                onDepartmentChanged: (id) =>
+                    context.read<SAAttendanceCubit>().applyDepartmentFilter(id),
+              ),
+              SAAttendanceStatsStrip(
+                presentCount: state.employeesWithAttendance,
+                absentCount: state.absentCount,
+                percentage: state.attendancePercentage,
+              ),
+              SAAttendanceFilterBar(
+                activeFilter: state.activeFilter,
+                onFilterChanged: (filter) =>
+                    context.read<SAAttendanceCubit>().applyFilter(filter),
+              ),
+              SAAttendanceSearchBar(
+                query: state.searchQuery,
+                onChanged: (query) =>
+                    context.read<SAAttendanceCubit>().applySearch(query),
+              ),
+              Expanded(
+                child: _buildBody(context, state),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildHeader(SuperAdminDashboardState state) {
-    final data = state.data;
-    final present = data?.presentToday ?? 0;
-    final total = data?.totalEmployees ?? 0;
-    final absent = total - present;
-    final pct = total > 0 ? (present / total * 100).round() : 0;
-
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
+  Widget _buildFilterButton(BuildContext context, SAAttendanceState state) {
+    return GestureDetector(
+      onTap: () => _showFiltersSheet(context, state),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Icon(Icons.tune_rounded, size: 24),
+          ),
+          if (state.hasActiveFilters)
+            Positioned(
+              right: 10,
+              top: 10,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.warning,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.how_to_reg_rounded,
-                        color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
+    );
+  }
+
+  void _showFiltersSheet(BuildContext context, SAAttendanceState state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: context.read<SAAttendanceCubit>(),
+        child: _FiltersSheet(state: state),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, SAAttendanceState state) {
+    switch (state.status) {
+      case SAAttendanceStatus.initial:
+      case SAAttendanceStatus.loading:
+        return _buildShimmer();
+      case SAAttendanceStatus.error:
+        return ErrorStateWidget(
+          error: state.errorMessage ?? 'حدث خطأ غير متوقع',
+          buttonLabel: 'إعادة المحاولة',
+          onRetry: () =>
+              context.read<SAAttendanceCubit>().loadAttendance(),
+        );
+      case SAAttendanceStatus.success:
+        if (state.filteredRecords.isEmpty) {
+          return EmptyStateWidget(
+            icon: Icons.event_busy_rounded,
+            title: 'لا يوجد سجلات',
+            message: 'لا توجد سجلات حضور لهذا التاريخ',
+            iconColor: AppColors.textTertiary,
+          );
+        }
+        return _buildList(context, state);
+    }
+  }
+
+  Widget _buildList(BuildContext context, SAAttendanceState state) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(
+        top: AppSpacing.sm,
+        bottom: AppSpacing.xxxl,
+      ),
+      itemCount: state.filteredRecords.length,
+      itemBuilder: (context, index) {
+        final record = state.filteredRecords[index];
+        return SAAttendanceEmployeeRow(
+          record: record,
+          isExpanded: state.expandedEmployeeId == record.employeeName,
+          onTap: () => context
+              .read<SAAttendanceCubit>()
+              .toggleExpand(record.employeeName),
+        );
+      },
+    );
+  }
+
+  Widget _buildShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        itemCount: 8,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppSizing.radiusMedium),
+            ),
+            child: Row(
+              children: [
+                const ShimmerPlaceholder(
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'الحضور اليوم',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      ShimmerPlaceholder(
+                        width: 120 + (index * 10).toDouble(),
+                        height: 14,
+                        borderRadius: 4,
                       ),
-                      Text(
-                        'إجمالي $total موظف',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                        ),
+                      const SizedBox(height: 6),
+                      ShimmerPlaceholder(
+                        width: 80,
+                        height: 10,
+                        borderRadius: 4,
                       ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Stats row
-              Row(
-                children: [
-                  _StatCard(
-                    label: 'حاضر',
-                    count: present,
-                    color: Colors.greenAccent,
-                    icon: Icons.check_circle_rounded,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatCard(
-                    label: 'غائب',
-                    count: absent,
-                    color: Colors.redAccent,
-                    icon: Icons.cancel_rounded,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatCard(
-                    label: 'نسبة الحضور',
-                    count: pct,
-                    suffix: '%',
-                    color: Colors.white,
-                    icon: Icons.pie_chart_rounded,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Department Attendance Card ───────────────────────────────────────────────
-
-class _DepartmentAttendanceCard extends StatefulWidget {
-  final SuperAdminDepartmentData department;
-  const _DepartmentAttendanceCard({required this.department});
-
-  @override
-  State<_DepartmentAttendanceCard> createState() =>
-      _DepartmentAttendanceCardState();
-}
-
-class _DepartmentAttendanceCardState
-    extends State<_DepartmentAttendanceCard> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final dept = widget.department;
-    final present = dept.presentToday;
-    final total = dept.employees.length;
-    final absent = total - present;
-    final pct = total > 0 ? (present / total * 100).round() : 0;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.border.withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // ── Header ──────────────────────────────────────────────────
-          InkWell(
-            onTap: total > 0
-                ? () => setState(() => _expanded = !_expanded)
-                : null,
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  // Progress circle
-                  SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          value: total > 0 ? present / total : 0,
-                          backgroundColor:
-                              AppColors.error.withValues(alpha: 0.2),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.success),
-                          strokeWidth: 4,
-                        ),
-                        Text(
-                          '$pct%',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          dept.departmentName,
-                          style: AppTextStyles.titleSmall
-                              .copyWith(fontWeight: FontWeight.w800),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            _MiniChip(
-                                label: '$present حاضر',
-                                color: AppColors.success),
-                            const SizedBox(width: 6),
-                            _MiniChip(
-                                label: '$absent غائب',
-                                color: AppColors.error),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (total > 0)
-                    Icon(
-                      _expanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.textTertiary,
-                    ),
-                ],
-              ),
+                ),
+                const ShimmerPlaceholder(
+                  width: 56,
+                  height: 22,
+                  borderRadius: 11,
+                ),
+              ],
             ),
-          ),
-
-          // ── Expanded employees list ──────────────────────────────────
-          if (_expanded && total > 0) ...[
-            const Divider(height: 1, indent: 14, endIndent: 14),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-              itemCount: dept.employees.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final emp = dept.employees[i];
-                final name = emp.shortNameAr;
-                return _EmployeeAttendanceRow(employee: emp, name: name);
-              },
-            ),
-          ],
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-// ─── Employee Attendance Row ──────────────────────────────────────────────────
+// ─── Department Filter Bar ────────────────────────────────────────────────────
 
-class _EmployeeAttendanceRow extends StatelessWidget {
-  final SuperAdminDeptEmployee employee;
-  final String name;
-  const _EmployeeAttendanceRow(
-      {required this.employee, required this.name});
+class _DepartmentFilterBar extends StatelessWidget {
+  final List<DepartmentOption> departments;
+  final int? selectedDepartmentId;
+  final ValueChanged<int?> onDepartmentChanged;
 
-  @override
-  Widget build(BuildContext context) {
-    final isPresent = employee.isPresent;
-
-    return Row(
-      children: [
-        // Avatar
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isPresent
-                ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.error.withValues(alpha: 0.08),
-          ),
-          child: employee.imageUrl != null
-              ? ClipOval(
-                  child: Image.network(
-                    employee.imageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) =>
-                        _initials(name, isPresent),
-                  ),
-                )
-              : _initials(name, isPresent),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            name,
-            style: AppTextStyles.bodySmall
-                .copyWith(fontWeight: FontWeight.w600),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        // Status
-        if (isPresent)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.login_rounded,
-                  size: 13, color: AppColors.success),
-              const SizedBox(width: 3),
-              Text(
-                _fmt(employee.todayAttendanceTime!),
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.success),
-              ),
-            ],
-          )
-        else
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cancel_rounded,
-                  size: 13, color: AppColors.error),
-              const SizedBox(width: 3),
-              Text(
-                'غائب',
-                style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.error),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
-  Widget _initials(String name, bool isPresent) {
-    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
-    final text = parts.isEmpty
-        ? '?'
-        : parts.length == 1
-            ? parts[0][0]
-            : '${parts.first[0]}${parts.last[0]}';
-    return Center(
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: isPresent ? AppColors.success : AppColors.error,
-        ),
-      ),
-    );
-  }
-
-  String _fmt(String time) {
-    final p = time.split(':');
-    return p.length >= 2 ? '${p[0]}:${p[1]}' : time;
-  }
-}
-
-// ─── Shared Widgets ───────────────────────────────────────────────────────────
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final int count;
-  final String suffix;
-  final Color color;
-  final IconData icon;
-
-  const _StatCard({
-    required this.label,
-    required this.count,
-    required this.color,
-    required this.icon,
-    this.suffix = '',
+  const _DepartmentFilterBar({
+    required this.departments,
+    required this.selectedDepartmentId,
+    required this.onDepartmentChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
+      color: AppColors.surface,
+      child: Row(
+        children: [
+          Icon(
+            Icons.apartment_rounded,
+            size: 18,
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int?>(
+                value: selectedDepartmentId,
+                isExpanded: true,
+                isDense: true,
+                icon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: AppColors.textSecondary,
+                ),
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+                hint: Text(
+                  'كل الأقسام',
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                items: [
+                  DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text(
+                      'كل الأقسام',
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  ...departments.map(
+                    (dept) => DropdownMenuItem<int?>(
+                      value: dept.id,
+                      child: Text(
+                        dept.name,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: onDepartmentChanged,
+              ),
+            ),
+          ),
+          if (selectedDepartmentId != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            GestureDetector(
+              onTap: () => onDepartmentChanged(null),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.errorTint,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: AppColors.error,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Filter Bottom Sheet ──────────────────────────────────────────────────────
+
+class _FiltersSheet extends StatefulWidget {
+  final SAAttendanceState state;
+  const _FiltersSheet({required this.state});
+
+  @override
+  State<_FiltersSheet> createState() => _FiltersSheetState();
+}
+
+class _FiltersSheetState extends State<_FiltersSheet> {
+  late DateTime? _dateFrom;
+  late DateTime? _dateTo;
+  late int? _deviceType;
+
+  @override
+  void initState() {
+    super.initState();
+    _dateFrom = widget.state.startDate;
+    _dateTo = widget.state.endDate;
+    _deviceType = widget.state.deviceTypeFilter;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Text(
+                'تصفية النتائج',
+                style: AppTextStyles.titleMedium.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  context.read<SAAttendanceCubit>().clearAllFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('مسح الكل'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'الفترة الزمنية',
+            style: AppTextStyles.labelMedium.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _DatePickerField(
+                  label: 'من',
+                  value: _dateFrom,
+                  onPicked: (v) => setState(() => _dateFrom = v),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _DatePickerField(
+                  label: 'إلى',
+                  value: _dateTo,
+                  onPicked: (v) => setState(() => _dateTo = v),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'نوع الجهاز',
+            style: AppTextStyles.labelMedium.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _DeviceTypeChip(
+                label: 'الكل',
+                isSelected: _deviceType == null,
+                onTap: () => setState(() => _deviceType = null),
+              ),
+              const SizedBox(width: 8),
+              _DeviceTypeChip(
+                label: 'موبايل',
+                icon: Icons.phone_android_rounded,
+                isSelected: _deviceType == 2,
+                onTap: () => setState(() => _deviceType = 2),
+              ),
+              const SizedBox(width: 8),
+              _DeviceTypeChip(
+                label: 'بصمة',
+                icon: Icons.fingerprint_rounded,
+                isSelected: _deviceType == 3,
+                onTap: () => setState(() => _deviceType = 3),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                final cubit = context.read<SAAttendanceCubit>();
+                if (_dateFrom != null && _dateTo != null) {
+                  cubit.loadAttendanceWithRange(
+                    startDate: _dateFrom!,
+                    endDate: _dateTo!,
+                  );
+                } else {
+                  cubit.loadAttendance();
+                }
+                cubit.applyDeviceTypeFilter(_deviceType);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'تطبيق',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DatePickerField extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final ValueChanged<DateTime?> onPicked;
+
+  const _DatePickerField({
+    required this.label,
+    required this.value,
+    required this.onPicked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayText = value != null
+        ? '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}'
+        : null;
+
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+        );
+        if (picked != null) {
+          onPicked(picked);
+        }
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Column(
+        child: Row(
           children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
-            Text(
-              '$count$suffix',
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            const Icon(
+              Icons.calendar_today_rounded,
+              size: 16,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                displayText ?? label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: value != null
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+            if (value != null)
+              GestureDetector(
+                onTap: () => onPicked(null),
+                child: const Icon(
+                  Icons.clear_rounded,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
           ],
         ),
       ),
@@ -483,26 +591,62 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _MiniChip extends StatelessWidget {
+class _DeviceTypeChip extends StatelessWidget {
   final String label;
-  final Color color;
-  const _MiniChip({required this.label, required this.color});
+  final IconData? icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DeviceTypeChip({
+    required this.label,
+    this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSizing.radiusRound),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: AppTextStyles.labelMedium.copyWith(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );
