@@ -1,24 +1,26 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/services/service_locator.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:mediconsult_internal/src/features/home/models/home_notification.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 import '../../../core/network/dio_client.dart';
 import '../../../core/routing/app_router.dart';
+import '../../../core/services/location_service.dart';
+import '../../../core/services/service_locator.dart';
 import '../../../shared/components/custom_toast.dart';
+import '../../attendance/models/today_attendance.dart';
 import '../../auth/cubit/auth_cubit.dart';
 import '../../auth/services/auth_storage_service.dart';
-import 'package:mediconsult_internal/src/features/home/models/home_notification.dart';
-import '../../../core/services/location_service.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../models/employee_bonus.dart';
-import 'home_state.dart';
 import '../models/employee_info.dart';
 import '../models/employee_penalty.dart';
 import '../models/home_statistics.dart';
 import '../models/recent_activity.dart';
 import '../repository/home_repository.dart';
 import '../services/home_notification_service.dart';
-import '../../attendance/models/today_attendance.dart';
+import 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository _repository;
@@ -55,8 +57,12 @@ class HomeCubit extends Cubit<HomeState> {
         if (url == null) return null;
         // Remove all backticks and trim whitespace
         final cleaned = url.replaceAll('`', '').trim();
-        print('Original image URL: "$url"');
-        print('Cleaned image URL: "$cleaned"');
+        if (kDebugMode) {
+          print('Original image URL: "$url"');
+        }
+        if (kDebugMode) {
+          print('Cleaned image URL: "$cleaned"');
+        }
         return cleaned.isEmpty ? null : cleaned;
       }
 
