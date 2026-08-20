@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_exception.dart';
 import '../attendance/models/daily_attendance_record.dart';
 import '../attendance/widgets/attendance_records_table.dart';
 import 'cubit/employees_cubit.dart';
@@ -60,7 +61,7 @@ class _EmployeeAttendanceReportScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'حدث خطأ أثناء تحميل السجلات: ${e.toString()}';
+          _error = AppException.from(e).message;
           _isLoading = false;
         });
       }

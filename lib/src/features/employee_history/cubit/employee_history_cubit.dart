@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/utils/app_exception.dart';
 
 import '../models/employee_history_response.dart';
 import '../models/employee_history_summary.dart';
@@ -39,7 +40,7 @@ class EmployeeHistoryCubit extends Cubit<EmployeeHistoryState> {
       emit(
         state.copyWith(
           status: EmployeeHistoryStatus.failure,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: AppException.from(e).message,
         ),
       );
     }

@@ -23,6 +23,7 @@ class PunchSummaryList extends StatelessWidget {
             return false;
           },
           child: ListView.builder(
+            padding: const EdgeInsets.only(top: 8, bottom: 16),
             itemCount: items.length + (state.isLoadingMoreSummary ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == items.length) {

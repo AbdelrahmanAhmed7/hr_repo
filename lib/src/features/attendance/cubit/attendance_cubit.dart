@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../../core/utils/device_fingerprint.dart';
 import '../../../core/utils/work_rules.dart';
 import '../../permissions/models/permission_request.dart';
@@ -492,7 +493,7 @@ class AttendanceCubit extends Cubit<AttendanceState> {
       );
       throw Exception(msg);
     } catch (e) {
-      final msg = e.toString().replaceFirst('Exception: ', '');
+      final msg = AppException.from(e).message;
       emit(
         state.copyWith(
           pdfStatus: AttendancePdfStatus.failure,

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/utils/app_exception.dart';
 import '../models/department_assignment.dart';
 import '../repository/admin_assignments_repository.dart';
 import 'admin_assignments_state.dart';
@@ -86,7 +87,7 @@ class AdminAssignmentsCubit extends Cubit<AdminAssignmentsState> {
       );
     } catch (e) {
       if (isClosed) return;
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+      emit(state.copyWith(isLoading: false, error: AppException.from(e).message));
     }
   }
 
@@ -114,7 +115,7 @@ class AdminAssignmentsCubit extends Cubit<AdminAssignmentsState> {
       );
     } catch (e) {
       if (isClosed) return;
-      emit(state.copyWith(isLoadingMore: false, error: e.toString()));
+      emit(state.copyWith(isLoadingMore: false, error: AppException.from(e).message));
     }
   }
 
@@ -165,7 +166,7 @@ class AdminAssignmentsCubit extends Cubit<AdminAssignmentsState> {
       );
       return true;
     } catch (e) {
-      emit(state.copyWith(isUpdating: false, error: e.toString()));
+      emit(state.copyWith(isUpdating: false, error: AppException.from(e).message));
       return false;
     }
   }
@@ -184,7 +185,7 @@ class AdminAssignmentsCubit extends Cubit<AdminAssignmentsState> {
       );
       return true;
     } catch (e) {
-      emit(state.copyWith(isUpdating: false, error: e.toString()));
+      emit(state.copyWith(isUpdating: false, error: AppException.from(e).message));
       return false;
     }
   }

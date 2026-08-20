@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/app_exception.dart';
 import '../../data/models/department_model.dart';
 import '../../data/repositories/meetings_repository.dart';
 import 'meetings_state.dart';
@@ -42,7 +43,7 @@ class MeetingsCubit extends Cubit<MeetingsState> {
       if (isClosed) return;
       emit(state.copyWith(
         loadStatus: MeetingsLoadStatus.failure,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        errorMessage: AppException.from(e).message,
       ));
     }
   }
@@ -122,7 +123,7 @@ class MeetingsCubit extends Cubit<MeetingsState> {
       if (isClosed) return false;
       emit(state.copyWith(
         actionStatus: MeetingsActionStatus.failure,
-        actionErrorMessage: e.toString().replaceFirst('Exception: ', ''),
+        actionErrorMessage: AppException.from(e).message,
       ));
       return false;
     }
@@ -165,7 +166,7 @@ class MeetingsCubit extends Cubit<MeetingsState> {
       if (isClosed) return false;
       emit(state.copyWith(
         actionStatus: MeetingsActionStatus.failure,
-        actionErrorMessage: e.toString().replaceFirst('Exception: ', ''),
+        actionErrorMessage: AppException.from(e).message,
       ));
       return false;
     }
@@ -196,7 +197,7 @@ class MeetingsCubit extends Cubit<MeetingsState> {
       if (isClosed) return false;
       emit(state.copyWith(
         actionStatus: MeetingsActionStatus.failure,
-        actionErrorMessage: e.toString().replaceFirst('Exception: ', ''),
+        actionErrorMessage: AppException.from(e).message,
       ));
       return false;
     }

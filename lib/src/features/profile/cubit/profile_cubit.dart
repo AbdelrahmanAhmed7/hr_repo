@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../models/profile_response.dart';
+import '../../../core/utils/app_exception.dart';
 import '../repository/profile_repository.dart';
 
 part 'profile_state.dart';
@@ -21,7 +22,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(ProfileLoaded(profile));
     } catch (e) {
       if (isClosed) return;
-      emit(ProfileError(e.toString()));
+      emit(ProfileError(AppException.from(e).message));
     }
   }
 
@@ -56,7 +57,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       await fetchProfile();
     } catch (e) {
       if (isClosed) return;
-      emit(ProfileUpdateError(e.toString()));
+      emit(ProfileUpdateError(AppException.from(e).message));
     }
   }
 }

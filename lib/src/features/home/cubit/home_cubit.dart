@@ -6,6 +6,7 @@ import 'package:mediconsult_internal/src/features/home/models/home_notification.
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/services/service_locator.dart';
@@ -180,11 +181,11 @@ class HomeCubit extends Cubit<HomeState> {
       }
 
       // Fallback: try to load cached employee info
-      await _emitWithCachedFallback(e.toString());
+      await _emitWithCachedFallback(AppException.from(e).message);
     } catch (e) {
       if (isClosed) return;
       // Fallback: try to load cached employee info
-      await _emitWithCachedFallback(e.toString());
+      await _emitWithCachedFallback(AppException.from(e).message);
     }
   }
 

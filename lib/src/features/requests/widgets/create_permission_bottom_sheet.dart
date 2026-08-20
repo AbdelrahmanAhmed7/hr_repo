@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../../shared/components/custom_button.dart';
 import '../../../shared/components/custom_text_field.dart';
 import '../../../shared/components/custom_toast.dart';
@@ -482,9 +483,7 @@ class _CreateExitPermissionBottomSheetState
       // Extract error message
       String errorMessage = 'حدث خطأ أثناء إنشاء الإذن';
       if (e is Exception) {
-        errorMessage = e.toString().replaceFirst('Exception: ', '');
-      } else {
-        errorMessage = e.toString();
+        errorMessage = AppException.from(e).message;
       }
       
       debugPrint('Permission Creation Error: $errorMessage');

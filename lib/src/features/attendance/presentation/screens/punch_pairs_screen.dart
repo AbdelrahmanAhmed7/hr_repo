@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/service_locator.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../cubit/punch_cubit.dart';
 import '../cubit/punch_state.dart';
 import '../widgets/punch_pairs_list.dart';
@@ -41,14 +43,22 @@ class _PunchPairsScreenState extends State<PunchPairsScreen> {
       value: _cubit,
       child: BlocBuilder<PunchCubit, PunchState>(
         builder: (context, state) {
-          final theme = Theme.of(context);
           final isLoading = state.pairsLoadingUserId == widget.userId;
           final pairs = state.pairsCache[widget.userId];
 
           return Scaffold(
+            backgroundColor: AppColors.backgroundSecondary,
             appBar: AppBar(
-              title: Text(widget.employeeName,
-                  overflow: TextOverflow.ellipsis),
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              elevation: 0,
+              title: Text(
+                widget.employeeName,
+                style: AppTextStyles.titleMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
             body: Builder(
               builder: (ctx) {
@@ -60,19 +70,27 @@ class _PunchPairsScreenState extends State<PunchPairsScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.event_busy_rounded,
-                            size: 48, color: theme.hintColor),
+                        const Icon(
+                          Icons.event_busy_rounded,
+                          size: 48,
+                          color: AppColors.textTertiary,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'لا يوجد بيانات لهذا الموظف',
-                          style: TextStyle(color: theme.hintColor),
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ),
                   );
                 }
                 return SingleChildScrollView(
-                  child: PunchPairsList(userId: widget.userId),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: PunchPairsList(userId: widget.userId),
+                  ),
                 );
               },
             ),

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/shimmer_loading.dart';
@@ -65,7 +66,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = AppException.from(e).message;
         _isLoading = false;
       });
     }

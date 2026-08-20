@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../models/attendance_record_model.dart';
+import '../../../core/utils/app_exception.dart';
 import '../repository/sa_attendance_repository.dart';
 import 'sa_attendance_state.dart';
 
@@ -133,7 +134,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       emit(
         state.copyWith(
           status: SAAttendanceStatus.error,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: AppException.from(e).message,
         ),
       );
     }
@@ -172,7 +173,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       emit(
         state.copyWith(
           status: SAAttendanceStatus.error,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: AppException.from(e).message,
         ),
       );
     }
@@ -288,7 +289,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       emit(
         state.copyWith(
           isExportingPdf: false,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: AppException.from(e).message,
         ),
       );
     }

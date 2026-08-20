@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../profile/repository/profile_repository.dart';
 import '../models/leave_submission_model.dart';
 import '../repository/leaves_repository.dart';
@@ -43,7 +44,7 @@ class LeavesCubit extends Cubit<LeavesState> {
       );
     } catch (e) {
       if (isClosed) return;
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      final errorMessage = AppException.from(e).message;
       emit(
         state.copyWith(
           status: LeavesStatus.failure,
@@ -93,7 +94,7 @@ class LeavesCubit extends Cubit<LeavesState> {
       emit(
         state.copyWith(
           leaveTypesStatus: LeavesStatus.failure,
-          leaveTypesErrorMessage: e.toString().replaceFirst('Exception: ', ''),
+          leaveTypesErrorMessage: AppException.from(e).message,
         ),
       );
     }
@@ -196,7 +197,7 @@ class LeavesCubit extends Cubit<LeavesState> {
       );
     } catch (e) {
       if (isClosed) return;
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      final errorMessage = AppException.from(e).message;
 
       emit(
         state.copyWith(

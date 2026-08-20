@@ -1,8 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mediconsult_internal/src/shared/components/custom_toast.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_exception.dart';
 import 'attendance_auth_service.dart';
 import 'biometric_auth_service.dart';
 import 'location_service.dart';
@@ -105,18 +105,8 @@ class AttendanceHandler {
       String errorMessage = 'حدث خطأ غير متوقع';
       if (e is String) {
         errorMessage = e;
-      } else if (e is DioException) {
-        final data = e.response?.data;
-        if (data is Map) {
-          errorMessage =
-              data['title']?.toString() ??
-              data['message']?.toString() ??
-              errorMessage;
-        } else {
-          errorMessage = e.message ?? errorMessage;
-        }
       } else {
-        errorMessage = e.toString().replaceFirst('Exception: ', '');
+        errorMessage = AppException.from(e).message;
       }
 
       CustomToast.showError(errorMessage);

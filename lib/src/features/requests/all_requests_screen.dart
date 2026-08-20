@@ -23,7 +23,7 @@ class AllRequestsScreen extends StatefulWidget {
   State<AllRequestsScreen> createState() => _AllRequestsScreenState();
 }
 
-enum _RequestTypeFilter { all, leaves, permissions, missions, overtime }
+enum _RequestTypeFilter { all, leaves, permissions, missions }
 
 class _AllRequestsScreenState extends State<AllRequestsScreen>
     with SingleTickerProviderStateMixin {
@@ -165,10 +165,6 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
         return requests
             .where((item) => item.type == RequestType.assignment)
             .toList();
-      case _RequestTypeFilter.overtime:
-        return requests
-            .where((item) => item.type == RequestType.overtime)
-            .toList();
     }
   }
 
@@ -267,9 +263,6 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
                             .where(
                               (item) => item.type == RequestType.assignment,
                             )
-                            .length,
-                        overtimeCount: activeRequests
-                            .where((item) => item.type == RequestType.overtime)
                             .length,
                       ),
                     ],
@@ -407,7 +400,6 @@ class _RequestsTypeFilterBar extends StatelessWidget {
   final int leavesCount;
   final int permissionsCount;
   final int missionsCount;
-  final int overtimeCount;
 
   const _RequestsTypeFilterBar({
     required this.selectedFilter,
@@ -416,7 +408,6 @@ class _RequestsTypeFilterBar extends StatelessWidget {
     required this.leavesCount,
     required this.permissionsCount,
     required this.missionsCount,
-    required this.overtimeCount,
   });
 
   @override
@@ -451,13 +442,6 @@ class _RequestsTypeFilterBar extends StatelessWidget {
             count: missionsCount,
             isSelected: selectedFilter == _RequestTypeFilter.missions,
             onTap: () => onChanged(_RequestTypeFilter.missions),
-          ),
-          const SizedBox(width: 8),
-          _TypeChip(
-            label: 'أوفرتايم',
-            count: overtimeCount,
-            isSelected: selectedFilter == _RequestTypeFilter.overtime,
-            onTap: () => onChanged(_RequestTypeFilter.overtime),
           ),
         ],
       ),

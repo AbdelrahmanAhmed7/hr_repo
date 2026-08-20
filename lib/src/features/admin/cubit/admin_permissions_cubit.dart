@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/utils/app_exception.dart';
 import '../models/department_permission.dart';
 import '../repository/admin_permissions_repository.dart';
 import 'admin_permissions_state.dart';
@@ -90,7 +91,7 @@ class AdminPermissionsCubit extends Cubit<AdminPermissionsState> {
       );
     } catch (e) {
       if (isClosed) return;
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+      emit(state.copyWith(isLoading: false, error: AppException.from(e).message));
     }
   }
 
@@ -118,7 +119,7 @@ class AdminPermissionsCubit extends Cubit<AdminPermissionsState> {
       );
     } catch (e) {
       if (isClosed) return;
-      emit(state.copyWith(isLoadingMore: false, error: e.toString()));
+      emit(state.copyWith(isLoadingMore: false, error: AppException.from(e).message));
     }
   }
 
@@ -171,7 +172,7 @@ class AdminPermissionsCubit extends Cubit<AdminPermissionsState> {
       );
       return true;
     } catch (e) {
-      emit(state.copyWith(isUpdating: false, error: e.toString()));
+      emit(state.copyWith(isUpdating: false, error: AppException.from(e).message));
       return false;
     }
   }
@@ -191,7 +192,7 @@ class AdminPermissionsCubit extends Cubit<AdminPermissionsState> {
       );
       return true;
     } catch (e) {
-      emit(state.copyWith(isUpdating: false, error: e.toString()));
+      emit(state.copyWith(isUpdating: false, error: AppException.from(e).message));
       return false;
     }
   }

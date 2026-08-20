@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/utils/app_exception.dart';
 import '../repository/overtime_repository.dart';
 import 'overtime_state.dart';
 
@@ -33,7 +34,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       emit(
         state.copyWith(
           loadStatus: OvertimeLoadStatus.failure,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: AppException.from(e).message,
         ),
       );
     }
@@ -94,7 +95,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       emit(
         state.copyWith(
           submissionStatus: OvertimeSubmissionStatus.failure,
-          submissionErrorMessage: e.toString().replaceFirst('Exception: ', ''),
+          submissionErrorMessage: AppException.from(e).message,
         ),
       );
     }

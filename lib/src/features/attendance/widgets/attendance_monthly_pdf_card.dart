@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../../shared/components/custom_toast.dart';
 import '../cubit/attendance_cubit.dart';
 import '../cubit/attendance_state.dart';
@@ -30,7 +31,7 @@ class AttendanceMonthlyPdfCard extends StatelessWidget {
       }
     } catch (e) {
       if (!context.mounted) return;
-      CustomToast.showError(e.toString().replaceFirst('Exception: ', ''));
+      CustomToast.showError(AppException.from(e).message);
     }
   }
 

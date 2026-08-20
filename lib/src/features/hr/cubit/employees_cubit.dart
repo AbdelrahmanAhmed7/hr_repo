@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/features/attendance/models/daily_attendance_record.dart';
+import '../../../core/utils/app_exception.dart';
 import '../models/department_option.dart';
 import '../models/employee.dart';
 import '../models/employees_page_response.dart';
@@ -72,7 +73,7 @@ class EmployeesCubit extends Cubit<EmployeesState> {
         state.copyWith(
           isLoading: false,
           isFiltersLoading: false,
-          error: 'حدث خطأ أثناء تحميل الموظفين: ${e.toString()}',
+          error: AppException.from(e).message,
         ),
       );
     }
@@ -112,7 +113,7 @@ class EmployeesCubit extends Cubit<EmployeesState> {
         state.copyWith(
           isLoading: false,
           isLoadingMore: false,
-          error: 'حدث خطأ أثناء تحميل الموظفين: ${e.toString()}',
+          error: AppException.from(e).message,
         ),
       );
     }
@@ -149,7 +150,7 @@ class EmployeesCubit extends Cubit<EmployeesState> {
       emit(
         state.copyWith(
           isLoadingMore: false,
-          error: 'حدث خطأ أثناء تحميل المزيد: ${e.toString()}',
+          error: AppException.from(e).message,
         ),
       );
     }
@@ -206,8 +207,7 @@ class EmployeesCubit extends Cubit<EmployeesState> {
         nextState.copyWith(
           isLoading: false,
           isLoadingMore: false,
-          error:
-              'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ†: ${e.toString()}',
+          error: AppException.from(e).message,
         ),
       );
     }
@@ -398,8 +398,7 @@ class EmployeesCubit extends Cubit<EmployeesState> {
       emit(
         state.copyWith(
           isLoading: false,
-          error:
-              'حدث خطأ أثناء إضافة الموظف: ${e.toString().replaceFirst('Exception: ', '')}',
+          error: AppException.from(e).message,
         ),
       );
       return false;
@@ -467,8 +466,7 @@ class EmployeesCubit extends Cubit<EmployeesState> {
       emit(
         state.copyWith(
           isLoading: false,
-          error:
-              'حدث خطأ أثناء تحديث الموظف: ${e.toString().replaceFirst('Exception: ', '')}',
+          error: AppException.from(e).message,
         ),
       );
       return null;

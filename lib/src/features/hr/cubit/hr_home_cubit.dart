@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/utils/app_exception.dart';
 import '../models/hr_home_response.dart';
 import 'hr_home_state.dart';
 import '../models/employees_page_response.dart';
@@ -33,7 +34,7 @@ class HrHomeCubit extends Cubit<HrHomeState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+      emit(state.copyWith(isLoading: false, error: AppException.from(e).message));
     }
   }
 

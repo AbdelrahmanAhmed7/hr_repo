@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_toast.dart';
 import 'models/attendance_list_response.dart';
 import 'repository/attendance_repository.dart';
@@ -89,7 +90,7 @@ class _HrAttendanceManagementScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = AppException.from(e).message;
         _isLoading = false;
       });
     }
@@ -123,9 +124,7 @@ class _HrAttendanceManagementScreenState
       }
     } catch (e) {
       if (!mounted) return;
-      CustomToast.showError(
-        e.toString().replaceFirst('Exception: ', ''),
-      );
+      CustomToast.showError(AppException.from(e).message);
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }

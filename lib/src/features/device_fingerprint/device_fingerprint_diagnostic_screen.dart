@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconsult_internal/src/core/theme/app_colors.dart';
 import 'package:mediconsult_internal/src/core/utils/device_fingerprint.dart';
+import 'package:mediconsult_internal/src/core/utils/app_exception.dart';
 
 class DeviceFingerprintDiagnosticScreen extends StatefulWidget {
   const DeviceFingerprintDiagnosticScreen({super.key});
@@ -35,7 +36,7 @@ class _DeviceFingerprintDiagnosticScreenState
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = AppException.from(e).message;
         _isLoading = false;
       });
     }

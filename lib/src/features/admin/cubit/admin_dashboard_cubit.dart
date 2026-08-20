@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/utils/app_exception.dart';
 import '../repository/admin_dashboard_repository.dart';
 import 'admin_dashboard_state.dart';
 
@@ -20,7 +21,7 @@ class AdminDashboardCubit extends Cubit<AdminDashboardState> {
       final data = await _repository.getAdminDashboard();
       emit(state.copyWith(isLoading: false, data: data));
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+      emit(state.copyWith(isLoading: false, error: AppException.from(e).message));
     }
   }
 
@@ -31,7 +32,7 @@ class AdminDashboardCubit extends Cubit<AdminDashboardState> {
       final data = await _repository.getAdminDashboard(forceRefresh: true);
       emit(state.copyWith(isLoading: false, data: data));
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+      emit(state.copyWith(isLoading: false, error: AppException.from(e).message));
     }
   }
 }

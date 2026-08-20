@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/utils/app_exception.dart';
 import '../../home/models/employee_info.dart';
 import '../models/payslip.dart';
 import '../repository/payslip_repository.dart';
@@ -86,7 +87,7 @@ class PayslipCubit extends Cubit<PayslipState> {
       emit(
         state.copyWith(
           loadStatus: PayslipLoadStatus.failure,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: AppException.from(e).message,
           clearPayslip: true,
         ),
       );
@@ -206,7 +207,7 @@ class PayslipCubit extends Cubit<PayslipState> {
       emit(
         state.copyWith(
           pdfStatus: PayslipPdfStatus.failure,
-          pdfErrorMessage: e.toString().replaceFirst('Exception: ', ''),
+          pdfErrorMessage: AppException.from(e).message,
         ),
       );
       rethrow;

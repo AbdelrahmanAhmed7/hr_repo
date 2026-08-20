@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/utils/app_exception.dart';
 import '../repository/assignment_repository.dart';
 import 'assignment_state.dart';
 
@@ -22,7 +23,7 @@ class AssignmentCubit extends Cubit<AssignmentState> {
         isLoading: false,
       ));
     } catch (e) {
-      final errorMessage = e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'حدث خطأ أثناء تحميل المأموريات';
+      final errorMessage = AppException.from(e).message;
       if (isClosed) return;
       
       emit(state.copyWith(
@@ -46,7 +47,7 @@ class AssignmentCubit extends Cubit<AssignmentState> {
         isLoading: false,
       ));
     } catch (e) {
-      final errorMessage = e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'حدث خطأ أثناء تحميل المأموريات';
+      final errorMessage = AppException.from(e).message;
       if (isClosed) return;
       
       emit(state.copyWith(
@@ -93,7 +94,7 @@ class AssignmentCubit extends Cubit<AssignmentState> {
       
       return true;
     } catch (e) {
-      final errorMessage = e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'حدث خطأ أثناء إنشاء المأمورية';
+      final errorMessage = AppException.from(e).message;
       if (isClosed) return false;
       
       emit(state.copyWith(
@@ -141,7 +142,7 @@ class AssignmentCubit extends Cubit<AssignmentState> {
       
       return true;
     } catch (e) {
-      final errorMessage = e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'حدث خطأ أثناء تحديث حالة المأمورية';
+      final errorMessage = AppException.from(e).message;
       if (isClosed) return false;
       
       emit(state.copyWith(

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/departments.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/mixins/form_controller_mixin.dart';
 import '../../shared/widgets/form_section_container.dart';
@@ -126,7 +127,7 @@ class _EmployeeEditScreenState extends State<EmployeeEditScreen>
       if (!mounted) return;
       setState(() {
         _isProfileLoading = false;
-        _profileError = e.toString().replaceFirst('Exception: ', '');
+        _profileError = AppException.from(e).message;
       });
     }
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/punch_pair_model.dart';
 
 class PunchPairItem extends StatelessWidget {
@@ -24,112 +26,121 @@ class PunchPairItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final surfaceColor = theme.colorScheme.surface;
-    final surface2Color = theme.colorScheme.surfaceContainerHighest;
-    final borderColor = theme.dividerColor;
-    final textMuted = theme.hintColor;
-    final textSecondary =
-        theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ??
-        Colors.grey;
-    final amberColor = Colors.amber.shade700;
-    final greenColor = Colors.green.shade600;
-    final redColor = theme.colorScheme.error;
+    final statusColor = item.isOpen ? AppColors.warning : AppColors.success;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: item.isOpen ? amberColor : greenColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
       ),
-      clipBehavior: Clip.hardEdge,
-      child: Container(
-        margin: const EdgeInsets.only(right: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        color: surfaceColor,
-        child: Row(
-          children: [
-            // Check-in
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('دخول', style: TextStyle(fontSize: 10, color: textMuted)),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(Icons.login_rounded, size: 14, color: greenColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      formatTime(item.checkIn),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: greenColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+      child: Row(
+        children: [
+          // Check-in
+          _TimeBlock(
+            label: 'دخول',
+            icon: Icons.login_rounded,
+            time: formatTime(item.checkIn),
+            color: AppColors.success,
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: Icon(
+              Icons.arrow_back_rounded,
+              size: 16,
+              color: AppColors.textTertiary,
             ),
-            // Arrow separator
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Icon(Icons.arrow_back_rounded, size: 16, color: textMuted),
-            ),
-            // Check-out
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('خروج', style: TextStyle(fontSize: 10, color: textMuted)),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.logout_rounded,
-                      size: 14,
-                      color: item.isOpen ? amberColor : redColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      item.checkOut != null ? formatTime(item.checkOut!) : '—',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: item.isOpen ? amberColor : redColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const Spacer(),
-            // Duration chip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: item.isOpen
-                    ? amberColor.withValues(alpha: 0.12)
-                    : surface2Color,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: item.isOpen
-                      ? amberColor.withValues(alpha: 0.4)
-                      : borderColor,
+          ),
+          // Check-out
+          _TimeBlock(
+            label: 'خروج',
+            icon: Icons.logout_rounded,
+            time: item.checkOut != null ? formatTime(item.checkOut!) : '—',
+            color: statusColor,
+          ),
+          const Spacer(),
+          // Status + duration
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                item.isOpen ? 'لم يُسجَّل الخروج' : 'مكتمل',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: statusColor,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              child: Text(
-                item.duration,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: item.isOpen ? amberColor : textSecondary,
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
                 ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: Text(
+                  item.duration,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimeBlock extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final String time;
+  final Color color;
+
+  const _TimeBlock({
+    required this.label,
+    required this.icon,
+    required this.time,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelSmall.copyWith(
+            color: AppColors.textTertiary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              time,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

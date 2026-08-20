@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/app_exception.dart';
 import '../api/profile_api.dart';
 import '../models/profile_response.dart';
 
@@ -24,7 +25,7 @@ class ProfileRepository {
       final errorMessage = _extractErrorMessage(e);
       throw Exception(errorMessage);
     } catch (e) {
-      throw Exception(e.toString());
+      throw Exception(AppException.from(e).message);
     }
   }
 
@@ -144,7 +145,7 @@ class ProfileRepository {
       throw Exception(errorMessage);
     } catch (e) {
       if (kDebugMode) print('=== updateProfile error: \$e ===');
-      throw Exception(e.toString());
+      throw Exception(AppException.from(e).message);
     }
   }
 }

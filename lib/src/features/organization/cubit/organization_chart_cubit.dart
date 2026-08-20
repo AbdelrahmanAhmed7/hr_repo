@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphview/GraphView.dart';
 import '../../../core/services/organization_service.dart';
+import '../../../core/utils/app_exception.dart';
 import '../models/organization_models.dart';
 import '../models/view_mode.dart';
 import '../services/preferences_service.dart';
@@ -66,7 +67,7 @@ class OrganizationChartCubit extends Cubit<OrganizationChartState> {
     } catch (e) {
       emit(state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: AppException.from(e).message,
       ));
     }
   }

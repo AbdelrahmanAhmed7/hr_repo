@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/punch_pair_model.dart';
 import '../../data/models/punch_summary_model.dart';
 import '../cubit/punch_cubit.dart';
@@ -24,20 +26,25 @@ class PunchSummaryEmployeeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<PunchCubit, PunchState>(
       builder: (context, state) {
-        final theme = Theme.of(context);
-        final primary = theme.colorScheme.primary;
-        final textMuted = theme.hintColor;
-        final dividerColor = theme.dividerColor;
-        final surfaceVariant = theme.colorScheme.surfaceContainerHighest;
-
         final isExpanded = state.expandedUserId == item.userId;
         final isLoadingPairs = state.pairsLoadingUserId == item.userId;
         final pairs = state.pairsCache[item.userId];
 
         return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: dividerColor)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryDark.withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
+          clipBehavior: Clip.antiAlias,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -47,60 +54,60 @@ class PunchSummaryEmployeeCard extends StatelessWidget {
                     context.read<PunchCubit>().toggleExpand(item.userId),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
-                      // Expand indicator
                       Icon(
                         isExpanded
                             ? Icons.keyboard_arrow_up_rounded
                             : Icons.keyboard_arrow_down_rounded,
-                        color: textMuted,
+                        color: AppColors.textTertiary,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      // Avatar
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: primary.withValues(alpha: 0.12),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                         child: Text(
                           _getInitials(item.employeeName),
-                          style: TextStyle(
-                            color: primary,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.primary,
                             fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Name
                       Expanded(
                         child: Text(
                           item.employeeName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      // Hours summary
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.access_time_rounded,
-                                  size: 12, color: primary),
+                              const Icon(
+                                Icons.access_time_rounded,
+                                size: 12,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 3),
                               Text(
                                 item.workedFormatted,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: primary,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ],
@@ -110,13 +117,17 @@ class PunchSummaryEmployeeCard extends StatelessWidget {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.free_breakfast_rounded,
-                                    size: 11, color: textMuted),
+                                const Icon(
+                                  Icons.free_breakfast_rounded,
+                                  size: 11,
+                                  color: AppColors.textTertiary,
+                                ),
                                 const SizedBox(width: 3),
                                 Text(
                                   item.breakFormatted,
-                                  style: TextStyle(
-                                      fontSize: 11, color: textMuted),
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.textTertiary,
+                                  ),
                                 ),
                               ],
                             ),
@@ -139,8 +150,6 @@ class PunchSummaryEmployeeCard extends StatelessWidget {
                   userId: item.userId,
                   isLoading: isLoadingPairs,
                   pairs: pairs,
-                  surfaceVariant: surfaceVariant,
-                  textMuted: textMuted,
                 ),
               ),
             ],
@@ -157,15 +166,11 @@ class _ExpandedPanel extends StatelessWidget {
   final String userId;
   final bool isLoading;
   final List<PunchPairModel>? pairs;
-  final Color surfaceVariant;
-  final Color textMuted;
 
   const _ExpandedPanel({
     required this.userId,
     required this.isLoading,
     required this.pairs,
-    required this.surfaceVariant,
-    required this.textMuted,
   });
 
   @override
@@ -185,20 +190,20 @@ class _ExpandedPanel extends StatelessWidget {
         child: Center(
           child: Text(
             'لا يوجد بيانات',
-            style: TextStyle(fontSize: 13, color: textMuted),
+            style: AppTextStyles.labelMedium.copyWith(
+              color: AppColors.textTertiary,
+            ),
           ),
         ),
       );
     } else {
       content = Column(
-        children: pairs!
-            .map((p) => PunchPairItem(item: p))
-            .toList(),
+        children: pairs!.map((p) => PunchPairItem(item: p)).toList(),
       );
     }
 
     return Container(
-      color: surfaceVariant.withValues(alpha: 0.45),
+      color: AppColors.backgroundSecondary,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: content,

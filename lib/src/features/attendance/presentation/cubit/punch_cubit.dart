@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/app_exception.dart';
 import '../../../hr/repository/employees_repository.dart';
 import '../../data/models/punch_pair_model.dart';
 import '../../data/models/punch_summary_model.dart';
@@ -118,7 +119,7 @@ class PunchCubit extends Cubit<PunchState> {
     } catch (e) {
       emit(state.copyWithNullables(
         summaryStatus: PunchStatus.error,
-        errorMessage: () => e.toString(),
+        errorMessage: () => AppException.from(e).message,
       ));
     }
   }

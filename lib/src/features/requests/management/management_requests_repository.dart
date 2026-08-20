@@ -15,7 +15,6 @@ class ManagementRequestsRepository {
       _safely(_dataSource.fetchLeaves),
       _safely(_dataSource.fetchPermissions),
       _safely(_dataSource.fetchAssignments),
-      _safely(_dataSource.fetchOvertime),
     ]);
 
     final all = <RecentActivity>[

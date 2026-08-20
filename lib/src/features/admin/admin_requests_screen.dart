@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/features/admin/cubit/admin_requests_state.dart';
 import '../../core/theme/app_colors.dart';
+import '../requests/widgets/requests_header.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/status_tabs_bar.dart';
 import '../../shared/components/custom_toast.dart';
@@ -17,12 +18,13 @@ class AdminRequestsScreen extends StatefulWidget {
   State<AdminRequestsScreen> createState() => _AdminRequestsScreenState();
 }
 
-enum _RequestTypeFilter { all, leaves, permissions, missions, overtime }
+enum _RequestTypeFilter { all, leaves, permissions, missions }
 
 class _AdminRequestsScreenState extends State<AdminRequestsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   _RequestTypeFilter _selectedTypeFilter = _RequestTypeFilter.all;
+  int? _selectedMonth;
 
   @override
   void initState() {
@@ -34,6 +36,16 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
         context.read<AdminRequestsCubit>().loadRequests();
       }
     });
+  }
+
+  void _handleMonthChanged(int? month) {
+    if (_selectedMonth == month) return;
+    setState(() => _selectedMonth = month);
+    context.read<AdminRequestsCubit>().loadRequests(month: month);
+  }
+
+  int _countByType(List<RecentActivity> requests, RequestType type) {
+    return requests.where((item) => item.type == type).length;
   }
 
   @override
@@ -81,7 +93,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
+      backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
         child: BlocBuilder<AdminRequestsCubit, AdminRequestsState>(
@@ -91,30 +103,18 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
               return NestedScrollView(
                 headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
                   return [
-                    // Header
                     SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'إدارة الطلبات',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                            ),
-                          ],
-                        ),
+                      child: RequestsHeader(
+                        title: 'إدارة الطلبات',
+                        subtitle: 'متابعة طلبات الموظفين والإجراءات عليها من مكان واحد',
+                        countLabel: _selectedMonth == null
+                            ? 'إجمالي الطلبات'
+                            : 'طلبات الشهر',
+                        requestCount: state.allRequests.length,
+                        selectedMonth: _selectedMonth,
+                        onMonthChanged: _handleMonthChanged,
+                        icon: Icons.request_quote_rounded,
+                        accentColor: const Color(0xFFFFB74D),
                       ),
                     ),
                     // Tabs
@@ -129,12 +129,25 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
                         child: _RequestsTypeFilterBar(
                           selectedFilter: _selectedTypeFilter,
                           onChanged: (filter) {
                             setState(() => _selectedTypeFilter = filter);
                           },
+                          allCount: state.allRequests.length,
+                          leavesCount: _countByType(
+                            state.allRequests,
+                            RequestType.leave,
+                          ),
+                          permissionsCount: _countByType(
+                            state.allRequests,
+                            RequestType.permission,
+                          ),
+                          missionsCount: _countByType(
+                            state.allRequests,
+                            RequestType.assignment,
+                          ),
                         ),
                       ),
                     ),
@@ -172,10 +185,6 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
         return requests
             .where((item) => item.type == RequestType.assignment)
             .toList();
-      case _RequestTypeFilter.overtime:
-        return requests
-            .where((item) => item.type == RequestType.overtime)
-            .toList();
     }
   }
 
@@ -183,40 +192,55 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
     final filteredRequests = _applyTypeFilter(requests);
 
     if (cubit.state.isLoading) {
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          16,
+          24,
+          16 + MediaQuery.of(context).padding.bottom,
+        ),
+        itemCount: 6,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          return const SkeletonListItem(showAvatar: true);
+        },
+      );
+    }
+
+    if (filteredRequests.isEmpty) {
+      final isFilteredOut = requests.isNotEmpty;
       return RefreshIndicator(
-        onRefresh: () => cubit.loadRequests(),
-        child: ListView.separated(
-          padding: EdgeInsets.fromLTRB(
-            24,
-            16,
-            24,
-            16 + MediaQuery.of(context).padding.bottom,
-          ),
-          itemCount: 5,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            return const SkeletonListItem(showAvatar: true);
+        onRefresh: () => cubit.loadRequests(month: _selectedMonth),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: EmptyStateWidget(
+                  icon: isFilteredOut
+                      ? Icons.filter_alt_off_rounded
+                      : Icons.inbox_outlined,
+                  title: isFilteredOut ? 'لا توجد نتائج لهذه الفلترة' : 'لا توجد طلبات',
+                  message: isFilteredOut
+                      ? 'جرّب تغيير نوع الطلب أو اختيار تبويب حالة مختلف.'
+                      : 'لم يتم العثور على أي طلبات في هذه الفئة بعد.',
+                  iconColor: isFilteredOut
+                      ? AppColors.warning
+                      : AppColors.textTertiary,
+                ),
+              ),
+            );
           },
         ),
       );
     }
 
-    if (filteredRequests.isEmpty) {
-      return EmptyStateWidget(
-        icon: Icons.inbox_outlined,
-        title: requests.isEmpty
-            ? 'لا توجد طلبات'
-            : 'لا توجد نتائج لهذه الفلترة',
-        message: requests.isEmpty
-            ? 'لم يتم العثور على أي طلبات في هذه الفئة'
-            : 'جرّب تغيير نوع الطلب أو اختيار تبويب حالة مختلف.',
-        iconColor: AppColors.textTertiary,
-      );
-    }
-
     return RefreshIndicator(
-      onRefresh: () => cubit.loadRequests(),
+      onRefresh: () => cubit.loadRequests(month: _selectedMonth),
       child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           24,
           16,
@@ -246,10 +270,18 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
 class _RequestsTypeFilterBar extends StatelessWidget {
   final _RequestTypeFilter selectedFilter;
   final ValueChanged<_RequestTypeFilter> onChanged;
+  final int allCount;
+  final int leavesCount;
+  final int permissionsCount;
+  final int missionsCount;
 
   const _RequestsTypeFilterBar({
     required this.selectedFilter,
     required this.onChanged,
+    required this.allCount,
+    required this.leavesCount,
+    required this.permissionsCount,
+    required this.missionsCount,
   });
 
   @override
@@ -260,32 +292,38 @@ class _RequestsTypeFilterBar extends StatelessWidget {
         children: [
           _TypeChip(
             label: 'الكل',
+            icon: Icons.apps_rounded,
+            color: AppColors.primary,
+            count: allCount,
             isSelected: selectedFilter == _RequestTypeFilter.all,
             onTap: () => onChanged(_RequestTypeFilter.all),
           ),
           const SizedBox(width: 8),
           _TypeChip(
             label: 'إجازات',
+            icon: Icons.airline_seat_individual_suite_rounded,
+            color: AppColors.primaryLight,
+            count: leavesCount,
             isSelected: selectedFilter == _RequestTypeFilter.leaves,
             onTap: () => onChanged(_RequestTypeFilter.leaves),
           ),
           const SizedBox(width: 8),
           _TypeChip(
             label: 'أذونات',
+            icon: Icons.logout_rounded,
+            color: AppColors.warning,
+            count: permissionsCount,
             isSelected: selectedFilter == _RequestTypeFilter.permissions,
             onTap: () => onChanged(_RequestTypeFilter.permissions),
           ),
           const SizedBox(width: 8),
           _TypeChip(
             label: 'مأموريات',
+            icon: Icons.flight_takeoff_rounded,
+            color: AppColors.info,
+            count: missionsCount,
             isSelected: selectedFilter == _RequestTypeFilter.missions,
             onTap: () => onChanged(_RequestTypeFilter.missions),
-          ),
-          const SizedBox(width: 8),
-          _TypeChip(
-            label: 'أوفرتايم',
-            isSelected: selectedFilter == _RequestTypeFilter.overtime,
-            onTap: () => onChanged(_RequestTypeFilter.overtime),
           ),
         ],
       ),
@@ -295,33 +333,92 @@ class _RequestsTypeFilterBar extends StatelessWidget {
 
 class _TypeChip extends StatelessWidget {
   final String label;
+  final IconData icon;
+  final Color color;
+  final int count;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _TypeChip({
     required this.label,
+    required this.icon,
+    required this.color,
+    required this.count,
     required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: isSelected ? Colors.white : AppColors.textSecondary,
-          fontWeight: FontWeight.w700,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.border,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 17,
+                color: isSelected ? Colors.white : color,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: isSelected
+                      ? Colors.white
+                      : AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: 7),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.22)
+                        : color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isSelected ? Colors.white : color,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
-      selected: isSelected,
-      selectedColor: AppColors.primary,
-      backgroundColor: Colors.white,
-      side: BorderSide(
-        color: isSelected ? AppColors.primary : AppColors.border,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      onSelected: (_) => onTap(),
     );
   }
 }

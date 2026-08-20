@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/app_exception.dart';
 import '../models/employee_history_response.dart';
 import '../models/employee_history_summary.dart';
 
@@ -19,7 +20,7 @@ class EmployeeHistoryService {
     } on DioException catch (e) {
       throw Exception(_extractErrorMessage(e));
     } catch (e) {
-      throw Exception(e.toString());
+      throw Exception(AppException.from(e).message);
     }
   }
 
@@ -39,7 +40,7 @@ class EmployeeHistoryService {
     } on DioException catch (e) {
       throw Exception(_extractErrorMessage(e));
     } catch (e) {
-      throw Exception(e.toString());
+      throw Exception(AppException.from(e).message);
     }
   }
 

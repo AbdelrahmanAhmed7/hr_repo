@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/punch_pair_model.dart';
 import '../cubit/punch_cubit.dart';
 import '../cubit/punch_state.dart';
@@ -32,12 +34,6 @@ class PunchPairsList extends StatelessWidget {
         final sortedKeys = grouped.keys.toList()
           ..sort((a, b) => b.compareTo(a));
 
-        final theme = Theme.of(context);
-        final surface2 = theme.colorScheme.surfaceContainerHighest;
-        final textSecondary =
-            theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ??
-                Colors.grey;
-
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -56,15 +52,20 @@ class PunchPairsList extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  color: surface2,
+                  margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 6),
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryTint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: Text(
                     dateHeader,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: textSecondary,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

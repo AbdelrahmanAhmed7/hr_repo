@@ -41,7 +41,7 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
            getIt<ManagementRequestsRepository>(),
        super(const AdminRequestsState());
 
-  Future<void> loadRequests() async {
+  Future<void> loadRequests({int? month}) async {
     if (isClosed) return;
     final authState = getIt<AuthCubit>().state;
     final canManage =
@@ -63,8 +63,8 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
 
     try {
       final requests = authState.isSuperAdmin
-          ? await _loadSuperAdminRequests()
-          : await _loadAdminRequests();
+          ? await _loadSuperAdminRequests(month: month)
+          : await _loadAdminRequests(month: month);
 
       requests.sort((a, b) => b.date.compareTo(a.date));
       if (isClosed) return;
@@ -159,16 +159,21 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
     }
   }
 
-  Future<List<RecentActivity>> _loadAdminRequests() async {
+  Future<List<RecentActivity>> _loadAdminRequests({int? month}) async {
     final dashboard = await _adminDashboardRepository.getAdminDashboard();
-    return _mapRequests([
+    var requests = _mapRequests([
       ...dashboard.adminRequests,
       ...dashboard.departmentUsersRequests,
     ]);
+
+    if (month != null) {
+      requests = requests.where((item) => item.date.month == month).toList();
+    }
+    return requests;
   }
 
-  Future<List<RecentActivity>> _loadSuperAdminRequests() async {
-    return _managementRequestsRepository.getAllRequests();
+  Future<List<RecentActivity>> _loadSuperAdminRequests({int? month}) async {
+    return _managementRequestsRepository.getAllRequests(month: month);
   }
 
   List<RecentActivity> _mapRequests(List<AdminRequest> requests) {

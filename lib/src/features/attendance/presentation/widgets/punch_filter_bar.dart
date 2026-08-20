@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../cubit/punch_cubit.dart';
 import '../cubit/punch_state.dart';
 
@@ -13,356 +15,384 @@ class PunchFilterBar extends StatefulWidget {
 }
 
 class _PunchFilterBarState extends State<PunchFilterBar> {
+  static const double _sectionPaddingH = 12;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PunchCubit, PunchState>(
       builder: (context, state) {
-        final theme = Theme.of(context);
-        final primary = theme.colorScheme.primary;
-        final dividerColor = theme.dividerColor;
-
-        return Column(
-          children: [
-            // Row 1 – Date Navigator (RTL correct)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(bottom: BorderSide(color: dividerColor)),
-              ),
-              child: Row(
-                children: [
-                  // Filter icon (leftmost in RTL)
-                  IconButton(
-                    icon: Stack(
-                      children: [
-                        const Icon(Icons.tune_rounded),
-                        if (state.hasActiveFilters)
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.error,
-                                shape: BoxShape.circle,
+        return Container(
+          margin: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              // Row 1 – Date Navigator (RTL correct)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Stack(
+                        children: [
+                          const Icon(Icons.tune_rounded),
+                          if (state.hasActiveFilters)
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.error,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
+                      onPressed: () => _showFilterSheet(context),
                     ),
-                    onPressed: () => _showFilterSheet(context),
-                  ),
-                  // Today chip
-                  if (!state.isToday)
-                    GestureDetector(
-                      onTap: () => context.read<PunchCubit>().goToToday(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        margin: const EdgeInsets.only(right: 4),
-                        decoration: BoxDecoration(
-                          color: primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
+                    if (!state.isToday)
+                      GestureDetector(
+                        onTap: () => context.read<PunchCubit>().goToToday(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          margin: const EdgeInsets.only(right: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'اليوم',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                        child: Text(
-                          'اليوم',
-                          style: TextStyle(fontSize: 11, color: primary),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      onPressed: () =>
+                          context.read<PunchCubit>().goToPreviousDay(),
+                    ),
+                    Expanded(
+                      child: Text(
+                        _formatDisplayDate(state.fromDate, state.toDate),
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  // Previous day = chevron_right (RTL: right arrow goes back)
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right_rounded),
-                    onPressed: () =>
-                        context.read<PunchCubit>().goToPreviousDay(),
-                  ),
-                  // Date label
-                  Expanded(
-                    child: Text(
-                      _formatDisplayDate(state.fromDate, state.toDate),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                  // Next day = chevron_left (RTL: left arrow goes forward)
-                  IconButton(
-                    icon: Icon(
-                      Icons.chevron_left_rounded,
-                      color: state.isToday ? theme.disabledColor : null,
-                    ),
-                    onPressed: state.isToday
-                        ? null
-                        : () => context.read<PunchCubit>().goToNextDay(),
-                  ),
-                ],
-              ),
-            ),
-
-            // Row 2 – Quick date chips
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(bottom: BorderSide(color: dividerColor)),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _QuickDateChip(
-                      label: 'اليوم',
-                      icon: Icons.today_rounded,
-                      isActive: _isRange(state, _dateOnly(DateTime.now()),
-                          _dateOnly(DateTime.now())),
-                      onTap: () => context.read<PunchCubit>().goToToday(),
-                    ),
-                    _QuickDateChip(
-                      label: 'أمس',
-                      icon: Icons.history_rounded,
-                      isActive: _isRange(
-                          state,
-                          _dateOnly(DateTime.now().subtract(
-                              const Duration(days: 1))),
-                          _dateOnly(DateTime.now().subtract(
-                              const Duration(days: 1)))),
-                      onTap: () {
-                        final d = DateTime.now().subtract(const Duration(days: 1));
-                        context
-                            .read<PunchCubit>()
-                            .applyDateFilter(from: _startOfDay(d), to: _endOfDay(d));
-                      },
-                    ),
-                    _QuickDateChip(
-                      label: 'الأسبوع',
-                      icon: Icons.view_week_rounded,
-                      isActive: _isRange(state, _weekStart(), _dateOnly(DateTime.now())),
-                      onTap: () {
-                        final now = DateTime.now();
-                        context
-                            .read<PunchCubit>()
-                            .applyDateFilter(from: _weekStart(), to: _dateOnly(now));
-                      },
-                    ),
-                    _QuickDateChip(
-                      label: 'الشهر',
-                      icon: Icons.calendar_month_rounded,
-                      isActive: _isRange(
-                          state, _monthStart(), _dateOnly(DateTime.now())),
-                      onTap: () {
-                        final now = DateTime.now();
-                        context
-                            .read<PunchCubit>()
-                            .applyDateFilter(from: _monthStart(), to: _dateOnly(now));
-                      },
+                    IconButton(
+                      icon: Icon(
+                        Icons.chevron_left_rounded,
+                        color: state.isToday
+                            ? AppColors.textTertiary
+                            : AppColors.textSecondary,
+                      ),
+                      onPressed: state.isToday
+                          ? null
+                          : () => context.read<PunchCubit>().goToNextDay(),
                     ),
                   ],
                 ),
               ),
-            ),
-
-            // Row 3 – Employee + Department dropdowns
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(bottom: BorderSide(color: dividerColor)),
-              ),
-              child: Column(
-                children: [
-                  // Employee dropdown
-                  Row(
+              const Divider(height: 1, color: AppColors.border),
+              // Row 2 – Quick date chips
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _sectionPaddingH,
+                  vertical: 8,
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
                     children: [
-                      Icon(
-                        Icons.person_search_rounded,
-                        size: 18,
-                        color: state.selectedEmployeeName != null
-                            ? primary
-                            : theme.hintColor,
+                      _QuickDateChip(
+                        label: 'اليوم',
+                        icon: Icons.today_rounded,
+                        isActive: _isRange(state, _dateOnly(DateTime.now()),
+                            _dateOnly(DateTime.now())),
+                        onTap: () => context.read<PunchCubit>().goToToday(),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String?>(
-                            value: state.selectedUserId,
-                            isExpanded: true,
-                            isDense: true,
-                            hint: Text(
-                              state.isLoadingEmployees
-                                  ? 'جاري تحميل الموظفين...'
-                                  : 'كل الموظفين',
-                              style: TextStyle(
-                                  fontSize: 13, color: theme.hintColor),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                            items: [
-                              const DropdownMenuItem<String?>(
-                                value: null,
-                                child: Text('كل الموظفين',
-                                    style: TextStyle(fontSize: 13)),
-                              ),
-                              ...state.employeeOptions.map(
-                                (opt) => DropdownMenuItem<String?>(
-                                  value: opt.userId,
-                                  child: Text(opt.name,
-                                      style: const TextStyle(fontSize: 13),
-                                      overflow: TextOverflow.ellipsis),
-                                ),
-                              ),
-                            ],
-                            onChanged: (id) {
-                              EmployeeOption? opt;
-                              for (final o in state.employeeOptions) {
-                                if (o.userId == id) {
-                                  opt = o;
-                                  break;
-                                }
-                              }
-                              if (id != null) {
-                                context.read<PunchCubit>().selectEmployee(
-                                    opt?.userId, opt?.name);
-                              } else {
-                                context
-                                    .read<PunchCubit>()
-                                    .clearEmployeeFilter();
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      if (state.selectedEmployeeName != null)
-                        GestureDetector(
-                          onTap: () => context
+                      _QuickDateChip(
+                        label: 'أمس',
+                        icon: Icons.history_rounded,
+                        isActive: _isRange(
+                            state,
+                            _dateOnly(DateTime.now().subtract(
+                                const Duration(days: 1))),
+                            _dateOnly(DateTime.now().subtract(
+                                const Duration(days: 1)))),
+                        onTap: () {
+                          final d = DateTime.now().subtract(const Duration(days: 1));
+                          context
                               .read<PunchCubit>()
-                              .clearEmployeeFilter(),
-                          child: Icon(Icons.close_rounded,
-                              size: 16,
-                              color: theme.colorScheme.error),
-                        ),
+                              .applyDateFilter(from: _startOfDay(d), to: _endOfDay(d));
+                        },
+                      ),
+                      _QuickDateChip(
+                        label: 'الأسبوع',
+                        icon: Icons.view_week_rounded,
+                        isActive: _isRange(state, _weekStart(), _dateOnly(DateTime.now())),
+                        onTap: () {
+                          final now = DateTime.now();
+                          context
+                              .read<PunchCubit>()
+                              .applyDateFilter(from: _weekStart(), to: _dateOnly(now));
+                        },
+                      ),
+                      _QuickDateChip(
+                        label: 'الشهر',
+                        icon: Icons.calendar_month_rounded,
+                        isActive: _isRange(
+                            state, _monthStart(), _dateOnly(DateTime.now())),
+                        onTap: () {
+                          final now = DateTime.now();
+                          context
+                              .read<PunchCubit>()
+                              .applyDateFilter(from: _monthStart(), to: _dateOnly(now));
+                        },
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  // Department dropdown
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.apartment_rounded,
-                        size: 18,
-                        color: state.selectedDepartmentId != null
-                            ? primary
-                            : theme.hintColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<int?>(
-                            value: state.selectedDepartmentId,
-                            isExpanded: true,
-                            isDense: true,
-                            hint: const Text('كل الأقسام',
-                                style: TextStyle(fontSize: 13)),
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                            items: [
-                              const DropdownMenuItem<int?>(
-                                value: null,
-                                child: Text('كل الأقسام',
-                                    style: TextStyle(fontSize: 13)),
-                              ),
-                              ...state.departments.map(
-                                (dept) => DropdownMenuItem<int?>(
-                                  value: dept.id,
-                                  child: Text(dept.name,
-                                      style: const TextStyle(fontSize: 13),
-                                      overflow: TextOverflow.ellipsis),
-                                ),
-                              ),
-                            ],
-                            onChanged: (id) =>
-                                context
-                                    .read<PunchCubit>()
-                                    .applyDepartmentFilter(id),
-                          ),
-                        ),
-                      ),
-                      if (state.selectedDepartmentId != null)
-                        GestureDetector(
-                          onTap: () => context
-                              .read<PunchCubit>()
-                              .applyDepartmentFilter(null),
-                          child: Icon(Icons.close_rounded,
-                              size: 16,
-                              color: theme.colorScheme.error),
-                        ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-
-            // Row 4 – Active filter chips
-            if (state.hasActiveFilters)
-              Builder(
-                builder: (context) {
-                  final dept = state.departments
-                      .where((d) => d.id == state.selectedDepartmentId)
-                      .toList()
-                      .isEmpty
-                      ? null
-                      : state.departments
-                          .where((d) => d.id == state.selectedDepartmentId)
-                          .first;
-                  final deptName = state.selectedDepartmentId != null
-                      ? dept?.name ?? 'القسم'
-                      : null;
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
-                    child: Row(
+              const Divider(height: 1, color: AppColors.border),
+              // Row 3 – Employee + Department dropdowns
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _sectionPaddingH,
+                  vertical: 8,
+                ),
+                child: Column(
+                  children: [
+                    Row(
                       children: [
-                        if (state.showDateChip)
-                          _ActiveChip(
-                            label: '${DateFormat('d/M', 'ar').format(state.fromDate)}'
-                                ' — ${DateFormat('d/M', 'ar').format(state.toDate)}',
-                            onRemove: () =>
-                                context.read<PunchCubit>().goToToday(),
+                        Icon(
+                          Icons.person_search_rounded,
+                          size: 18,
+                          color: state.selectedEmployeeName != null
+                              ? AppColors.primary
+                              : AppColors.textTertiary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: state.selectedUserId,
+                              isExpanded: true,
+                              isDense: true,
+                              hint: Text(
+                                state.isLoadingEmployees
+                                    ? 'جاري تحميل الموظفين...'
+                                    : 'كل الموظفين',
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: AppColors.textTertiary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text(
+                                    'كل الموظفين',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                                ...state.employeeOptions.map(
+                                  (opt) => DropdownMenuItem<String?>(
+                                    value: opt.userId,
+                                    child: Text(
+                                      opt.name,
+                                      style: const TextStyle(fontSize: 13),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (id) {
+                                EmployeeOption? opt;
+                                for (final o in state.employeeOptions) {
+                                  if (o.userId == id) {
+                                    opt = o;
+                                    break;
+                                  }
+                                }
+                                if (id != null) {
+                                  context.read<PunchCubit>().selectEmployee(
+                                      opt?.userId, opt?.name);
+                                } else {
+                                  context
+                                      .read<PunchCubit>()
+                                      .clearEmployeeFilter();
+                                }
+                              },
+                            ),
                           ),
-                        if (state.selectedEmployeeName != null) ...[
-                          const SizedBox(width: 8),
-                          _ActiveChip(
-                            label: state.selectedEmployeeName!,
-                            onRemove: () =>
-                                context.read<PunchCubit>().clearEmployeeFilter(),
-                          ),
-                        ],
-                        if (deptName != null) ...[
-                          const SizedBox(width: 8),
-                          _ActiveChip(
-                            label: deptName,
-                            onRemove: () => context
+                        ),
+                        if (state.selectedEmployeeName != null)
+                          GestureDetector(
+                            onTap: () => context
                                 .read<PunchCubit>()
-                                .applyDepartmentFilter(null),
+                                .clearEmployeeFilter(),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: AppColors.error,
+                            ),
                           ),
-                        ],
                       ],
                     ),
-                  );
-                },
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.apartment_rounded,
+                          size: 18,
+                          color: state.selectedDepartmentId != null
+                              ? AppColors.primary
+                              : AppColors.textTertiary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int?>(
+                              value: state.selectedDepartmentId,
+                              isExpanded: true,
+                              isDense: true,
+                              hint: Text(
+                                'كل الأقسام',
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                              items: [
+                                const DropdownMenuItem<int?>(
+                                  value: null,
+                                  child: Text(
+                                    'كل الأقسام',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                                ...state.departments.map(
+                                  (dept) => DropdownMenuItem<int?>(
+                                    value: dept.id,
+                                    child: Text(
+                                      dept.name,
+                                      style: const TextStyle(fontSize: 13),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (id) =>
+                                  context
+                                      .read<PunchCubit>()
+                                      .applyDepartmentFilter(id),
+                            ),
+                          ),
+                        ),
+                        if (state.selectedDepartmentId != null)
+                          GestureDetector(
+                            onTap: () => context
+                                .read<PunchCubit>()
+                                .applyDepartmentFilter(null),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: AppColors.error,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-          ],
+              // Row 4 – Active filter chips
+              if (state.hasActiveFilters) ...[
+                const Divider(height: 1, color: AppColors.border),
+                Builder(
+                  builder: (context) {
+                    final dept = state.departments
+                        .where((d) => d.id == state.selectedDepartmentId)
+                        .toList()
+                        .isEmpty
+                        ? null
+                        : state.departments
+                            .where((d) => d.id == state.selectedDepartmentId)
+                            .first;
+                    final deptName = state.selectedDepartmentId != null
+                        ? dept?.name ?? 'القسم'
+                        : null;
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: _sectionPaddingH,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          if (state.showDateChip)
+                            _ActiveChip(
+                              label: '${DateFormat('d/M', 'ar').format(state.fromDate)}'
+                                  ' — ${DateFormat('d/M', 'ar').format(state.toDate)}',
+                              onRemove: () =>
+                                  context.read<PunchCubit>().goToToday(),
+                            ),
+                          if (state.selectedEmployeeName != null) ...[
+                            const SizedBox(width: 8),
+                            _ActiveChip(
+                              label: state.selectedEmployeeName!,
+                              onRemove: () => context
+                                  .read<PunchCubit>()
+                                  .clearEmployeeFilter(),
+                            ),
+                          ],
+                          if (deptName != null) ...[
+                            const SizedBox(width: 8),
+                            _ActiveChip(
+                              label: deptName,
+                              onRemove: () => context
+                                  .read<PunchCubit>()
+                                  .applyDepartmentFilter(null),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
         );
       },
     );
   }
 
-  DateTime _dateOnly(DateTime d) =>
-      DateTime(d.year, d.month, d.day);
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  DateTime _startOfDay(DateTime d) =>
-      DateTime(d.year, d.month, d.day);
+  DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
 
   DateTime _endOfDay(DateTime d) =>
       DateTime(d.year, d.month, d.day, 23, 59, 59);
@@ -402,22 +432,44 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
                   Text(
                     'تصفية السجلات',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
                         ),
                   ),
                   const SizedBox(height: 16),
@@ -467,7 +519,18 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                             cubit.clearFilters();
                             Navigator.pop(ctx);
                           },
-                          child: const Text('إعادة تعيين'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textSecondary,
+                            side: BorderSide(color: AppColors.border),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'إعادة تعيين',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -478,12 +541,23 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                                 from: tempFrom, to: tempTo);
                             Navigator.pop(ctx);
                           },
-                          child: const Text('تطبيق'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'تطبيق',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: MediaQuery.of(ctx).viewInsets.bottom),
                 ],
               ),
             );
@@ -511,7 +585,6 @@ class _QuickDateChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -519,27 +592,30 @@ class _QuickDateChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isActive
-              ? primary.withValues(alpha: 0.12)
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : AppColors.backgroundSecondary,
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: isActive
-                ? primary.withValues(alpha: 0.5)
-                : Theme.of(context).dividerColor,
+                ? AppColors.primary.withValues(alpha: 0.5)
+                : AppColors.border,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 14, color: isActive ? primary : Theme.of(context).hintColor),
+            Icon(
+              icon,
+              size: 14,
+              color: isActive ? AppColors.primary : AppColors.textTertiary,
+            ),
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(
+              style: AppTextStyles.labelSmall.copyWith(
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? primary : Theme.of(context).hintColor,
+                color: isActive ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
           ],
@@ -559,21 +635,33 @@ class _ActiveChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: TextStyle(fontSize: 12, color: primary)),
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(width: 4),
           GestureDetector(
             onTap: onRemove,
-            child: Icon(Icons.close_rounded, size: 14, color: primary),
+            child: const Icon(
+              Icons.close_rounded,
+              size: 14,
+              color: AppColors.primary,
+            ),
           ),
         ],
       ),
@@ -596,34 +684,40 @@ class _DatePickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: TextStyle(fontSize: 10, color: theme.hintColor),
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textTertiary,
+              ),
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.calendar_month_rounded,
-                    size: 16, color: theme.colorScheme.primary),
+                const Icon(
+                  Icons.calendar_month_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     DateFormat('d MMM yyyy', 'ar').format(date),
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w500),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ],

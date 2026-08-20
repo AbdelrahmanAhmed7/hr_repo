@@ -7,6 +7,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/error_state_widget.dart';
@@ -66,7 +67,7 @@ class _PayslipScreenState extends State<PayslipScreen> {
     } catch (e) {
       if (!mounted) return;
       CustomToast.showError(
-        e.toString().replaceFirst('Exception: ', ''),
+        AppException.from(e).message,
       );
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_button.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/form_section_container.dart';
@@ -58,7 +59,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = AppException.from(e).message;
       });
     }
   }
