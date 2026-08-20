@@ -26,6 +26,8 @@ class RecentActivityCard extends StatelessWidget {
         return Icons.access_time_rounded;
       case RequestType.overtime:
         return Icons.schedule_rounded;
+      case RequestType.assignment:
+        return Icons.directions_rounded;
       case RequestType.other:
         return Icons.description_rounded;
     }
@@ -180,14 +182,7 @@ class _QuickRemindIconState extends State<_QuickRemindIcon> {
     if (activity.status != RequestStatus.pending) return false;
     if (activity.type == RequestType.leave) return true;
     if (activity.type == RequestType.permission) return true;
-    if (activity.type == RequestType.other) {
-      final t = activity.title.trim();
-      if (t.isEmpty) return false;
-      if (t.contains('مهمة') || t.contains('مأمورية') || t.contains('مأمور')) {
-        return true;
-      }
-      return false;
-    }
+    if (activity.type == RequestType.assignment) return true;
     return false;
   }
 
@@ -207,9 +202,10 @@ class _QuickRemindIconState extends State<_QuickRemindIcon> {
           (await getIt<LeavesRepository>().remindLeave(id: id)).message,
         RequestType.permission =>
           (await getIt<PermissionRepository>().remindPermission(id: id)).message,
-        RequestType.other =>
+        RequestType.assignment =>
           (await getIt<AssignmentRepository>().remindAssignment(id: id)).message,
         RequestType.overtime => null,
+        RequestType.other => null,
       };
 
       if (!mounted) return;

@@ -15,12 +15,11 @@ class SAAttendanceSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      color: AppColors.surface,
       child: TextField(
         onChanged: onChanged,
         textDirection: TextDirection.rtl,
@@ -46,7 +45,7 @@ class SAAttendanceSearchBar extends StatelessWidget {
                 )
               : null,
           filled: true,
-          fillColor: AppColors.backgroundSecondary,
+          fillColor: AppColors.surface,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,

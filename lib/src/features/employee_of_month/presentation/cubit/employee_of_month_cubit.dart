@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/app_exception.dart';
 import '../../domain/repositories/employee_of_month_repository.dart';
 import 'employee_of_month_state.dart';
 
@@ -56,10 +57,11 @@ class EmployeeOfMonthCubit extends Cubit<EmployeeOfMonthState> {
       );
     } catch (e) {
       if (isClosed) return;
+      final error = AppException.from(e, fallbackMessage: 'تعذر تحميل بيانات الموظف الشهري.');
       emit(
         state.copyWith(
           status: EmployeeOfMonthStatus.error,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: error.message,
         ),
       );
     }
@@ -95,10 +97,11 @@ class EmployeeOfMonthCubit extends Cubit<EmployeeOfMonthState> {
       );
     } catch (e) {
       if (isClosed) return;
+      final error = AppException.from(e, fallbackMessage: 'تعذر إرسال التصويت.');
       emit(
         state.copyWith(
           voteStatus: VoteStatus.error,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: error.message,
         ),
       );
     }
@@ -132,10 +135,11 @@ class SuperAdminEmployeeOfMonthCubit
       );
     } catch (e) {
       if (isClosed) return;
+      final error = AppException.from(e, fallbackMessage: 'تعذر تحميل الفائزين.');
       emit(
         state.copyWith(
           status: EmployeeOfMonthStatus.error,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: error.message,
         ),
       );
     }
@@ -156,10 +160,16 @@ class SuperAdminEmployeeOfMonthCubit
       await loadWinners();
     } catch (e) {
       if (isClosed) return;
+      // The server rejects calculation when no votes exist for the month.
+      final error = AppException.from(e, fallbackMessage: 'تعذر احتساب الفائزين.');
+      final message =
+          error.message.contains('No votes found')
+              ? 'لا توجد أصوات لهذا الشهر حتى الآن.'
+              : error.message;
       emit(
         state.copyWith(
           calculateStatus: CalculateStatus.error,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: message,
         ),
       );
     }

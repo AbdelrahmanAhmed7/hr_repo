@@ -96,8 +96,8 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   sliver: SliverList.separated(
                     itemCount: 5,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, __) => _NomineeSkeleton(),
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (_, _) => _NomineeSkeleton(),
                   ),
                 ),
 
@@ -151,7 +151,7 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     sliver: SliverList.separated(
                       itemCount: state.nominees.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (_, i) {
                         final nominee = state.nominees[i];
                         final isVotedFor =
@@ -203,7 +203,7 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                     sliver: SliverList.separated(
                       itemCount: state.winners.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) =>
                           WinnerCard(winner: state.winners[i]),
                     ),

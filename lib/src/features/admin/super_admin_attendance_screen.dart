@@ -16,6 +16,10 @@ import '../attendance/widgets/sa_attendance_stats_strip.dart';
 import '../attendance/widgets/sa_attendance_filter_bar.dart';
 import '../attendance/widgets/sa_attendance_search_bar.dart';
 import '../attendance/widgets/sa_attendance_employee_row.dart';
+import '../attendance/presentation/cubit/punch_cubit.dart';
+import '../attendance/presentation/cubit/punch_state.dart';
+import '../attendance/presentation/widgets/punch_filter_bar.dart';
+import '../attendance/presentation/widgets/punch_summary_list.dart';
 
 class SuperAdminAttendanceScreen extends StatelessWidget {
   const SuperAdminAttendanceScreen({super.key});
@@ -46,75 +50,98 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
-      builder: (context, state) {
-        return Scaffold(
-          backgroundColor: AppColors.backgroundSecondary,
-          appBar: AppBar(
-            title: const Text('سجل الحضور والانصراف'),
-            centerTitle: true,
-            actions: [
-              if (state.isExportingPdf)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundSecondary,
+        appBar: AppBar(
+          title: const Text('سجل الحضور والانصراف'),
+          centerTitle: true,
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'سجل الحضور'),
+              Tab(text: 'الدخول والخروج'),
+            ],
+          ),
+          actions: [
+            BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
+              builder: (context, state) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (state.isExportingPdf)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    else
+                      IconButton(
+                        onPressed: () => context.read<SAAttendanceCubit>().exportPdf(),
+                        icon: const Icon(Icons.picture_as_pdf_rounded),
+                        tooltip: 'تصدير PDF',
+                      ),
+                    _buildFilterButton(context, state),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            // Tab 1: Attendance
+            BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
+              builder: (context, state) {
+                return Column(
+                  children: [
+                    SAAttendanceDateNavigator(
+                      selectedDate: state.selectedDate,
+                      onPrevious: () => context.read<SAAttendanceCubit>().goToPreviousDay(),
+                      onNext: () => context.read<SAAttendanceCubit>().goToNextDay(),
+                      onToday: () => context.read<SAAttendanceCubit>().goToToday(),
                     ),
-                  ),
-                )
-              else
-                IconButton(
-                  onPressed: () =>
-                      context.read<SAAttendanceCubit>().exportPdf(),
-                  icon: const Icon(Icons.picture_as_pdf_rounded),
-                  tooltip: 'تصدير PDF',
-                ),
-              _buildFilterButton(context, state),
-            ],
-          ),
-          body: Column(
-            children: [
-              SAAttendanceDateNavigator(
-                selectedDate: state.selectedDate,
-                onPrevious: () =>
-                    context.read<SAAttendanceCubit>().goToPreviousDay(),
-                onNext: () =>
-                    context.read<SAAttendanceCubit>().goToNextDay(),
-                onToday: () =>
-                    context.read<SAAttendanceCubit>().goToToday(),
-              ),
-              _DepartmentFilterBar(
-                departments: state.departments,
-                selectedDepartmentId: state.selectedDepartmentId,
-                onDepartmentChanged: (id) =>
-                    context.read<SAAttendanceCubit>().applyDepartmentFilter(id),
-              ),
-              SAAttendanceStatsStrip(
-                presentCount: state.employeesWithAttendance,
-                absentCount: state.absentCount,
-                percentage: state.attendancePercentage,
-              ),
-              SAAttendanceFilterBar(
-                activeFilter: state.activeFilter,
-                onFilterChanged: (filter) =>
-                    context.read<SAAttendanceCubit>().applyFilter(filter),
-              ),
-              SAAttendanceSearchBar(
-                query: state.searchQuery,
-                onChanged: (query) =>
-                    context.read<SAAttendanceCubit>().applySearch(query),
-              ),
-              Expanded(
-                child: _buildBody(context, state),
-              ),
-            ],
-          ),
-        );
-      },
+                    _DepartmentFilterBar(
+                      departments: state.departments,
+                      selectedDepartmentId: state.selectedDepartmentId,
+                      onDepartmentChanged: (id) =>
+                          context.read<SAAttendanceCubit>().applyDepartmentFilter(id),
+                    ),
+                    SAAttendanceStatsStrip(
+                      presentCount: state.employeesWithAttendance,
+                      absentCount: state.absentCount,
+                      percentage: state.attendancePercentage,
+                    ),
+                    SAAttendanceFilterBar(
+                      activeFilter: state.activeFilter,
+                      onFilterChanged: (filter) =>
+                          context.read<SAAttendanceCubit>().applyFilter(filter),
+                    ),
+                    SAAttendanceSearchBar(
+                      query: state.searchQuery,
+                      onChanged: (query) => context.read<SAAttendanceCubit>().applySearch(query),
+                    ),
+                    Expanded(
+                      child: _buildBody(context, state),
+                    ),
+                  ],
+                );
+              },
+            ),
+            // Tab 2: Punch Summary
+            BlocProvider(
+              create: (ctx) => getIt<PunchCubit>(),
+              child: const _PunchTabContent(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -273,12 +300,11 @@ class _DepartmentFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.xs,
       ),
-      color: AppColors.surface,
       child: Row(
         children: [
           Icon(
@@ -649,6 +675,47 @@ class _DeviceTypeChip extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PunchTabContent extends StatelessWidget {
+  const _PunchTabContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<PunchCubit, PunchState>(
+      builder: (context, state) {
+        return Column(
+          children: [
+            const PunchFilterBar(),
+            Expanded(
+              child: Builder(
+                builder: (context) {
+                  if (state.summaryStatus == PunchStatus.loading && state.summaryItems.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (state.summaryStatus == PunchStatus.error && state.summaryItems.isEmpty) {
+                    return ErrorStateWidget(
+                      error: state.errorMessage ?? 'حدث خطأ',
+                      buttonLabel: 'إعادة المحاولة',
+                      onRetry: () => context.read<PunchCubit>().loadSummary(refresh: true),
+                    );
+                  }
+                  if (state.summaryItems.isEmpty) {
+                    return const EmptyStateWidget(
+                      icon: Icons.event_busy_rounded,
+                      title: 'لا يوجد بيانات',
+                      message: 'لم يتم العثور على سجلات في هذه الفترة',
+                    );
+                  }
+                  return const PunchSummaryList();
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

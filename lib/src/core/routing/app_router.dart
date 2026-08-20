@@ -49,6 +49,10 @@ import '../../features/admin/cubit/admin_requests_cubit.dart';
 import '../../features/home/cubit/home_cubit.dart';
 import '../../features/hr/cubit/employees_cubit.dart';
 import '../../features/notifications/cubit/notifications_cubit.dart';
+import '../../features/meetings/presentation/screens/meetings_screen.dart';
+import '../../features/meetings/presentation/cubit/meetings_cubit.dart';
+import '../../features/notifications/send_notification_screen.dart';
+import '../../features/notifications/cubit/send_notification_cubit.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -188,6 +192,27 @@ class AppRouter {
         builder: (context, state) => BlocProvider.value(
           value: getIt<AuthCubit>(),
           child: const SuperAdminScreen(),
+        ),
+      ),
+
+      // Meetings Route
+      GoRoute(
+        path: '/meetings',
+        name: 'superAdminMeetings',
+        builder: (context, state) => BlocProvider(
+          create: (_) =>
+              getIt<MeetingsCubit>()..loadMeetings()..loadDepartments(),
+          child: const MeetingsScreen(),
+        ),
+      ),
+
+      // Send Notification Route
+      GoRoute(
+        path: '/send-notification',
+        name: 'send-notification',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<SendNotificationCubit>(),
+          child: const SendNotificationScreen(),
         ),
       ),
 

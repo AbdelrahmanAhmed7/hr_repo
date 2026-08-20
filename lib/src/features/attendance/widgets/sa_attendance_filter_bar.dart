@@ -17,12 +17,11 @@ class SAAttendanceFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      color: AppColors.surface,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -99,8 +98,6 @@ class SAAttendanceFilterBar extends StatelessWidget {
         return 'حاضر';
       case AttendanceFilter.absent:
         return 'غائب';
-      case AttendanceFilter.notDeparted:
-        return 'لم ينصرف';
     }
   }
 }

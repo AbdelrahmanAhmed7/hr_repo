@@ -84,7 +84,7 @@ class HomeCubit extends Cubit<HomeState> {
         );
       }
 
-      // Save updated employee info
+      // Save updated employee infoـ
       await employeeInfo.saveToStorage();
 
       // Convert all requests to recent activities (show up to 10 for tabs)

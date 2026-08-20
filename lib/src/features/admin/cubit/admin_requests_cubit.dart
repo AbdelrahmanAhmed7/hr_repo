@@ -1,43 +1,44 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/services/service_locator.dart';
+import '../../../core/utils/app_exception.dart';
 import '../../auth/cubit/auth_cubit.dart';
 import '../../home/models/recent_activity.dart';
 import '../../leaves/repository/leaves_repository.dart';
 import '../../missions/repository/assignment_repository.dart';
 import '../../overtime/repository/overtime_repository.dart';
 import '../../permissions/repository/permission_repository.dart';
+import '../../requests/management/management_requests_repository.dart';
 import '../models/admin_dashboard_response.dart';
 import '../repository/admin_dashboard_repository.dart';
-import '../repository/super_admin_dashboard_repository.dart';
 import 'admin_requests_state.dart';
 
 class AdminRequestsCubit extends Cubit<AdminRequestsState> {
   final AdminDashboardRepository _adminDashboardRepository;
-  final SuperAdminDashboardRepository _superAdminDashboardRepository;
   final PermissionRepository _permissionRepository;
   final AssignmentRepository _assignmentRepository;
   final LeavesRepository _leavesRepository;
   final OvertimeRepository _overtimeRepository;
+  final ManagementRequestsRepository _managementRequestsRepository;
 
   AdminRequestsCubit({
     AdminDashboardRepository? adminDashboardRepository,
-    SuperAdminDashboardRepository? superAdminDashboardRepository,
     PermissionRepository? permissionRepository,
     AssignmentRepository? assignmentRepository,
     LeavesRepository? leavesRepository,
     OvertimeRepository? overtimeRepository,
+    ManagementRequestsRepository? managementRequestsRepository,
   }) : _adminDashboardRepository =
            adminDashboardRepository ?? getIt<AdminDashboardRepository>(),
-       _superAdminDashboardRepository =
-           superAdminDashboardRepository ??
-           getIt<SuperAdminDashboardRepository>(),
        _permissionRepository =
            permissionRepository ?? getIt<PermissionRepository>(),
        _assignmentRepository =
            assignmentRepository ?? getIt<AssignmentRepository>(),
        _leavesRepository = leavesRepository ?? getIt<LeavesRepository>(),
        _overtimeRepository = overtimeRepository ?? getIt<OvertimeRepository>(),
+       _managementRequestsRepository =
+           managementRequestsRepository ??
+           getIt<ManagementRequestsRepository>(),
        super(const AdminRequestsState());
 
   Future<void> loadRequests() async {
@@ -80,7 +81,7 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
       emit(
         state.copyWith(
           isLoading: false,
-          error: e.toString().replaceFirst('Exception: ', ''),
+          error: AppException.from(e).message,
         ),
       );
     }
@@ -133,12 +134,14 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
             rejectionReason: rejectionReason,
           );
           break;
-        case RequestType.other:
+        case RequestType.assignment:
           await _assignmentRepository.setAssignmentStatus(
             id: parsedId,
             status: status,
             rejectionReason: rejectionReason,
           );
+          break;
+        case RequestType.other:
           break;
       }
 
@@ -149,7 +152,7 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
       emit(
         state.copyWith(
           isLoading: false,
-          error: e.toString().replaceFirst('Exception: ', ''),
+          error: AppException.from(e).message,
         ),
       );
       return false;
@@ -165,32 +168,7 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
   }
 
   Future<List<RecentActivity>> _loadSuperAdminRequests() async {
-    final dashboard = await _superAdminDashboardRepository
-        .getSuperAdminDashboard();
-
-    final requests = <AdminRequest>[];
-    for (final department in dashboard.departments) {
-      for (final item in department.requests) {
-        requests.add(
-          AdminRequest(
-            id: item.id,
-            type: item.type,
-            createdAt: item.createdAt,
-            status: item.status,
-            userId: item.userId,
-            date: item.date,
-            startDate: item.startDate,
-            endDate: item.endDate,
-            startTime: item.startTime,
-            endTime: item.endTime,
-            where: item.where,
-            reason: item.reason,
-          ),
-        );
-      }
-    }
-
-    return _mapRequests(requests);
+    return _managementRequestsRepository.getAllRequests();
   }
 
   List<RecentActivity> _mapRequests(List<AdminRequest> requests) {
@@ -230,6 +208,7 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
         description = 'من ${request.startTime} إلى ${request.endTime}';
       }
     } else if (normalizedType == 'assignment') {
+      type = RequestType.assignment;
       title = 'مأمورية';
       description = request.where ?? request.reason;
     }

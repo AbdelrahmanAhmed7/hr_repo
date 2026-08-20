@@ -17,9 +17,12 @@ class AdminRequestsScreen extends StatefulWidget {
   State<AdminRequestsScreen> createState() => _AdminRequestsScreenState();
 }
 
+enum _RequestTypeFilter { all, leaves, permissions, missions, overtime }
+
 class _AdminRequestsScreenState extends State<AdminRequestsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  _RequestTypeFilter _selectedTypeFilter = _RequestTypeFilter.all;
 
   @override
   void initState() {
@@ -124,6 +127,17 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
                         ),
                       ),
                     ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                        child: _RequestsTypeFilterBar(
+                          selectedFilter: _selectedTypeFilter,
+                          onChanged: (filter) {
+                            setState(() => _selectedTypeFilter = filter);
+                          },
+                        ),
+                      ),
+                    ),
                   ];
                 },
                 body: TabBarView(
@@ -142,10 +156,32 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
       );
   }
 
-  Widget _buildRequestsList(
-    List<RecentActivity> requests,
-    AdminRequestsCubit cubit,
-  ) {
+  List<RecentActivity> _applyTypeFilter(List<RecentActivity> requests) {
+    switch (_selectedTypeFilter) {
+      case _RequestTypeFilter.all:
+        return requests;
+      case _RequestTypeFilter.leaves:
+        return requests
+            .where((item) => item.type == RequestType.leave)
+            .toList();
+      case _RequestTypeFilter.permissions:
+        return requests
+            .where((item) => item.type == RequestType.permission)
+            .toList();
+      case _RequestTypeFilter.missions:
+        return requests
+            .where((item) => item.type == RequestType.assignment)
+            .toList();
+      case _RequestTypeFilter.overtime:
+        return requests
+            .where((item) => item.type == RequestType.overtime)
+            .toList();
+    }
+  }
+
+  Widget _buildRequestsList(List<RecentActivity> requests, AdminRequestsCubit cubit) {
+    final filteredRequests = _applyTypeFilter(requests);
+
     if (cubit.state.isLoading) {
       return RefreshIndicator(
         onRefresh: () => cubit.loadRequests(),
@@ -165,11 +201,15 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
       );
     }
 
-    if (requests.isEmpty) {
+    if (filteredRequests.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.inbox_outlined,
-        title: 'لا توجد طلبات',
-        message: 'لم يتم العثور على أي طلبات في هذه الفئة',
+        title: requests.isEmpty
+            ? 'لا توجد طلبات'
+            : 'لا توجد نتائج لهذه الفلترة',
+        message: requests.isEmpty
+            ? 'لم يتم العثور على أي طلبات في هذه الفئة'
+            : 'جرّب تغيير نوع الطلب أو اختيار تبويب حالة مختلف.',
         iconColor: AppColors.textTertiary,
       );
     }
@@ -183,10 +223,10 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
           24,
           16 + MediaQuery.of(context).padding.bottom,
         ),
-        itemCount: requests.length,
+        itemCount: filteredRequests.length,
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          final request = requests[index];
+          final request = filteredRequests[index];
           return AdminRequestCard(
             request: request,
             isLoading: false,
@@ -199,6 +239,89 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
           );
         },
       ),
+    );
+  }
+}
+
+class _RequestsTypeFilterBar extends StatelessWidget {
+  final _RequestTypeFilter selectedFilter;
+  final ValueChanged<_RequestTypeFilter> onChanged;
+
+  const _RequestsTypeFilterBar({
+    required this.selectedFilter,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _TypeChip(
+            label: 'الكل',
+            isSelected: selectedFilter == _RequestTypeFilter.all,
+            onTap: () => onChanged(_RequestTypeFilter.all),
+          ),
+          const SizedBox(width: 8),
+          _TypeChip(
+            label: 'إجازات',
+            isSelected: selectedFilter == _RequestTypeFilter.leaves,
+            onTap: () => onChanged(_RequestTypeFilter.leaves),
+          ),
+          const SizedBox(width: 8),
+          _TypeChip(
+            label: 'أذونات',
+            isSelected: selectedFilter == _RequestTypeFilter.permissions,
+            onTap: () => onChanged(_RequestTypeFilter.permissions),
+          ),
+          const SizedBox(width: 8),
+          _TypeChip(
+            label: 'مأموريات',
+            isSelected: selectedFilter == _RequestTypeFilter.missions,
+            onTap: () => onChanged(_RequestTypeFilter.missions),
+          ),
+          const SizedBox(width: 8),
+          _TypeChip(
+            label: 'أوفرتايم',
+            isSelected: selectedFilter == _RequestTypeFilter.overtime,
+            onTap: () => onChanged(_RequestTypeFilter.overtime),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TypeChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TypeChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: AppColors.primary,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : AppColors.border,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      onSelected: (_) => onTap(),
     );
   }
 }

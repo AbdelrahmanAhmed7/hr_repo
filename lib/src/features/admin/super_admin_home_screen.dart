@@ -54,6 +54,15 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   )
                 else if (data != null) ...[
                   SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: _MeetingsEntryCard(
+                        onTap: () =>
+                            context.pushNamed('superAdminMeetings'),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                     sliver: SliverToBoxAdapter(
                       child: _SectionHeader(
@@ -242,6 +251,31 @@ class _SuperAdminHeader extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // Send notification button
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => context.push('/send-notification'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   // Notification bell
                   Stack(
                     clipBehavior: Clip.none,
@@ -351,7 +385,11 @@ class _SuperAdminHeader extends StatelessWidget {
                     const SizedBox(width: 8),
                     _StatChip(label: 'حضور اليوم', count: data!.presentToday),
                     const SizedBox(width: 8),
-                    _StatChip(label: 'الطلبات', count: data!.totalRequests),
+                    _StatChip(
+                      label: 'الطلبات',
+                      count: data!.totalRequests,
+                      onTap: () => context.push('/all-requests'),
+                    ),
                   ],
                 ),
               ],
@@ -366,42 +404,60 @@ class _SuperAdminHeader extends StatelessWidget {
 class _StatChip extends StatelessWidget {
   final String label;
   final int count;
+  final VoidCallback? onTap;
 
-  const _StatChip({required this.label, required this.count});
+  const _StatChip({
+    required this.label,
+    required this.count,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '$count',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return Expanded(child: chip);
+    }
+
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.18),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-        ),
-        child: Column(
-          children: [
-            Text(
-              '$count',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          child: chip,
         ),
       ),
     );
@@ -409,6 +465,84 @@ class _StatChip extends StatelessWidget {
 }
 
 // ─── Department Card ──────────────────────────────────────────────────────────
+
+class _MeetingsEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _MeetingsEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'الاجتماعات',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'إنشاء وإدارة اجتماعات الموظفين',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _DepartmentCard extends StatelessWidget {
   final SuperAdminDepartmentData department;

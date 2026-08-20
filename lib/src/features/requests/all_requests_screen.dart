@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import '../../core/network/dio_client.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/components/custom_toast.dart';
@@ -9,6 +8,7 @@ import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/status_tabs_bar.dart';
 import '../auth/cubit/auth_cubit.dart';
 import '../home/models/recent_activity.dart';
+import 'management/management_requests_repository.dart';
 import 'repository/requests_repository.dart';
 import 'services/requests_refresh_service.dart';
 import 'widgets/request_card.dart';
@@ -81,16 +81,17 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
 
     try {
       final authState = getIt<AuthCubit>().state;
-      final isManagementRole =
-          authState.isHR || authState.isAdmin || authState.isSuperAdmin;
 
       List<RecentActivity> all;
       List<RecentActivity> pending;
       List<RecentActivity> approved;
       List<RecentActivity> rejected;
 
-      if (isManagementRole) {
-        all = await _loadManagementRequests();
+      // The /all endpoints are Super Admin only — other roles fall back to
+      // the classic home-based requests list.
+      if (authState.isSuperAdmin) {
+        all = await getIt<ManagementRequestsRepository>()
+            .getAllRequests(month: _selectedMonth);
         pending = all
             .where((item) => item.status == RequestStatus.pending)
             .toList();
@@ -148,285 +149,6 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
     }
   }
 
-  Future<List<RecentActivity>> _loadManagementRequests() async {
-    final dio = getIt<DioClient>().dio;
-
-    Future<dynamic> safeGet(
-      String path, {
-      Map<String, dynamic>? queryParameters,
-    }) async {
-      try {
-        return await dio.get(path, queryParameters: queryParameters);
-      } catch (_) {
-        return null;
-      }
-    }
-
-    final results = await Future.wait<dynamic>([
-      safeGet(
-        '/api/Assignment/all',
-        queryParameters: {'pageNumber': 1, 'pageSize': 500},
-      ),
-      safeGet('/api/Permission/all'),
-      safeGet('/api/Overtime/all'),
-      safeGet('/api/Leave/pending'),
-    ]);
-
-    final assignments = _extractItems(results[0]?.data)
-        .map((item) => _mapManagementItem(item, fallbackType: 'assignment'))
-        .whereType<RecentActivity>();
-    final permissions = _extractItems(results[1]?.data)
-        .map((item) => _mapManagementItem(item, fallbackType: 'permission'))
-        .whereType<RecentActivity>();
-    final overtimes = _extractItems(results[2]?.data)
-        .map((item) => _mapManagementItem(item, fallbackType: 'overtime'))
-        .whereType<RecentActivity>();
-    final leaves = _extractItems(results[3]?.data)
-        .map((item) => _mapManagementItem(item, fallbackType: 'leave'))
-        .whereType<RecentActivity>();
-
-    final merged = [...assignments, ...permissions, ...overtimes, ...leaves];
-
-    final needsUserLookup = merged.any(
-      (item) =>
-          (item.userName == null || item.userName!.trim().isEmpty) &&
-          item.userId != null &&
-          item.userId!.trim().isNotEmpty,
-    );
-
-    final usersLookup = needsUserLookup
-        ? await _loadUsersLookup(dio)
-        : const <String, String>{};
-
-    final all =
-        merged
-            .map((item) {
-              final fallbackUserName = usersLookup[item.userId];
-              return RecentActivity(
-                id: item.id,
-                type: item.type,
-                status: item.status,
-                title: item.title,
-                date: item.date,
-                description: item.description,
-                userId: item.userId,
-                userName: (item.userName?.trim().isNotEmpty ?? false)
-                    ? item.userName
-                    : fallbackUserName,
-                remainingVacationBalance: item.remainingVacationBalance,
-                reason: item.reason,
-                startDate: item.startDate,
-                endDate: item.endDate,
-                startTime: item.startTime,
-                endTime: item.endTime,
-                location: item.location,
-                leaveType: item.leaveType,
-                rejectionReason: item.rejectionReason,
-                totalHours: item.totalHours,
-                amount: item.amount,
-              );
-            })
-            .where(
-              (item) =>
-                  _selectedMonth == null || item.date.month == _selectedMonth,
-            )
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-
-    return all;
-  }
-
-  Future<Map<String, String>> _loadUsersLookup(dynamic dio) async {
-    final Map<String, String> usersById = {};
-    int pageNumber = 1;
-    int totalPages = 1;
-
-    while (pageNumber <= totalPages) {
-      try {
-        final response = await dio.get(
-          '/api/Auth/users',
-          queryParameters: {'pageNumber': pageNumber, 'pageSize': 200},
-        );
-
-        final data = response.data;
-        final items = _extractItems(data);
-
-        for (final item in items) {
-          final id = item['id']?.toString();
-          final name = _extractUserName(item);
-          if (id != null &&
-              id.trim().isNotEmpty &&
-              name != null &&
-              name.isNotEmpty) {
-            usersById[id] = name;
-          }
-        }
-
-        if (data is Map<String, dynamic>) {
-          final parsedTotalPages = int.tryParse(
-            data['totalPages']?.toString() ?? '',
-          );
-          totalPages = parsedTotalPages != null && parsedTotalPages > 0
-              ? parsedTotalPages
-              : 1;
-        } else {
-          break;
-        }
-
-        if (items.isEmpty) break;
-        pageNumber++;
-      } catch (_) {
-        break;
-      }
-    }
-
-    return usersById;
-  }
-
-  String? _extractUserName(Map<String, dynamic> item) {
-    final fullArabic = [
-      item['firstNameAr']?.toString(),
-      item['middleNameAr']?.toString(),
-      item['lastNameAr']?.toString(),
-    ].where((part) => part != null && part.trim().isNotEmpty).join(' ').trim();
-    if (fullArabic.isNotEmpty) return fullArabic;
-
-    final fullEnglish = [
-      item['firstNameEn']?.toString(),
-      item['middleNameEn']?.toString(),
-      item['lastNameEn']?.toString(),
-    ].where((part) => part != null && part.trim().isNotEmpty).join(' ').trim();
-    if (fullEnglish.isNotEmpty) return fullEnglish;
-
-    final employeeNameAr = item['employeeNameAr']?.toString();
-    if (employeeNameAr != null && employeeNameAr.trim().isNotEmpty) {
-      return employeeNameAr.trim();
-    }
-
-    final employeeNameEn = item['employeeNameEn']?.toString();
-    if (employeeNameEn != null && employeeNameEn.trim().isNotEmpty) {
-      return employeeNameEn.trim();
-    }
-
-    final email = item['email']?.toString();
-    if (email != null && email.trim().isNotEmpty) return email.trim();
-
-    return null;
-  }
-
-  List<Map<String, dynamic>> _extractItems(dynamic payload) {
-    if (payload is List) {
-      return payload
-          .whereType<Map>()
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-    }
-
-    if (payload is Map<String, dynamic>) {
-      final items = payload['items'];
-      if (items is List) {
-        return items
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList();
-      }
-    }
-
-    return const [];
-  }
-
-  RecentActivity? _mapManagementItem(
-    Map<String, dynamic> json, {
-    required String fallbackType,
-  }) {
-    final typeRaw = (json['type']?.toString() ?? fallbackType).toLowerCase();
-    final statusRaw = (json['status']?.toString() ?? 'pending').toLowerCase();
-
-    final RequestType type = switch (typeRaw) {
-      'leave' => RequestType.leave,
-      'permission' => RequestType.permission,
-      'overtime' => RequestType.overtime,
-      'assignment' => RequestType.other,
-      _ => RequestType.other,
-    };
-
-    final RequestStatus status;
-    if (statusRaw == 'approved' || statusRaw == 'accepted') {
-      status = RequestStatus.approved;
-    } else if (statusRaw == 'rejected') {
-      status = RequestStatus.rejected;
-    } else {
-      status = RequestStatus.pending;
-    }
-
-    DateTime date = DateTime.now();
-    final dateCandidates = [
-      json['date']?.toString(),
-      json['startDate']?.toString(),
-      json['createdAt']?.toString(),
-    ];
-    for (final value in dateCandidates) {
-      if (value == null || value.trim().isEmpty) continue;
-      final parsed = DateTime.tryParse(value);
-      if (parsed != null) {
-        date = parsed;
-        break;
-      }
-    }
-
-    final descriptionParts = <String>[
-      if ((json['where']?.toString().isNotEmpty ?? false))
-        json['where'].toString(),
-      if ((json['reason']?.toString().isNotEmpty ?? false))
-        json['reason'].toString(),
-      if ((json['startTime']?.toString().isNotEmpty ?? false) &&
-          (json['endTime']?.toString().isNotEmpty ?? false))
-        '${json['startTime']} - ${json['endTime']}',
-      if (json['totalHours'] != null) 'عدد الساعات: ${json['totalHours']}',
-      if (json['amount'] != null) 'القيمة: ${json['amount']}',
-    ];
-
-    final title = switch (type) {
-      RequestType.leave => 'إجازة',
-      RequestType.permission => 'إذن',
-      RequestType.overtime => 'عمل إضافي',
-      RequestType.other => typeRaw == 'assignment' ? 'مأمورية' : 'طلب',
-    };
-
-    return RecentActivity(
-      id:
-          json['id']?.toString() ??
-          '${fallbackType}_${date.millisecondsSinceEpoch}',
-      type: type,
-      status: status,
-      title: title,
-      date: date,
-      description: descriptionParts.isEmpty
-          ? null
-          : descriptionParts.join(' | '),
-      userId: json['userId']?.toString(),
-      userName:
-          json['employeeNameAr']?.toString() ??
-          json['employeeNameEn']?.toString(),
-      reason: json['reason']?.toString(),
-      startDate: DateTime.tryParse(json['startDate']?.toString() ?? ''),
-      endDate: DateTime.tryParse(json['endDate']?.toString() ?? ''),
-      startTime: json['startTime']?.toString(),
-      endTime: json['endTime']?.toString(),
-      location: json['where']?.toString(),
-      leaveType: json['leaveType']?.toString(),
-      rejectionReason: json['rejectionReason']?.toString(),
-      totalHours: _toDouble(json['totalHours']),
-      amount: _toDouble(json['amount']),
-    );
-  }
-
-  double? _toDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    return double.tryParse(value.toString());
-  }
-
   List<RecentActivity> _applyTypeFilter(List<RecentActivity> requests) {
     switch (_selectedTypeFilter) {
       case _RequestTypeFilter.all:
@@ -441,7 +163,7 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
             .toList();
       case _RequestTypeFilter.missions:
         return requests
-            .where((item) => item.type == RequestType.other)
+            .where((item) => item.type == RequestType.assignment)
             .toList();
       case _RequestTypeFilter.overtime:
         return requests
@@ -542,7 +264,9 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
                             )
                             .length,
                         missionsCount: activeRequests
-                            .where((item) => item.type == RequestType.other)
+                            .where(
+                              (item) => item.type == RequestType.assignment,
+                            )
                             .length,
                         overtimeCount: activeRequests
                             .where((item) => item.type == RequestType.overtime)

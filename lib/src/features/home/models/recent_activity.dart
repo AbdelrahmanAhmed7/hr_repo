@@ -6,6 +6,7 @@ enum RequestType {
   leave,
   permission,
   overtime,
+  assignment,
   other,
 }
 
@@ -35,6 +36,7 @@ class RecentActivity {
   final String? rejectionReason;
   final double? totalHours;
   final double? amount;
+  final String? deductionType;
 
   RecentActivity({
     required this.id,
@@ -56,6 +58,7 @@ class RecentActivity {
     this.rejectionReason,
     this.totalHours,
     this.amount,
+    this.deductionType,
   });
 
   String get typeText {
@@ -66,6 +69,8 @@ class RecentActivity {
         return 'إذن';
       case RequestType.overtime:
         return 'عمل إضافي';
+      case RequestType.assignment:
+        return 'مأمورية';
       case RequestType.other:
         return 'طلب آخر';
     }
@@ -142,8 +147,8 @@ class RecentActivity {
         title = 'عمل إضافي';
         break;
       case 'assignment':
-        type = RequestType.other;
-        title = 'مهمة';
+        type = RequestType.assignment;
+        title = 'مأمورية';
         break;
       default:
         type = RequestType.other;
@@ -197,6 +202,7 @@ class RecentActivity {
     final rejectionReason = _readOptionalString(item, ['rejectionReason']);
     final totalHoursValue = _readDynamicField(item, 'totalHours');
     final amountValue = _readDynamicField(item, 'amount');
+    final deductionType = _readOptionalString(item, ['deductionType']);
 
     return RecentActivity(
       id: item.id.toString(),
@@ -217,6 +223,7 @@ class RecentActivity {
       rejectionReason: rejectionReason,
       totalHours: _toDouble(totalHoursValue),
       amount: _toDouble(amountValue),
+      deductionType: deductionType,
     );
   }
 
@@ -337,6 +344,8 @@ class RecentActivity {
           return source.leaveType;
         case 'rejectionReason':
           return source.rejectionReason;
+        case 'deductionType':
+          return source.deductionType;
         case 'totalHours':
           return source.totalHours;
         case 'amount':

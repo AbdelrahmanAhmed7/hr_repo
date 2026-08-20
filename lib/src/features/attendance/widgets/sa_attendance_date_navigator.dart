@@ -26,12 +26,11 @@ class SAAttendanceDateNavigator extends StatelessWidget {
     final isFuture = selectedDate.isAfter(now);
     final arabicFormat = DateFormat('EEEE، d MMMM yyyy', 'ar');
 
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      color: AppColors.surface,
       child: Row(
         children: [
           IconButton(

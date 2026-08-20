@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../data/models/punch_pair_response_model.dart';
+import '../data/models/punch_summary_response_model.dart';
 import '../models/attendance_response_model.dart';
 import '../models/monthly_report_file.dart';
-import '../models/punch_pair.dart';
 
 class SAAttendanceService {
   final DioClient _dioClient;
@@ -42,29 +43,48 @@ class SAAttendanceService {
     return AttendanceResponseModel.fromJson(map);
   }
 
-  Future<PunchPairsResponse> getPunchPairs({
+  Future<PunchSummaryResponseModel> getPunchSummary({
     String? userId,
-    DateTime? from,
-    DateTime? to,
-    int page = 1,
-    int pageSize = 15,
+    String? from,
+    String? to,
+    required int page,
+    required int pageSize,
   }) async {
-    String fmt(DateTime d) =>
-        '${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}-${d.year}';
-
     final response = await _dioClient.dio.get(
-      '/api/Attendance/punch-pairs',
+      '/api/Attendance/punch-summary',
       queryParameters: {
         if (userId != null && userId.trim().isNotEmpty) 'userId': userId.trim(),
-        if (from != null) 'from': fmt(from),
-        if (to != null) 'to': fmt(to),
+        'from': ?from,
+        'to': ?to,
         'page': page,
         'pageSize': pageSize,
       },
     );
 
     final map = _asMap(response.data);
-    return PunchPairsResponse.fromJson(map);
+    return PunchSummaryResponseModel.fromJson(map);
+  }
+
+  Future<PunchPairResponseModel> getPunchPairs({
+    String? userId,
+    String? from,
+    String? to,
+    required int page,
+    required int pageSize,
+  }) async {
+    final response = await _dioClient.dio.get(
+      '/api/Attendance/punch-pairs',
+      queryParameters: {
+        if (userId != null && userId.trim().isNotEmpty) 'userId': userId.trim(),
+        'from': ?from,
+        'to': ?to,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    final map = _asMap(response.data);
+    return PunchPairResponseModel.fromJson(map);
   }
 
   Future<MonthlyReportFile> downloadMonthlyPdf({

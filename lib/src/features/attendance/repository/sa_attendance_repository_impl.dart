@@ -1,6 +1,7 @@
 import '../models/attendance_response_model.dart';
 import '../models/monthly_report_file.dart';
-import '../models/punch_pair.dart';
+import '../data/models/punch_summary_response_model.dart';
+import '../data/models/punch_pair_response_model.dart';
 import '../services/sa_attendance_service.dart';
 import 'sa_attendance_repository.dart';
 
@@ -33,20 +34,29 @@ class SAAttendanceRepositoryImpl implements SAAttendanceRepository {
   }
 
   @override
-  Future<MonthlyReportFile> downloadMonthlyPdf({
-    required int month,
-    required int year,
+  Future<PunchSummaryResponseModel> getPunchSummary({
+    String? userId,
+    String? from,
+    String? to,
+    required int page,
+    required int pageSize,
   }) {
-    return _service.downloadMonthlyPdf(month: month, year: year);
+    return _service.getPunchSummary(
+      userId: userId,
+      from: from,
+      to: to,
+      page: page,
+      pageSize: pageSize,
+    );
   }
 
   @override
-  Future<PunchPairsResponse> getPunchPairs({
+  Future<PunchPairResponseModel> getPunchPairs({
     String? userId,
-    DateTime? from,
-    DateTime? to,
-    int page = 1,
-    int pageSize = 15,
+    String? from,
+    String? to,
+    required int page,
+    required int pageSize,
   }) {
     return _service.getPunchPairs(
       userId: userId,
@@ -55,5 +65,13 @@ class SAAttendanceRepositoryImpl implements SAAttendanceRepository {
       page: page,
       pageSize: pageSize,
     );
+  }
+
+  @override
+  Future<MonthlyReportFile> downloadMonthlyPdf({
+    required int month,
+    required int year,
+  }) {
+    return _service.downloadMonthlyPdf(month: month, year: year);
   }
 }

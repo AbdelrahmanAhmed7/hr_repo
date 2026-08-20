@@ -198,6 +198,8 @@ class _RequestsScreenState extends State<RequestsScreen>
         return RequestType.permission;
       case 'overtime':
         return RequestType.overtime;
+      case 'assignment':
+        return RequestType.assignment;
       default:
         return RequestType.other;
     }
@@ -229,7 +231,7 @@ class _RequestsScreenState extends State<RequestsScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final authState = context.watch<AuthCubit>().state;
-    final canOpenAllRequests = authState.isHR || authState.isAdmin || authState.isSuperAdmin;
+    final canOpenAllRequests = authState.isSuperAdmin;
 
     final currentList = _currentList;
     final currentTab = _tabs[_selectedFilterIndex];

@@ -192,7 +192,7 @@ class _SuperAdminEmployeeOfMonthScreenState
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     sliver: SliverList.separated(
                       itemCount: state.winners.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) =>
                           WinnerCard(winner: state.winners[i]),
                     ),

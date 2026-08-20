@@ -61,4 +61,44 @@ class NotificationsRepository {
       throw AppException.from(e, fallbackMessage: 'تعذر تحديث حالة جميع الإشعارات.');
     }
   }
+
+  /// Send a notification to a single employee.
+  Future<void> sendDirectNotification({
+    required String recipientUserId,
+    required String title,
+    required String message,
+  }) async {
+    try {
+      await _dioClient.dio.post('/api/Notification/direct', data: {
+        'recipientUserId': recipientUserId,
+        'title': title,
+        'message': message,
+      });
+    } catch (e) {
+      throw AppException.from(e, fallbackMessage: 'تعذر إرسال الإشعار.');
+    }
+  }
+
+  /// Send a broadcast notification to all employees or a specific department.
+  ///
+  /// [targetType]: 1 => all employees, 2 => specific department.
+  Future<void> sendBroadcastNotification({
+    required int targetType,
+    String? targetUserId,
+    int? targetDepartmentId,
+    required String title,
+    required String message,
+  }) async {
+    try {
+      await _dioClient.dio.post('/api/Notification/broadcast', data: {
+        'targetType': targetType,
+        'targetUserId': targetUserId,
+        'targetDepartmentId': targetDepartmentId ?? 0,
+        'title': title,
+        'message': message,
+      });
+    } catch (e) {
+      throw AppException.from(e, fallbackMessage: 'تعذر إرسال الإشعار.');
+    }
+  }
 }

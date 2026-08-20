@@ -10,6 +10,9 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
   final SAAttendanceRepository _repository;
   final Dio? _dio;
 
+  /// Maps employee name (lowercase) -> departmentId
+  final Map<String, int?> _employeeDeptMap = {};
+
   SAAttendanceCubit(this._repository, {Dio? dio})
       : _dio = dio,
         super(SAAttendanceState.initial());
@@ -21,6 +24,8 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
   Future<void> loadDepartments() async {
     try {
       if (_dio == null) return;
+
+      // 1) Load departments list for the dropdown
       final departments = <DepartmentOption>[];
       var currentPage = 1;
       var totalPages = 1;
@@ -33,7 +38,8 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
 
         final data = _asMap(response.data);
         final items = (data['items'] as List<dynamic>? ?? const [])
-            .map((item) => DepartmentOption.fromJson(item as Map<String, dynamic>))
+            .map((item) =>
+                DepartmentOption.fromJson(item as Map<String, dynamic>))
             .toList();
 
         departments.addAll(items);
@@ -41,9 +47,51 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
         currentPage++;
       } while (currentPage <= totalPages);
 
+      // 2) Load ALL employees (paginated) to build name -> departmentId map
+      await _loadEmployeeDepartmentMap();
+
       emit(state.copyWith(departments: departments));
     } catch (_) {
       // Departments load failed silently – dropdown will be empty.
+    }
+  }
+
+  Future<void> _loadEmployeeDepartmentMap() async {
+    if (_dio == null) return;
+    try {
+      var currentPage = 1;
+      var totalPages = 1;
+
+      do {
+        final response = await _dio.get(
+          '/api/Auth/users',
+          queryParameters: {
+            'pageNumber': currentPage,
+            'pageSize': 100,
+          },
+        );
+
+        final data = _asMap(response.data);
+        final items = data['items'] as List<dynamic>? ?? const [];
+
+        for (final item in items) {
+          final map = item as Map<String, dynamic>;
+          final firstName = (map['firstNameAr'] as String?)?.trim() ?? '';
+          final middleName = (map['middleNameAr'] as String?)?.trim() ?? '';
+          final lastName = (map['lastNameAr'] as String?)?.trim() ?? '';
+          final fullName = '$firstName $middleName $lastName'.trim();
+          final departmentId = map['departmentId'] as int?;
+
+          if (fullName.isNotEmpty) {
+            _employeeDeptMap[fullName.toLowerCase()] = departmentId;
+          }
+        }
+
+        totalPages = data['totalPages'] as int? ?? 1;
+        currentPage++;
+      } while (currentPage <= totalPages);
+    } catch (_) {
+      // Employee map load failed silently.
     }
   }
 
@@ -62,9 +110,8 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       final response = await _repository.getAllAttendance(
         startDate: _formatApiDate(targetDate),
         endDate: _formatApiDate(targetDate),
-        departmentId: state.selectedDepartmentId,
         pageNumber: 1,
-        pageSize: 100,
+        pageSize: 500,
       );
 
       emit(
@@ -102,7 +149,6 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       final response = await _repository.getAllAttendance(
         startDate: _formatApiDate(startDate),
         endDate: _formatApiDate(endDate),
-        departmentId: state.selectedDepartmentId,
         pageNumber: 1,
         pageSize: 500,
       );
@@ -167,7 +213,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
 
   void applyDepartmentFilter(int? departmentId) {
     emit(state.copyWith(selectedDepartmentId: departmentId));
-    loadAttendance();
+    _applyFilterAndSearch();
   }
 
   void clearAllFilters() {
@@ -177,7 +223,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       clearDeviceTypeFilter: true,
       clearDepartmentId: true,
     ));
-    loadAttendance();
+    _applyFilterAndSearch();
   }
 
   void toggleExpand(String employeeName) {
@@ -189,6 +235,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
   void _applyFilterAndSearch() {
     List<AttendanceRecordModel> filtered = List.of(state.records);
 
+    // 1) Attendance status filter
     switch (state.activeFilter) {
       case AttendanceFilter.all:
         break;
@@ -198,17 +245,24 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       case AttendanceFilter.absent:
         filtered = filtered.where((r) => r.isAbsent).toList();
         break;
-      case AttendanceFilter.notDeparted:
-        filtered = filtered.where((r) => r.isStillPresent).toList();
-        break;
     }
 
+    // 2) Device type filter
     if (state.deviceTypeFilter != null) {
       filtered = filtered
           .where((r) => r.deviceType == state.deviceTypeFilter)
           .toList();
     }
 
+    // 3) Department filter (client-side via employee map)
+    if (state.selectedDepartmentId != null && _employeeDeptMap.isNotEmpty) {
+      filtered = filtered.where((r) {
+        final deptId = _employeeDeptMap[r.employeeName.toLowerCase()];
+        return deptId == state.selectedDepartmentId;
+      }).toList();
+    }
+
+    // 4) Search filter
     if (state.searchQuery.isNotEmpty) {
       final query = state.searchQuery.toLowerCase();
       filtered = filtered

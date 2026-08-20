@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import '../network/dio_client.dart';
 import '../../features/notifications/repository/notifications_repository.dart';
 import '../../features/notifications/cubit/notifications_cubit.dart';
+import '../../features/notifications/cubit/send_notification_cubit.dart';
 import '../../features/auth/api/auth_api.dart';
 import '../../features/auth/services/auth_api_service.dart';
 import '../../features/auth/repository/auth_repository.dart';
@@ -37,6 +38,8 @@ import '../../features/home/services/home_api_service.dart';
 import '../../features/home/repository/home_repository.dart';
 import '../../features/home/cubit/home_cubit.dart';
 import '../../features/requests/repository/requests_repository.dart';
+import '../../features/requests/management/management_requests_data_source.dart';
+import '../../features/requests/management/management_requests_repository.dart';
 import '../../features/requests/services/requests_refresh_service.dart';
 import '../../features/hr/cubit/employees_cubit.dart';
 import '../../features/hr/cubit/hr_home_cubit.dart';
@@ -79,7 +82,11 @@ import '../../features/attendance/services/sa_attendance_service.dart';
 import '../../features/attendance/repository/sa_attendance_repository.dart';
 import '../../features/attendance/repository/sa_attendance_repository_impl.dart';
 import '../../features/attendance/cubit/sa_attendance_cubit.dart';
-import '../../features/attendance/cubit/punch_pairs_cubit.dart';
+import '../../features/attendance/presentation/cubit/punch_cubit.dart';
+import '../../features/meetings/data/datasources/meetings_service.dart';
+import '../../features/meetings/data/repositories/meetings_repository.dart';
+import '../../features/meetings/data/repositories/meetings_repository_impl.dart';
+import '../../features/meetings/presentation/cubit/meetings_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -195,6 +202,12 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<RequestsRepository>(
     () => RequestsRepository(getIt<HomeRepository>()),
+  );
+  getIt.registerFactory<ManagementRequestsDataSource>(
+    () => ManagementRequestsDataSource(getIt<DioClient>().dio),
+  );
+  getIt.registerFactory<ManagementRequestsRepository>(
+    () => ManagementRequestsRepository(getIt<ManagementRequestsDataSource>()),
   );
   getIt.registerLazySingleton<RequestsRefreshService>(
     () => RequestsRefreshService(),
@@ -322,9 +335,27 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<SuperAdminEmployeeOfMonthCubit>(
     () => SuperAdminEmployeeOfMonthCubit(getIt<EmployeeOfMonthRepository>()),
   );
-  getIt.registerFactory<PunchPairsCubit>(
-    () => PunchPairsCubit(
+  getIt.registerFactory<PunchCubit>(
+    () => PunchCubit(
       getIt<SAAttendanceRepository>(),
+      getIt<EmployeesRepository>(),
+    ),
+  );
+
+  // Meetings
+  getIt.registerLazySingleton<MeetingsService>(
+    () => MeetingsService(getIt<DioClient>().dio),
+  );
+  getIt.registerLazySingleton<MeetingsRepository>(
+    () => MeetingsRepositoryImpl(getIt<MeetingsService>()),
+  );
+  getIt.registerFactory<MeetingsCubit>(
+    () => MeetingsCubit(getIt<MeetingsRepository>()),
+  );
+
+  getIt.registerFactory<SendNotificationCubit>(
+    () => SendNotificationCubit(
+      getIt<NotificationsRepository>(),
       getIt<EmployeesRepository>(),
     ),
   );

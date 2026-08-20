@@ -21,6 +21,8 @@ class RequestCard extends StatelessWidget {
         return Icons.access_time_rounded;
       case RequestType.overtime:
         return Icons.schedule_rounded;
+      case RequestType.assignment:
+        return Icons.directions_rounded;
       case RequestType.other:
         return Icons.description_rounded;
     }
@@ -48,6 +50,8 @@ class RequestCard extends StatelessWidget {
       if (request.startTime?.trim().isNotEmpty == true &&
           request.endTime?.trim().isNotEmpty == true)
         'الوقت: ${request.startTime} - ${request.endTime}',
+      if (request.deductionType?.trim().isNotEmpty == true)
+        'الخصم: ${request.deductionType}',
       if (request.totalHours != null) 'عدد الساعات: ${request.totalHours}',
       if (request.amount != null) 'القيمة: ${request.amount} EGP',
       if (request.rejectionReason?.trim().isNotEmpty == true)

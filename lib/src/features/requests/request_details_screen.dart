@@ -30,15 +30,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     if (request.status != RequestStatus.pending) return false;
     if (request.type == RequestType.leave) return true;
     if (request.type == RequestType.permission) return true;
-    // Assignments are mapped as RequestType.other with title "مهمة" in this app.
-    if (request.type == RequestType.other) {
-      final t = request.title.trim();
-      if (t.isEmpty) return false;
-      if (t.contains('مهمة') || t.contains('مأمورية') || t.contains('مأمور')) {
-        return true;
-      }
-      return false;
-    }
+    if (request.type == RequestType.assignment) return true;
     return false;
   }
 
@@ -59,9 +51,10 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
           (await getIt<LeavesRepository>().remindLeave(id: id)).message,
         RequestType.permission =>
           (await getIt<PermissionRepository>().remindPermission(id: id)).message,
-        RequestType.other =>
+        RequestType.assignment =>
           (await getIt<AssignmentRepository>().remindAssignment(id: id)).message,
         RequestType.overtime => null,
+        RequestType.other => null,
       };
 
       if (!mounted) return;
@@ -315,6 +308,8 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
         return Icons.access_time_rounded;
       case RequestType.overtime:
         return Icons.schedule_rounded;
+      case RequestType.assignment:
+        return Icons.directions_rounded;
       case RequestType.other:
         return Icons.description_rounded;
     }
@@ -344,6 +339,9 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     }
     if (request.leaveType?.trim().isNotEmpty == true) {
       items.add(('نوع الإجازة', request.leaveType!));
+    }
+    if (request.deductionType?.trim().isNotEmpty == true) {
+      items.add(('نوع الخصم', request.deductionType!));
     }
     if (request.location?.trim().isNotEmpty == true) {
       items.add(('المكان', request.location!));

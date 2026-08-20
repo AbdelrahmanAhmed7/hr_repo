@@ -125,7 +125,7 @@ class _HRHomeScreenContentState extends State<_HRHomeScreenContent> {
   void _handleNotificationTap() => context.push('/notifications');
   void _handleMenuTap() => context.push('/organization');
   void _handleViewAllActivities() => context.push('/requests');
-  void _handleViewAllRequests() => context.push('/all-requests');
+  void _handleViewAllRequests() => context.push('/admin/requests');
   void _handleViewEmployees() => context.push('/hr/employees');
   void _handleViewDepartments() => context.push('/hr/departments');
   void _handleViewOrganizationChart() => context.push('/organization');

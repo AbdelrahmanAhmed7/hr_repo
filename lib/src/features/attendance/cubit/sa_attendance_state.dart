@@ -2,7 +2,7 @@ import '../models/attendance_record_model.dart';
 
 enum SAAttendanceStatus { initial, loading, success, error }
 
-enum AttendanceFilter { all, present, absent, notDeparted }
+enum AttendanceFilter { all, present, absent }
 
 class DepartmentOption {
   final int id;

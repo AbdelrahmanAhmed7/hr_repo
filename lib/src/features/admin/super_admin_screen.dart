@@ -10,8 +10,6 @@ import 'cubit/super_admin_dashboard_cubit.dart';
 import 'super_admin_home_screen.dart';
 import 'pending_requests_screen.dart';
 import 'system_settings_screen.dart';
-import 'punch_pairs_screen.dart';
-
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
 
@@ -26,7 +24,6 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
   final List<Widget> _screens = [
     const SuperAdminHomeScreen(),
     const SuperAdminAttendanceScreen(),
-    const PunchPairsScreen(),
     const PendingRequestsScreen(),
     BlocProvider(
       create: (_) => getIt<SuperAdminEmployeeOfMonthCubit>(),
@@ -122,22 +119,21 @@ class _SuperAdminScreenBody extends StatelessWidget {
                     'لوحة التحكم',
                   ),
                   _buildNavItem(context, 1, Icons.how_to_reg_rounded, 'الحضور'),
-                  _buildNavItem(context, 2, Icons.swap_horiz_rounded, 'الدخول والخروج'),
                   _buildNavItem(
                     context,
-                    3,
+                    2,
                     Icons.pending_actions_outlined,
                     'الطلبات',
                   ),
                   _buildNavItem(
                     context,
-                    4,
+                    3,
                     Icons.emoji_events_rounded,
                     'موظف الشهر',
                   ),
                   _buildNavItem(
                     context,
-                    5,
+                    4,
                     Icons.settings_outlined,
                     'الإعدادات',
                   ),

@@ -158,12 +158,6 @@ class SAAttendanceEmployeeRow extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _deviceIcon(record.deviceType),
-              size: 14,
-              color: AppColors.success,
-            ),
-            const SizedBox(width: 4),
             Text(
               _formatTimeShort(record.attendanceTime!),
               style: AppTextStyles.labelSmall.copyWith(
@@ -183,12 +177,6 @@ class SAAttendanceEmployeeRow extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _deviceIcon(record.deviceType),
-              size: 14,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 4),
             Text(
               '${_formatTimeShort(record.attendanceTime!)} ← ${_formatTimeShort(record.departureTime!)}',
               style: AppTextStyles.labelSmall.copyWith(
@@ -237,24 +225,10 @@ class SAAttendanceEmployeeRow extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: _DetailItem(
-                  icon: _deviceIcon(record.deviceType),
-                  label: 'مصدر الحضور',
-                  value: _deviceLabel(record.deviceType),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: _DetailItem(
-                  icon: Icons.access_time_rounded,
-                  label: 'مدة العمل',
-                  value: _workDuration(),
-                ),
-              ),
-            ],
+          _DetailItem(
+            icon: Icons.access_time_rounded,
+            label: 'مدة العمل',
+            value: _workDuration(),
           ),
         ],
       ),
@@ -317,17 +291,6 @@ class SAAttendanceEmployeeRow extends StatelessWidget {
     return DateTime(2026, 1, 1, h, m, s);
   }
 
-  IconData _deviceIcon(int? deviceType) {
-    if (deviceType == 2) return Icons.phone_android_rounded;
-    if (deviceType == 3) return Icons.fingerprint_rounded;
-    return Icons.device_unknown_rounded;
-  }
-
-  String _deviceLabel(int? deviceType) {
-    if (deviceType == 2) return 'موبايل';
-    if (deviceType == 3) return 'بصمة';
-    return '—';
-  }
 }
 
 class _StatusBadge extends StatelessWidget {
