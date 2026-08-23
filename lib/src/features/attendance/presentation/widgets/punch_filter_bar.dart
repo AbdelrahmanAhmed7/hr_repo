@@ -21,6 +21,15 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
   Widget build(BuildContext context) {
     return BlocBuilder<PunchCubit, PunchState>(
       builder: (context, state) {
+        String? selectedDeptName;
+        if (state.selectedDepartmentId != null) {
+          for (final d in state.departments) {
+            if (d.id == state.selectedDepartmentId) {
+              selectedDeptName = d.name;
+              break;
+            }
+          }
+        }
         return Container(
           margin: const EdgeInsets.fromLTRB(14, 12, 14, 4),
           decoration: BoxDecoration(
@@ -80,9 +89,15 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                         ),
                       ),
                     IconButton(
-                      icon: const Icon(Icons.chevron_right_rounded),
-                      onPressed: () =>
-                          context.read<PunchCubit>().goToPreviousDay(),
+                      icon: Icon(
+                        Icons.chevron_right_rounded,
+                        color: state.isToday
+                            ? AppColors.textTertiary
+                            : AppColors.textSecondary,
+                      ),
+                      onPressed: state.isToday
+                          ? null
+                          : () => context.read<PunchCubit>().goToNextDay(),
                     ),
                     Expanded(
                       child: Text(
@@ -95,15 +110,9 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(
-                        Icons.chevron_left_rounded,
-                        color: state.isToday
-                            ? AppColors.textTertiary
-                            : AppColors.textSecondary,
-                      ),
-                      onPressed: state.isToday
-                          ? null
-                          : () => context.read<PunchCubit>().goToNextDay(),
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      onPressed: () =>
+                          context.read<PunchCubit>().goToPreviousDay(),
                     ),
                   ],
                 ),
@@ -180,149 +189,110 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.person_search_rounded,
-                          size: 18,
-                          color: state.selectedEmployeeName != null
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                        ),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String?>(
-                              value: state.selectedUserId,
-                              isExpanded: true,
-                              isDense: true,
-                              hint: Text(
-                                state.isLoadingEmployees
-                                    ? 'جاري تحميل الموظفين...'
-                                    : 'كل الموظفين',
-                                style: AppTextStyles.labelMedium.copyWith(
-                                  color: AppColors.textTertiary,
+                          child: _PunchFilterDropdown<String>(
+                            icon: Icons.person_search_rounded,
+                            placeholder: 'كل الموظفين',
+                            isLoading: state.isLoadingEmployees,
+                            selectedLabel: state.selectedEmployeeName,
+                            value: state.selectedUserId,
+                            labelOf: (id) {
+                              if (id == null) return null;
+                              for (final o in state.employeeOptions) {
+                                if (o.userId == id) return o.name;
+                              }
+                              return null;
+                            },
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: _DropdownItemText(
+                                  icon: Icons.group_rounded,
+                                  text: 'كل الموظفين',
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                              icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                              items: [
-                                const DropdownMenuItem<String?>(
-                                  value: null,
-                                  child: Text(
-                                    'كل الموظفين',
-                                    style: TextStyle(fontSize: 13),
+                              ...state.employeeOptions.map(
+                                (opt) => DropdownMenuItem<String?>(
+                                  value: opt.userId,
+                                  child: _DropdownItemText(
+                                    icon: Icons.person_rounded,
+                                    text: opt.name,
                                   ),
                                 ),
-                                ...state.employeeOptions.map(
-                                  (opt) => DropdownMenuItem<String?>(
-                                    value: opt.userId,
-                                    child: Text(
-                                      opt.name,
-                                      style: const TextStyle(fontSize: 13),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (id) {
-                                EmployeeOption? opt;
-                                for (final o in state.employeeOptions) {
-                                  if (o.userId == id) {
-                                    opt = o;
-                                    break;
-                                  }
+                              ),
+                            ],
+                            onChanged: (id) {
+                              EmployeeOption? opt;
+                              for (final o in state.employeeOptions) {
+                                if (o.userId == id) {
+                                  opt = o;
+                                  break;
                                 }
-                                if (id != null) {
-                                  context.read<PunchCubit>().selectEmployee(
-                                      opt?.userId, opt?.name);
-                                } else {
-                                  context
-                                      .read<PunchCubit>()
-                                      .clearEmployeeFilter();
-                                }
-                              },
-                            ),
+                              }
+                              if (id != null) {
+                                context.read<PunchCubit>().selectEmployee(
+                                    opt?.userId, opt?.name);
+                              } else {
+                                context
+                                    .read<PunchCubit>()
+                                    .clearEmployeeFilter();
+                              }
+                            },
+                            onClear: state.selectedEmployeeName != null
+                                ? () => context
+                                    .read<PunchCubit>()
+                                    .clearEmployeeFilter()
+                                : null,
                           ),
                         ),
-                        if (state.selectedEmployeeName != null)
-                          GestureDetector(
-                            onTap: () => context
-                                .read<PunchCubit>()
-                                .clearEmployeeFilter(),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              size: 16,
-                              color: AppColors.error,
-                            ),
-                          ),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        Icon(
-                          Icons.apartment_rounded,
-                          size: 18,
-                          color: state.selectedDepartmentId != null
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                        ),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int?>(
-                              value: state.selectedDepartmentId,
-                              isExpanded: true,
-                              isDense: true,
-                              hint: Text(
-                                'كل الأقسام',
-                                style: AppTextStyles.labelMedium.copyWith(
-                                  color: AppColors.textTertiary,
+                          child: _PunchFilterDropdown<int>(
+                            icon: Icons.apartment_rounded,
+                            placeholder: 'كل الأقسام',
+                            isLoading: false,
+                            selectedLabel: selectedDeptName,
+                            value: state.selectedDepartmentId,
+                            labelOf: (id) {
+                              if (id == null) return null;
+                              for (final d in state.departments) {
+                                if (d.id == id) return d.name;
+                              }
+                              return null;
+                            },
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: _DropdownItemText(
+                                  icon: Icons.apartment_rounded,
+                                  text: 'كل الأقسام',
                                 ),
                               ),
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: AppColors.textPrimary,
+                              ...state.departments.map(
+                                (dept) => DropdownMenuItem<int?>(
+                                  value: dept.id,
+                                  child: _DropdownItemText(
+                                    icon: Icons.business_rounded,
+                                    text: dept.name,
+                                  ),
+                                ),
                               ),
-                              icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                              items: [
-                                const DropdownMenuItem<int?>(
-                                  value: null,
-                                  child: Text(
-                                    'كل الأقسام',
-                                    style: TextStyle(fontSize: 13),
-                                  ),
-                                ),
-                                ...state.departments.map(
-                                  (dept) => DropdownMenuItem<int?>(
-                                    value: dept.id,
-                                    child: Text(
-                                      dept.name,
-                                      style: const TextStyle(fontSize: 13),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (id) =>
-                                  context
-                                      .read<PunchCubit>()
-                                      .applyDepartmentFilter(id),
-                            ),
+                            ],
+                            onChanged: (id) => context
+                                .read<PunchCubit>()
+                                .applyDepartmentFilter(id),
+                            onClear:
+                                state.selectedDepartmentId != null
+                                ? () => context
+                                    .read<PunchCubit>()
+                                    .applyDepartmentFilter(null)
+                                : null,
                           ),
                         ),
-                        if (state.selectedDepartmentId != null)
-                          GestureDetector(
-                            onTap: () => context
-                                .read<PunchCubit>()
-                                .applyDepartmentFilter(null),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              size: 16,
-                              color: AppColors.error,
-                            ),
-                          ),
                       ],
                     ),
                   ],
@@ -564,6 +534,144 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
           },
         );
       },
+    );
+  }
+}
+
+// ─── Filter Dropdown Field ──────────────────────────────────────────────────
+
+class _PunchFilterDropdown<T> extends StatelessWidget {
+  final IconData icon;
+  final String placeholder;
+  final bool isLoading;
+  final String? selectedLabel;
+  final T? value;
+  final List<DropdownMenuItem<T?>> items;
+  final ValueChanged<T?> onChanged;
+  final String? Function(T?) labelOf;
+  final VoidCallback? onClear;
+
+  const _PunchFilterDropdown({
+    required this.icon,
+    required this.placeholder,
+    required this.isLoading,
+    required this.selectedLabel,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.labelOf,
+    this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = selectedLabel != null;
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? AppColors.primary.withValues(alpha: 0.06)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isActive
+                    ? AppColors.primary.withValues(alpha: 0.45)
+                    : AppColors.border,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color:
+                      isActive ? AppColors.primary : AppColors.textTertiary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<T?>(
+                      value: value,
+                      isExpanded: true,
+                      isDense: true,
+                      hint: Text(
+                        isLoading ? 'جاري التحميل...' : placeholder,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                      icon: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 20,
+                        color: isActive
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                      items: items,
+                      selectedItemBuilder: (context) => items
+                          .map(
+                            (item) => Text(
+                              labelOf(item.value) ?? placeholder,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: onChanged,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (onClear != null) ...[
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onClear,
+            child: const Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: AppColors.error,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ─── Dropdown Item Text ─────────────────────────────────────────────────────
+
+class _DropdownItemText extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _DropdownItemText({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 13),
+          maxLines: 1,
+        ),
+      ],
     );
   }
 }
