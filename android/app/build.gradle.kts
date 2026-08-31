@@ -19,7 +19,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.mediconsult.mediconsult_internal"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = "29.0.14206865"
 
     compileOptions {

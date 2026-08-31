@@ -285,6 +285,13 @@ class _AdminHomeScreenContentState extends State<_AdminHomeScreenContent> {
                               isLoading: attState.isLoading,
                               isAdmin: true,
                             ),
+                            // Send Notification
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                              child: _AdminSendNotificationCard(
+                                onTap: () => context.push('/send-notification'),
+                              ),
+                            ),
                             // Admin Management shortcuts
                             _AdminManagementSection(
                               onViewPermissions: () =>
@@ -1029,6 +1036,83 @@ class _EmptyCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Send Notification Card ──────────────────────────────────────────────────
+
+class _AdminSendNotificationCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AdminSendNotificationCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'إرسال إشعار',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'إرسال إشعار للموظفين',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

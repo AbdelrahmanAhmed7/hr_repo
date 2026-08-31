@@ -7,7 +7,9 @@ import '../models/department_option.dart';
 import '../models/employee.dart';
 import '../models/employees_page_response.dart';
 import '../models/employee_upsert_request.dart';
+import '../models/employee_payslip.dart';
 import '../models/job_title_option.dart';
+import '../models/salary_calculation.dart';
 
 class EmployeesApiService {
   final DioClient _dioClient;
@@ -82,6 +84,32 @@ class EmployeesApiService {
   Future<Employee> getEmployeeDetails(String id) async {
     final response = await _dioClient.dio.get('/api/Auth/employee/$id');
     return Employee.fromEmployeeDetailsApiJson(_asMap(response.data));
+  }
+
+  /// GET /api/Attendance/calculate-salary/{id}?month={month}&year={year}
+  Future<SalaryCalculation> calculateSalary({
+    required String employeeId,
+    required int month,
+    required int year,
+  }) async {
+    final response = await _dioClient.dio.get(
+      '/api/Attendance/calculate-salary/$employeeId',
+      queryParameters: {'month': month, 'year': year},
+    );
+    return SalaryCalculation.fromJson(_asMap(response.data));
+  }
+
+  /// GET /api/Payslip/employee/{id}?month={month}&year={year}
+  Future<EmployeePayslip> getPayslip({
+    required String employeeId,
+    required int month,
+    required int year,
+  }) async {
+    final response = await _dioClient.dio.get(
+      '/api/Payslip/employee/$employeeId',
+      queryParameters: {'month': month, 'year': year},
+    );
+    return EmployeePayslip.fromJson(_asMap(response.data));
   }
 
   Future<void> createEmployee(EmployeeUpsertRequest request) async {

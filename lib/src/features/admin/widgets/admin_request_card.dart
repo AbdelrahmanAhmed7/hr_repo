@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../home/models/recent_activity.dart';
+import '../../requests/request_details_screen.dart';
 
 class AdminRequestCard extends StatelessWidget {
   final RecentActivity request;
@@ -100,7 +101,15 @@ class AdminRequestCard extends StatelessWidget {
     final typeColor = _getTypeColor();
     final chips = _detailChips();
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RequestDetailsScreen(request: request, showRemindButton: false),
+          ),
+        );
+      },
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -370,6 +379,7 @@ class AdminRequestCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
       ),
     );
   }

@@ -47,6 +47,14 @@ class AdminLeavesRepository {
     }
   }
 
+  Future<void> revertLeaveToPending(int id) async {
+    try {
+      await _service.updateLeaveStatus(id: id, status: 1);
+    } on DioException catch (e) {
+      throw Exception(_extractError(e));
+    }
+  }
+
   String _extractError(DioException e) {
     try {
       if (e.response?.data is Map) {

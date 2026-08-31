@@ -14,7 +14,14 @@ import 'widgets/employee_card.dart';
 import 'widgets/hr_screen_header.dart';
 
 class HREmployeesScreen extends StatefulWidget {
-  const HREmployeesScreen({super.key});
+  final bool showBackButton;
+  final bool showAddFab;
+
+  const HREmployeesScreen({
+    super.key,
+    this.showBackButton = true,
+    this.showAddFab = true,
+  });
 
   @override
   State<HREmployeesScreen> createState() => _HREmployeesScreenState();
@@ -522,15 +529,20 @@ class _HREmployeesScreenState extends State<HREmployeesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _handleAddEmployee,
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.person_add, color: Colors.white),
-        label: const Text(
-          'إضافة موظف',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
+      floatingActionButton: widget.showAddFab
+          ? FloatingActionButton.extended(
+              onPressed: _handleAddEmployee,
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.person_add, color: Colors.white),
+              label: const Text(
+                'إضافة موظف',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : null,
       body: BlocBuilder<EmployeesCubit, EmployeesState>(
         builder: (context, state) {
           if (state.isLoading && state.employees.isEmpty) {
@@ -550,7 +562,7 @@ class _HREmployeesScreenState extends State<HREmployeesScreen> {
                     title: 'إدارة الموظفين',
                     subtitle: 'وصول أسرع للبيانات والفلاتر من شاشة واحدة',
                     icon: Icons.people_outlined,
-                    showBackButton: true,
+                    showBackButton: widget.showBackButton,
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,

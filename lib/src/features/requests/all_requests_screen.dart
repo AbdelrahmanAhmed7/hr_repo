@@ -23,7 +23,7 @@ class AllRequestsScreen extends StatefulWidget {
   State<AllRequestsScreen> createState() => _AllRequestsScreenState();
 }
 
-enum _RequestTypeFilter { all, leaves, permissions, missions }
+enum _RequestTypeFilter { leaves, permissions, missions }
 
 class _AllRequestsScreenState extends State<AllRequestsScreen>
     with SingleTickerProviderStateMixin {
@@ -34,7 +34,7 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
   List<RecentActivity> _rejectedRequests = [];
   bool _isLoading = false;
   int? _selectedMonth;
-  _RequestTypeFilter _selectedTypeFilter = _RequestTypeFilter.all;
+  _RequestTypeFilter _selectedTypeFilter = _RequestTypeFilter.leaves;
   StreamSubscription<void>? _refreshSubscription;
 
   @override
@@ -151,8 +151,6 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
 
   List<RecentActivity> _applyTypeFilter(List<RecentActivity> requests) {
     switch (_selectedTypeFilter) {
-      case _RequestTypeFilter.all:
-        return requests;
       case _RequestTypeFilter.leaves:
         return requests
             .where((item) => item.type == RequestType.leave)
@@ -250,7 +248,6 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
                         onChanged: (filter) {
                           setState(() => _selectedTypeFilter = filter);
                         },
-                        allCount: activeRequests.length,
                         leavesCount: activeRequests
                             .where((item) => item.type == RequestType.leave)
                             .length,
@@ -396,7 +393,6 @@ class _RequestsInsightCard extends StatelessWidget {
 class _RequestsTypeFilterBar extends StatelessWidget {
   final _RequestTypeFilter selectedFilter;
   final ValueChanged<_RequestTypeFilter> onChanged;
-  final int allCount;
   final int leavesCount;
   final int permissionsCount;
   final int missionsCount;
@@ -404,7 +400,6 @@ class _RequestsTypeFilterBar extends StatelessWidget {
   const _RequestsTypeFilterBar({
     required this.selectedFilter,
     required this.onChanged,
-    required this.allCount,
     required this.leavesCount,
     required this.permissionsCount,
     required this.missionsCount,
@@ -416,13 +411,6 @@ class _RequestsTypeFilterBar extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _TypeChip(
-            label: 'الكل',
-            count: allCount,
-            isSelected: selectedFilter == _RequestTypeFilter.all,
-            onTap: () => onChanged(_RequestTypeFilter.all),
-          ),
-          const SizedBox(width: 8),
           _TypeChip(
             label: 'إجازات',
             count: leavesCount,

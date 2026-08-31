@@ -69,7 +69,7 @@ class RequestCard extends StatelessWidget {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => RequestDetailsScreen(request: request),
+              builder: (context) => RequestDetailsScreen(request: request, showRemindButton: false),
             ),
           );
         },

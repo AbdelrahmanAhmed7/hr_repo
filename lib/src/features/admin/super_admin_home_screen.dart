@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../attendance/data/models/punch_pair_model.dart';
+import '../attendance/data/models/punch_summary_model.dart';
+import '../attendance/models/attendance_response_model.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../notifications/cubit/notifications_cubit.dart';
@@ -10,6 +13,64 @@ import 'cubit/super_admin_dashboard_cubit.dart';
 import 'cubit/super_admin_dashboard_state.dart';
 import 'models/super_admin_dashboard_response.dart';
 import 'super_admin_department_screen.dart';
+
+// ─── Helpers: numbers from attendance API (matches attendance screen) ─────────
+
+int _presentCount(SuperAdminDashboardState state) =>
+    state.todayAttendance?.employeesWithAttendance ?? state.data?.presentToday ?? 0;
+
+int _totalEmployeesCount(SuperAdminDashboardState state) =>
+    state.todayAttendance?.totalEmployees ?? state.data?.totalEmployees ?? 0;
+
+double _attendanceRateValue(SuperAdminDashboardState state) {
+  final total = _totalEmployeesCount(state);
+  if (total == 0) return 0;
+  return _presentCount(state) / total;
+}
+
+int _lateCount(SuperAdminDashboardState state) {
+  final records = state.todayAttendance?.attendances;
+  if (records == null) return state.data?.lateEmployees ?? 0;
+  const cutoff = 9 * 3600 + 16 * 60; // 09:16 in seconds
+  return records.where((r) {
+    if (r.attendanceTime == null) return false;
+    return _parseTime(r.attendanceTime!) > cutoff;
+  }).length;
+}
+
+
+int _parseTime(String raw) {
+  try {
+    final clean = raw.split('.')[0];
+    final parts = clean.split(':');
+    if (parts.length >= 3) {
+      return int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60 + int.parse(parts[2]);
+    }
+    if (parts.length == 2) {
+      return int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60;
+    }
+  } catch (_) {}
+  return 0;
+}
+
+String _formatHours(double hours) {
+  final h = hours.floor();
+  final m = ((hours - h) * 60).round();
+  if (h == 0) return '$m دقيقة';
+  if (m == 0) return '$h ساعة';
+  return '$h ساعة و $m دقيقة';
+}
+
+String _formatTime(String raw) {
+  try {
+    final clean = raw.split('.')[0];
+    final parts = clean.split(':');
+    if (parts.length >= 2) {
+      return '${parts[0]}:${parts[1]}';
+    }
+  } catch (_) {}
+  return raw;
+}
 
 class SuperAdminHomeScreen extends StatelessWidget {
   const SuperAdminHomeScreen({super.key});
@@ -26,6 +87,9 @@ class SuperAdminHomeScreen extends StatelessWidget {
         }
 
         final data = state.data;
+        final activeDepartments = data?.departments
+            .where((d) => d.employees.isNotEmpty)
+            .toList() ?? [];
 
         return Scaffold(
           backgroundColor: AppColors.backgroundSecondary,
@@ -38,6 +102,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   child: BlocBuilder<NotificationsCubit, NotificationsState>(
                     builder: (context, notifState) => _SuperAdminHeader(
                       data: data,
+                      dashboardState: state,
                       notificationCount: notifState.unreadCount,
                       onNotificationTap: () => context.push('/notifications'),
                     ),
@@ -53,27 +118,87 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     ),
                   )
                 else if (data != null) ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: _MeetingsEntryCard(
-                        onTap: () =>
-                            context.pushNamed('superAdminMeetings'),
+                  // ── KPI Row (merged with attendance insights) ──
+                  SliverToBoxAdapter(
+                    child: _KpiRow(
+                      data: data,
+                      todayAttendance: state.todayAttendance,
+                    ),
+                  ),
+
+                  // ── Top Performers (yesterday) ──
+                  if (state.yesterdaySummary.isNotEmpty || state.yesterdayPairs.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: _TopPerformersCard(
+                        summary: state.yesterdaySummary,
+                        pairs: state.yesterdayPairs,
+                        departments: activeDepartments,
+                      ),
+                    ),
+
+                  // ── Quick Actions (Send Notification + Employee of Month) ──
+                  SliverToBoxAdapter(
+                    child: _SuperAdminQuickActions(
+                      onSendNotification: () => context.push('/send-notification'),
+                      onEmployeeOfMonth: () => context.push('/employee-of-month'),
+                    ),
+                  ),
+
+                  // ── Payroll ──
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _PayrollEntryCard(
+                        onTap: () => context.push('/payroll'),
                       ),
                     ),
                   ),
+
+                  // ── Penalties ──
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _PenaltiesEntryCard(
+                        onTap: () => context.push('/penalties'),
+                      ),
+                    ),
+                  ),
+
+                  // ── Bonuses ──
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _BonusesEntryCard(
+                        onTap: () => context.push('/bonuses'),
+                      ),
+                    ),
+                  ),
+
+                  // ── Meetings ──
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: _MeetingsEntryCard(
+                        onTap: () => context.pushNamed('superAdminMeetings'),
+                      ),
+                    ),
+                  ),
+
+                  // ── Section Header: Departments ──
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     sliver: SliverToBoxAdapter(
                       child: _SectionHeader(
                         icon: Icons.business_rounded,
                         title: 'الأقسام',
-                        count: data.departments.length,
+                        count: activeDepartments.length,
                         countLabel: 'قسم',
                       ),
                     ),
                   ),
-                  if (data.departments.isEmpty)
+
+                  // ── Department Cards ──
+                  if (activeDepartments.isEmpty)
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -84,10 +209,10 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       sliver: SliverList.separated(
-                        itemCount: data.departments.length,
+                        itemCount: activeDepartments.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, i) =>
-                            _DepartmentCard(department: data.departments[i]),
+                            _DepartmentCard(department: activeDepartments[i]),
                       ),
                     ),
                 ],
@@ -101,15 +226,1081 @@ class SuperAdminHomeScreen extends StatelessWidget {
   }
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// ─── Alert Strip ─────────────────────────────────────────────────────────────
+
+// ─── KPI Row ─────────────────────────────────────────────────────────────────
+
+class _KpiRow extends StatelessWidget {
+  final SuperAdminDashboardResponse data;
+  final AttendanceResponseModel? todayAttendance;
+  const _KpiRow({required this.data, this.todayAttendance});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.read<SuperAdminDashboardCubit>().state;
+    final rate = (_attendanceRateValue(state) * 100).round();
+    final present = _presentCount(state);
+    final total = _totalEmployeesCount(state);
+    final lateCount = _lateCount(state);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.border.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                _KpiCard(
+                  icon: Icons.pie_chart_rounded,
+                  label: 'نسبة الحضور',
+                  value: '$rate%',
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 8),
+                _KpiCard(
+                  icon: Icons.people_rounded,
+                  label: 'الحضور اليوم',
+                  value: '$present/$total',
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                _KpiCard(
+                  icon: Icons.assignment_rounded,
+                  label: 'الطلبات المعلقة',
+                  value: '${data.pendingRequests}',
+                  color: AppColors.warning,
+                  onTap: () => context.push('/all-requests?tab=1'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _AttendanceMiniStat(
+                  label: 'متأخرون',
+                  count: lateCount,
+                  color: AppColors.error,
+                ),
+                const SizedBox(width: 8),
+                _AttendanceMiniStat(
+                  label: 'الحضور',
+                  count: present,
+                  color: AppColors.success,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Quick Actions: Send Notification + Employee of Month ─────────────────────
+
+class _SuperAdminQuickActions extends StatelessWidget {
+  final VoidCallback onSendNotification;
+  final VoidCallback onEmployeeOfMonth;
+
+  const _SuperAdminQuickActions({
+    required this.onSendNotification,
+    required this.onEmployeeOfMonth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.send_rounded,
+              title: 'إرسال إشعار',
+              subtitle: 'إرسال إشعار للموظفين',
+              color: AppColors.primary,
+              onTap: onSendNotification,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.emoji_events_rounded,
+              title: 'موظف الشهر',
+              subtitle: 'إدارة وحساب الفائزين',
+              color: const Color(0xFF1E3A8A),
+              onTap: onEmployeeOfMonth,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _KpiCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final inner = Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.border.withValues(alpha: 0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: AppTextStyles.titleSmall.copyWith(
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 9,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+
+    return Expanded(
+      child: onTap != null
+          ? GestureDetector(onTap: onTap, child: inner)
+          : inner,
+    );
+  }
+}
+
+class _AttendanceMiniStat extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+
+  const _AttendanceMiniStat({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$count',
+              style: AppTextStyles.titleMedium.copyWith(
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: color,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Top Performers Card ─────────────────────────────────────────────────────
+
+class _TopPerformersCard extends StatelessWidget {
+  final List<PunchSummaryModel> summary;
+  final List<PunchPairModel> pairs;
+  final List<SuperAdminDepartmentData> departments;
+
+  const _TopPerformersCard({
+    required this.summary,
+    required this.pairs,
+    required this.departments,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // ── Section 1: Highest work hours ──
+    final sortedByHours = List<PunchSummaryModel>.from(summary)
+      ..sort((a, b) => b.workedHours.compareTo(a.workedHours));
+    final topByHours = sortedByHours.take(3).toList();
+
+    // ── Section 2: Most check-in/check-out pairs (expandable) ──
+    final pairsByUser = <String, List<PunchPairModel>>{};
+    for (final p in pairs) {
+      pairsByUser.putIfAbsent(p.userId, () => []).add(p);
+    }
+    final sortedByPairs = pairsByUser.entries.toList()
+      ..sort((a, b) => b.value.length.compareTo(a.value.length));
+    final topByPairs = sortedByPairs.take(3).toList();
+
+    if (topByHours.isEmpty && topByPairs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.border.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Highest Hours ──
+            if (topByHours.isNotEmpty) ...[
+              _SectionTitle(
+                icon: Icons.emoji_events_rounded,
+                iconColor: AppColors.success,
+                title: 'الأعلى ساعات عمل أمس',
+              ),
+              const SizedBox(height: 12),
+              ...topByHours.asMap().entries.map((entry) {
+                final i = entry.key;
+                final e = entry.value;
+                return _PerformerRow(
+                  medal: i < 3 ? ['🥇', '🥈', '🥉'][i] : '',
+                  name: e.employeeName,
+                  badge: _formatHours(e.workedHours),
+                  badgeColor: AppColors.success,
+                );
+              }),
+            ],
+
+            // ── Most Active (show check-in / check-out times) ──
+            if (topByHours.isNotEmpty && topByPairs.isNotEmpty)
+              const SizedBox(height: 16),
+            if (topByPairs.isNotEmpty) ...[
+              _SectionTitle(
+                icon: Icons.swap_vert_circle_rounded,
+                iconColor: AppColors.primary,
+                title: 'الأكثر دخولاً وخروجاً أمس',
+              ),
+              const SizedBox(height: 12),
+              ...topByPairs.asMap().entries.map((entry) {
+                final i = entry.key;
+                final e = entry.value;
+                final userPairs = e.value;
+                final count = userPairs.length;
+                final empName = userPairs.first.employeeName;
+                final detailLines = userPairs.map((p) {
+                  final ci = _formatTime(p.checkIn);
+                  final co = p.checkOut != null ? _formatTime(p.checkOut!) : '—';
+                  return '  $ci → $co';
+                }).join('\n');
+                return _ExpandablePerformerRow(
+                  medal: i < 3 ? ['🥇', '🥈', '🥉'][i] : '',
+                  name: empName,
+                  badge: '$count مرة',
+                  badgeColor: AppColors.primary,
+                  expandedChild: Text(
+                    detailLines,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.6,
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+
+  const _SectionTitle({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: AppTextStyles.titleSmall.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PerformerRow extends StatelessWidget {
+  final String medal;
+  final String name;
+  final String badge;
+  final Color badgeColor;
+
+  const _PerformerRow({
+    required this.medal,
+    required this.name,
+    required this.badge,
+    required this.badgeColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Text(medal, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              badge,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: badgeColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpandablePerformerRow extends StatefulWidget {
+  final String medal;
+  final String name;
+  final String badge;
+  final Color badgeColor;
+  final Widget expandedChild;
+
+  const _ExpandablePerformerRow({
+    required this.medal,
+    required this.name,
+    required this.badge,
+    required this.badgeColor,
+    required this.expandedChild,
+  });
+
+  @override
+  State<_ExpandablePerformerRow> createState() => _ExpandablePerformerRowState();
+}
+
+class _ExpandablePerformerRowState extends State<_ExpandablePerformerRow> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Text(widget.medal, style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.name,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: widget.badgeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    widget.badge,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: widget.badgeColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 32),
+              child: widget.expandedChild,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Department Card ─────────────────────────────────────────────────────────
+
+class _DepartmentCard extends StatelessWidget {
+  final SuperAdminDepartmentData department;
+  const _DepartmentCard({required this.department});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPending = department.pendingRequestsCount > 0;
+    final attendanceRate = department.employees.isEmpty
+        ? 0.0
+        : department.presentToday / department.employees.length;
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SuperAdminDepartmentScreen(department: department),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.border.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryTint,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.business_rounded,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        department.departmentName,
+                        style: AppTextStyles.titleSmall.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${department.employees.length} موظف  •  ${department.presentToday} حاضر اليوم',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (hasPending)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Text(
+                      '${department.pendingRequestsCount} معلق',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textTertiary,
+                  size: 22,
+                ),
+              ],
+            ),
+            if (department.employees.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: attendanceRate,
+                  minHeight: 5,
+                  backgroundColor: AppColors.border,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    attendanceRate >= 0.8
+                        ? AppColors.success
+                        : attendanceRate >= 0.5
+                            ? AppColors.warning
+                            : AppColors.error,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'نسبة الحضور: ${(attendanceRate * 100).round()}%',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Meetings Entry Card ─────────────────────────────────────────────────────
+
+class _MeetingsEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MeetingsEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'الاجتماعات',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'إنشاء وإدارة اجتماعات الموظفين',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Penalties Entry Card ────────────────────────────────────────────────────
+
+class _PenaltiesEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _PenaltiesEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.error, Color(0xFFFF7043)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.gavel_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'إدارة الجزاءات',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'تسجيل ومتابعة جزاءات الموظفين',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Bonuses Entry Card ──────────────────────────────────────────────────────
+
+class _BonusesEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _BonusesEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.success, Color(0xFF4CAF50)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'إدارة المكافآت',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'تسجيل ومتابعة مكافآت الموظفين',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Payroll Entry Card ─────────────────────────────────────────────────────
+
+class _PayrollEntryCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _PayrollEntryCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.payments_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'كشف الرواتب',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'حساب وعرض كشف رواتب الموظفين الشهري',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Header ──────────────────────────────────────────────────────────────────
 
 class _SuperAdminHeader extends StatelessWidget {
   final SuperAdminDashboardResponse? data;
+  final SuperAdminDashboardState dashboardState;
   final int notificationCount;
   final VoidCallback onNotificationTap;
 
   const _SuperAdminHeader({
     required this.data,
+    required this.dashboardState,
     required this.notificationCount,
     required this.onNotificationTap,
   });
@@ -157,10 +1348,8 @@ class _SuperAdminHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top row: avatar + name + bell ──
               Row(
                 children: [
-                  // Avatar
                   Container(
                     width: 56,
                     height: 56,
@@ -251,32 +1440,7 @@ class _SuperAdminHeader extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Send notification button
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => context.push('/send-notification'),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                  ),
                   const SizedBox(width: 8),
-                  // Notification bell
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -336,8 +1500,6 @@ class _SuperAdminHeader extends StatelessWidget {
                   ),
                 ],
               ),
-
-              // ── Attendance row ──
               if (data?.todayAttendanceTime != null) ...[
                 const SizedBox(height: 14),
                 Container(
@@ -373,17 +1535,24 @@ class _SuperAdminHeader extends StatelessWidget {
                   ),
                 ),
               ],
-
-              // ── Stats row ──
               if (data != null) ...[
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _StatChip(label: 'الأقسام', count: data!.totalDepartments),
+                    _StatChip(
+                      label: 'الأقسام',
+                      count: data!.totalDepartments,
+                    ),
                     const SizedBox(width: 8),
-                    _StatChip(label: 'الموظفون', count: data!.totalEmployees),
+                    _StatChip(
+                      label: 'الموظفون',
+                      count: _totalEmployeesCount(dashboardState),
+                    ),
                     const SizedBox(width: 8),
-                    _StatChip(label: 'حضور اليوم', count: data!.presentToday),
+                    _StatChip(
+                      label: 'حضور اليوم',
+                      count: _presentCount(dashboardState),
+                    ),
                     const SizedBox(width: 8),
                     _StatChip(
                       label: 'الطلبات',
@@ -464,199 +1633,7 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ─── Department Card ──────────────────────────────────────────────────────────
-
-class _MeetingsEntryCard extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _MeetingsEntryCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.border.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.groups_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'الاجتماعات',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'إنشاء وإدارة اجتماعات الموظفين',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary,
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DepartmentCard extends StatelessWidget {
-  final SuperAdminDepartmentData department;
-
-  const _DepartmentCard({required this.department});
-
-  @override
-  Widget build(BuildContext context) {
-    final hasPending = department.pendingRequestsCount > 0;
-
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => SuperAdminDepartmentScreen(department: department),
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.border.withValues(alpha: 0.3),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.primaryTint,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.business_rounded,
-                color: AppColors.primary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    department.departmentName,
-                    style: AppTextStyles.titleSmall.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${department.employees.length} موظف  •  ${department.presentToday} حاضر اليوم',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '${department.requests.length} طلب',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      if (hasPending) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.warning.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppColors.warning.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: Text(
-                            '${department.pendingRequestsCount} معلق',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.warning,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textTertiary,
-              size: 22,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Shared widgets ───────────────────────────────────────────────────────────
+// ─── Shared widgets ──────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final IconData icon;
@@ -789,7 +1766,7 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-// ─── Shimmer ──────────────────────────────────────────────────────────────────
+// ─── Shimmer ─────────────────────────────────────────────────────────────────
 
 class _SuperAdminShimmer extends StatelessWidget {
   const _SuperAdminShimmer();
@@ -857,18 +1834,64 @@ class _SuperAdminShimmer extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              children: List.generate(
-                5,
-                (i) => Container(
+              children: [
+                Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  height: 88,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                ),
+                Row(
+                  children: List.generate(
+                    4,
+                    (_) => Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  height: 120,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.border),
                   ),
                 ),
-              ),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                ),
+                ...List.generate(
+                  3,
+                  (_) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

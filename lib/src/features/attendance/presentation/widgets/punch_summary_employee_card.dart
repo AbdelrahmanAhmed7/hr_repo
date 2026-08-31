@@ -197,8 +197,46 @@ class _ExpandedPanel extends StatelessWidget {
         ),
       );
     } else {
+      // Collect all permissions & assignments across every pair
+      final allPermissions = <PunchPairPermission>[];
+      final allAssignments = <PunchPairAssignment>[];
+      for (final p in pairs!) {
+        allPermissions.addAll(p.permissions);
+        allAssignments.addAll(p.assignments);
+      }
+
       content = Column(
-        children: pairs!.map((p) => PunchPairItem(item: p)).toList(),
+        children: [
+          ...pairs!.map((p) => PunchPairItem(item: p)),
+          if (allPermissions.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: BigRequestBanner(
+                icon: Icons.logout_rounded,
+                color: AppColors.warning,
+                label: 'أذن',
+                reason: allPermissions.first.reason,
+                time: allPermissions.first.displayTime,
+                count: allPermissions.length,
+              ),
+            ),
+          ],
+          if (allAssignments.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: BigRequestBanner(
+                icon: Icons.flight_takeoff_rounded,
+                color: AppColors.info,
+                label: 'مأمورية',
+                reason: allAssignments.first.reason,
+                time: allAssignments.first.displayTime,
+                count: allAssignments.length,
+              ),
+            ),
+          ],
+        ],
       );
     }
 

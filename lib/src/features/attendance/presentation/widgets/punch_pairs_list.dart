@@ -25,6 +25,49 @@ class PunchPairsList extends StatelessWidget {
     return map;
   }
 
+  List<Widget> _buildDateBanners(List<PunchPairModel> items) {
+    final allPermissions = <PunchPairPermission>[];
+    final allAssignments = <PunchPairAssignment>[];
+    for (final p in items) {
+      allPermissions.addAll(p.permissions);
+      allAssignments.addAll(p.assignments);
+    }
+    final widgets = <Widget>[];
+    if (allPermissions.isNotEmpty) {
+      widgets.addAll([
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: BigRequestBanner(
+            icon: Icons.logout_rounded,
+            color: AppColors.warning,
+            label: 'أذن',
+            reason: allPermissions.first.reason,
+            time: allPermissions.first.displayTime,
+            count: allPermissions.length,
+          ),
+        ),
+      ]);
+    }
+    if (allAssignments.isNotEmpty) {
+      widgets.addAll([
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: BigRequestBanner(
+            icon: Icons.flight_takeoff_rounded,
+            color: AppColors.info,
+            label: 'مأمورية',
+            reason: allAssignments.first.reason,
+            time: allAssignments.first.displayTime,
+            count: allAssignments.length,
+          ),
+        ),
+      ]);
+    }
+    return widgets;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PunchCubit, PunchState>(
@@ -71,6 +114,8 @@ class PunchPairsList extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 ...items.map((item) => PunchPairItem(item: item)),
+                // ── One banner per date for permissions ────────────
+                ..._buildDateBanners(items),
                 const SizedBox(height: 12),
               ],
             );

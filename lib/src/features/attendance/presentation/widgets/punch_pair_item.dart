@@ -38,7 +38,6 @@ class PunchPairItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Check-in
           _TimeBlock(
             label: 'دخول',
             icon: Icons.login_rounded,
@@ -53,7 +52,6 @@ class PunchPairItem extends StatelessWidget {
               color: AppColors.textTertiary,
             ),
           ),
-          // Check-out
           _TimeBlock(
             label: 'خروج',
             icon: Icons.logout_rounded,
@@ -61,7 +59,6 @@ class PunchPairItem extends StatelessWidget {
             color: statusColor,
           ),
           const Spacer(),
-          // Status + duration
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -141,6 +138,94 @@ class _TimeBlock extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Public banner widget — used inside _ExpandedPanel (one per employee).
+class BigRequestBanner extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String reason;
+  final String time;
+  final int count;
+
+  const BigRequestBanner({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.reason,
+    required this.time,
+    this.count = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  count > 1 ? '$label ($count)' : label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+                if (reason.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    reason,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: color.withValues(alpha: 0.8),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (time.isNotEmpty)
+            Text(
+              time,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color.withValues(alpha: 0.6),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/features/admin/super_admin_attendance_screen.dart';
-import 'package:mediconsult_internal/src/features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
-import 'package:mediconsult_internal/src/features/employee_of_month/presentation/screens/super_admin_employee_of_month_screen.dart';
+import 'package:mediconsult_internal/src/features/admin/department_requests/department_requests_screen.dart';
+import 'package:mediconsult_internal/src/features/admin/department_requests/cubit/department_requests_cubit.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../features/hr/cubit/employees_cubit.dart';
+import '../../features/reports/cubit/reports_cubit.dart';
+import '../../features/reports/screens/reports_hub_screen.dart';
 import 'cubit/super_admin_dashboard_cubit.dart';
+import 'super_admin_employees_screen.dart';
 import 'super_admin_home_screen.dart';
-import 'pending_requests_screen.dart';
-import 'system_settings_screen.dart';
+
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
 
@@ -24,12 +27,18 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
   final List<Widget> _screens = [
     const SuperAdminHomeScreen(),
     const SuperAdminAttendanceScreen(),
-    const PendingRequestsScreen(),
     BlocProvider(
-      create: (_) => getIt<SuperAdminEmployeeOfMonthCubit>(),
-      child: const SuperAdminEmployeeOfMonthScreen(),
+      create: (_) => getIt<EmployeesCubit>(),
+      child: const SuperAdminEmployeesScreen(),
     ),
-    const SystemSettingsScreen(),
+    BlocProvider(
+      create: (_) => getIt<DepartmentRequestsCubit>()..load(),
+      child: const DepartmentRequestsScreen(),
+    ),
+    BlocProvider(
+      create: (_) => getIt<ReportsCubit>(),
+      child: const ReportsHubScreen(),
+    ),
   ];
 
   @override
@@ -122,20 +131,20 @@ class _SuperAdminScreenBody extends StatelessWidget {
                   _buildNavItem(
                     context,
                     2,
+                    Icons.people_alt_outlined,
+                    'الموظفين',
+                  ),
+                  _buildNavItem(
+                    context,
+                    3,
                     Icons.pending_actions_outlined,
                     'الطلبات',
                   ),
                   _buildNavItem(
                     context,
-                    3,
-                    Icons.emoji_events_rounded,
-                    'موظف الشهر',
-                  ),
-                  _buildNavItem(
-                    context,
                     4,
-                    Icons.settings_outlined,
-                    'الإعدادات',
+                    Icons.assessment_rounded,
+                    'التقارير',
                   ),
                 ],
               ),

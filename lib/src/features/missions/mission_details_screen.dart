@@ -2,15 +2,109 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/services/service_locator.dart';
+import '../../core/utils/app_exception.dart';
+import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/approve_reject_sheet.dart';
+import '../admin/repository/admin_assignments_repository.dart';
 import 'models/mission.dart';
 
-class MissionDetailsScreen extends StatelessWidget {
+class MissionDetailsScreen extends StatefulWidget {
   final Mission mission;
 
   const MissionDetailsScreen({
     super.key,
     required this.mission,
   });
+
+  @override
+  State<MissionDetailsScreen> createState() => _MissionDetailsScreenState();
+}
+
+class _MissionDetailsScreenState extends State<MissionDetailsScreen> {
+  bool _isLoading = false;
+
+  bool get _isPending => widget.mission.status == MissionStatus.pending;
+  bool get _isApproved => widget.mission.status == MissionStatus.approved;
+  bool get _isRejected => widget.mission.status == MissionStatus.rejected;
+  bool get _canChangeDecision => _isPending || _isApproved || _isRejected;
+
+  Mission get mission => widget.mission;
+
+  Future<void> _handleApprove() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await getIt<AdminAssignmentsRepository>().approveAssignment(
+        int.parse(mission.id),
+      );
+      if (!mounted) return;
+      CustomToast.showSuccess('تم قبول الطلب بنجاح');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      CustomToast.showError(AppException.from(e).message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleReject(String? reason) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await getIt<AdminAssignmentsRepository>().rejectAssignment(
+        int.parse(mission.id),
+        rejectionReason: reason,
+      );
+      if (!mounted) return;
+      CustomToast.showSuccess('تم رفض الطلب');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      CustomToast.showError(AppException.from(e).message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleRevertToPending() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await getIt<AdminAssignmentsRepository>().revertAssignmentToPending(
+        int.parse(mission.id),
+      );
+      if (!mounted) return;
+      CustomToast.showSuccess('تم إرجاع الطلب لحالة الانتظار');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      CustomToast.showError(AppException.from(e).message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _onApproveRejectPressed({bool? approve}) async {
+    final shouldApprove = approve ?? true;
+    if (shouldApprove) {
+      await _handleApprove();
+    } else {
+      final result = await showApproveRejectSheet(
+        context,
+        requestType: 'المأمورية',
+      );
+      if (result == null || !mounted) return;
+      if (result.isRevertToPending) {
+        await _handleRevertToPending();
+      } else if (result.isApproved) {
+        await _handleApprove();
+      } else {
+        await _handleReject(result.rejectionReason);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,10 +232,139 @@ class MissionDetailsScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (_canChangeDecision) ...[
+                    const SizedBox(height: 18),
+                    _buildActionButtons(),
+                  ],
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    final statusLabel = _isApproved
+        ? 'تم القبول مسبقاً'
+        : _isRejected
+            ? 'تم الرفض مسبقاً'
+            : 'بانتظار القرار';
+
+    return _SectionCard(
+      title: 'القرار',
+      icon: Icons.gavel_rounded,
+      accent: AppColors.success,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (_isApproved
+                          ? AppColors.success
+                          : _isRejected
+                              ? AppColors.error
+                              : AppColors.warning)
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: _isApproved
+                        ? AppColors.success
+                        : _isRejected
+                            ? AppColors.error
+                            : AppColors.warning,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              if (_isPending || _isApproved) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () => _onApproveRejectPressed(approve: false),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.close_rounded, size: 16),
+                    label: Text(_isApproved ? 'تغيير إلى رفض' : 'رفض'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      textStyle: AppTextStyles.labelMedium,
+                    ),
+                  ),
+                ),
+                if (_isPending || _isRejected) const SizedBox(width: 10),
+              ],
+              if (_isPending || _isRejected) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () => _onApproveRejectPressed(approve: true),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_rounded, size: 16),
+                    label: Text(_isRejected ? 'تغيير إلى قبول' : 'قبول'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      textStyle: AppTextStyles.labelMedium,
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (!_isPending) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isLoading ? null : _onApproveRejectPressed,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.undo_rounded, size: 16),
+                label: const Text('إعادة للانتظار'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.warning,
+                  side: const BorderSide(color: AppColors.warning),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  textStyle: AppTextStyles.labelMedium,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/services/service_locator.dart';
+import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/approve_reject_sheet.dart';
+import '../admin/repository/admin_leaves_repository.dart';
+import '../admin/repository/admin_permissions_repository.dart';
+import '../admin/repository/admin_assignments_repository.dart';
 import '../leaves/repository/leaves_repository.dart';
 import '../missions/repository/assignment_repository.dart';
 import '../permissions/repository/permission_repository.dart';
@@ -11,10 +16,12 @@ import '../home/models/recent_activity.dart';
 
 class RequestDetailsScreen extends StatefulWidget {
   final RecentActivity request;
+  final bool showRemindButton;
 
   const RequestDetailsScreen({
     super.key,
     required this.request,
+    this.showRemindButton = true,
   });
 
   @override
@@ -23,16 +30,31 @@ class RequestDetailsScreen extends StatefulWidget {
 
 class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
   bool _isReminding = false;
+  bool _isApproving = false;
 
   RecentActivity get request => widget.request;
 
   bool get _canRemind {
+    if (!widget.showRemindButton) return false;
     if (request.status != RequestStatus.pending) return false;
     if (request.type == RequestType.leave) return true;
     if (request.type == RequestType.permission) return true;
     if (request.type == RequestType.assignment) return true;
     return false;
   }
+
+  bool get _canApproveReject {
+    if (request.status == RequestStatus.approved) return true;
+    if (request.status == RequestStatus.rejected) return true;
+    if (request.status != RequestStatus.pending) return false;
+    return request.type == RequestType.leave ||
+        request.type == RequestType.permission ||
+        request.type == RequestType.assignment;
+  }
+
+  bool get _isPending => request.status == RequestStatus.pending;
+  bool get _isApproved => request.status == RequestStatus.approved;
+  bool get _isRejected => request.status == RequestStatus.rejected;
 
   Future<void> _handleRemind() async {
     if (_isReminding || !_canRemind) return;
@@ -64,6 +86,134 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
       CustomToast.showError('تعذر إرسال التذكير الآن. حاول مرة أخرى.');
     } finally {
       if (mounted) setState(() => _isReminding = false);
+    }
+  }
+
+  Future<void> _handleApprove() async {
+    if (_isApproving) return;
+    final id = int.tryParse(request.id);
+    if (id == null) {
+      CustomToast.showError('رقم الطلب غير صحيح');
+      return;
+    }
+    setState(() => _isApproving = true);
+    try {
+      switch (request.type) {
+        case RequestType.leave:
+          await getIt<AdminLeavesRepository>().approveLeave(id);
+          break;
+        case RequestType.permission:
+          await getIt<AdminPermissionsRepository>().approvePermission(id);
+          break;
+        case RequestType.assignment:
+          await getIt<AdminAssignmentsRepository>().approveAssignment(id);
+          break;
+        default:
+          break;
+      }
+      if (!mounted) return;
+      CustomToast.showSuccess('تم قبول الطلب بنجاح');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      CustomToast.showError(AppException.from(e).message);
+    } finally {
+      if (mounted) setState(() => _isApproving = false);
+    }
+  }
+
+  Future<void> _handleReject(String? reason) async {
+    if (_isApproving) return;
+    final id = int.tryParse(request.id);
+    if (id == null) {
+      CustomToast.showError('رقم الطلب غير صحيح');
+      return;
+    }
+    setState(() => _isApproving = true);
+    try {
+      switch (request.type) {
+        case RequestType.leave:
+          await getIt<AdminLeavesRepository>().rejectLeave(
+            id,
+            rejectionReason: reason,
+          );
+          break;
+        case RequestType.permission:
+          await getIt<AdminPermissionsRepository>().rejectPermission(
+            id,
+            rejectionReason: reason,
+          );
+          break;
+        case RequestType.assignment:
+          await getIt<AdminAssignmentsRepository>().rejectAssignment(
+            id,
+            rejectionReason: reason,
+          );
+          break;
+        default:
+          break;
+      }
+      if (!mounted) return;
+      CustomToast.showSuccess('تم رفض الطلب');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      CustomToast.showError(AppException.from(e).message);
+    } finally {
+      if (mounted) setState(() => _isApproving = false);
+    }
+  }
+
+  Future<void> _handleRevertToPending() async {
+    if (_isApproving) return;
+    final id = int.tryParse(request.id);
+    if (id == null) {
+      CustomToast.showError('رقم الطلب غير صحيح');
+      return;
+    }
+    setState(() => _isApproving = true);
+    try {
+      switch (request.type) {
+        case RequestType.leave:
+          await getIt<AdminLeavesRepository>().revertLeaveToPending(id);
+          break;
+        case RequestType.permission:
+          await getIt<AdminPermissionsRepository>().revertPermissionToPending(id);
+          break;
+        case RequestType.assignment:
+          await getIt<AdminAssignmentsRepository>().revertAssignmentToPending(id);
+          break;
+        default:
+          break;
+      }
+      if (!mounted) return;
+      CustomToast.showSuccess('تم إرجاع الطلب لحالة الانتظار');
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      CustomToast.showError(AppException.from(e).message);
+    } finally {
+      if (mounted) setState(() => _isApproving = false);
+    }
+  }
+
+  Future<void> _onApproveRejectPressed({bool? approve}) async {
+    final shouldApprove = approve ?? true;
+    if (shouldApprove) {
+      await _handleApprove();
+    } else {
+      final result = await showApproveRejectSheet(
+        context,
+        requestType: request.typeText,
+      );
+      if (result == null || !mounted) return;
+      if (result.isRevertToPending) {
+        await _handleRevertToPending();
+      } else if (result.isApproved) {
+        await _handleApprove();
+      } else {
+        await _handleReject(result.rejectionReason);
+      }
     }
   }
 
@@ -291,10 +441,138 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                       ),
                     ),
                   ],
+                  if (_canApproveReject) ...[
+                    const SizedBox(height: 14),
+                    _buildActionButtons(),
+                  ],
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    final statusLabel = _isApproved
+        ? 'تم القبول مسبقاً'
+        : _isRejected
+            ? 'تم الرفض مسبقاً'
+            : 'بانتظار القرار';
+
+    return _SectionCard(
+      title: 'القرار',
+      icon: Icons.gavel_rounded,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (_isApproved
+                          ? AppColors.success
+                          : _isRejected
+                              ? AppColors.error
+                              : AppColors.warning)
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: _isApproved
+                        ? AppColors.success
+                        : _isRejected
+                            ? AppColors.error
+                            : AppColors.warning,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              if (_isPending || _isApproved) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isApproving
+                        ? null
+                        : () => _onApproveRejectPressed(approve: false),
+                    icon: _isApproving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.close_rounded, size: 16),
+                    label: Text(_isApproved ? 'تغيير إلى رفض' : 'رفض'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      textStyle: AppTextStyles.labelMedium,
+                    ),
+                  ),
+                ),
+                if (_isPending || _isRejected) const SizedBox(width: 10),
+              ],
+              if (_isPending || _isRejected) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isApproving
+                        ? null
+                        : () => _onApproveRejectPressed(approve: true),
+                    icon: _isApproving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_rounded, size: 16),
+                    label: Text(_isRejected ? 'تغيير إلى قبول' : 'قبول'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      textStyle: AppTextStyles.labelMedium,
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (!_isPending) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isApproving ? null : _onApproveRejectPressed,
+                icon: _isApproving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.undo_rounded, size: 16),
+                label: const Text('إعادة للانتظار'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.warning,
+                  side: const BorderSide(color: AppColors.warning),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  textStyle: AppTextStyles.labelMedium,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

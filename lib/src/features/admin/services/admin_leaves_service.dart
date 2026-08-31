@@ -35,7 +35,7 @@ class AdminLeavesService {
 
   Future<void> updateLeaveStatus({
     required int id,
-    required int status, // 2 = Approved, 3 = Rejected
+    required int status, // 1 = Pending, 2 = Approved, 3 = Rejected
     String? rejectionReason,
   }) async {
     await _dioClient.dio.put(

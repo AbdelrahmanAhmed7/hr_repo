@@ -208,12 +208,18 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
   }
 
   void applyDeviceTypeFilter(int? deviceType) {
-    emit(state.copyWith(deviceTypeFilter: deviceType));
+    emit(state.copyWith(
+      deviceTypeFilter: deviceType,
+      clearDeviceTypeFilter: deviceType == null,
+    ));
     _applyFilterAndSearch();
   }
 
   void applyDepartmentFilter(int? departmentId) {
-    emit(state.copyWith(selectedDepartmentId: departmentId));
+    emit(state.copyWith(
+      selectedDepartmentId: departmentId,
+      clearDepartmentId: departmentId == null,
+    ));
     _applyFilterAndSearch();
   }
 
@@ -271,7 +277,19 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
           .toList();
     }
 
-    emit(state.copyWith(filteredRecords: filtered));
+    // Recompute stats from filtered data
+    final total = filtered.length;
+    final withAttendance = filtered.where((r) => !r.isAbsent).length;
+    final withDeparture = filtered.where((r) => r.hasDeparted).length;
+    final percentage = total > 0 ? (withAttendance / total) * 100.0 : 0.0;
+
+    emit(state.copyWith(
+      filteredRecords: filtered,
+      totalEmployees: total,
+      employeesWithAttendance: withAttendance,
+      employeesWithDeparture: withDeparture,
+      attendancePercentage: percentage,
+    ));
   }
 
   Future<void> exportPdf() async {

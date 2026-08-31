@@ -1,58 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mediconsult_internal/src/features/device_fingerprint/device_fingerprint_diagnostic_screen.dart';
 import 'package:mediconsult_internal/src/features/holidays/holidays_screen.dart';
 import 'package:mediconsult_internal/src/features/notifications/notifications_screen.dart';
-import 'package:mediconsult_internal/src/features/device_fingerprint/device_fingerprint_diagnostic_screen.dart';
+import 'package:mediconsult_internal/src/features/penalties/cubit/penalties_cubit.dart';
+
 import '../../core/services/service_locator.dart';
-import '../../features/auth/cubit/auth_cubit.dart';
-import '../../features/auth/login_screen.dart';
-import '../../features/auth/forgot_password_screen.dart';
-import '../../features/auth/otp_screen.dart';
-import '../../features/auth/reset_password_screen.dart';
-import '../../features/splash/splash_screen.dart';
-import '../../features/main/main_screen.dart';
-import '../../features/home/home_screen.dart';
-import '../../features/hr/hr_home_screen.dart';
 import '../../features/admin/admin_home_screen.dart';
+import '../../features/admin/admin_requests_screen.dart';
+import '../../features/admin/cubit/admin_requests_cubit.dart';
 import '../../features/admin/super_admin_screen.dart';
 import '../../features/attendance/attendance_screen.dart';
-import '../../features/missions/missions_screen.dart';
-import '../../features/missions/create_mission_screen.dart';
-import '../../features/hr/hr_assignments_screen.dart';
-import '../../features/hr/hr_departments_screen.dart';
-import '../../features/hr/hr_employees_screen.dart';
-import '../../features/organization/organization_chart_screen.dart';
-import '../../features/admin/admin_requests_screen.dart';
-import '../../features/profile/profile_screen.dart';
-import '../../features/profile/full_profile_screen.dart';
-import '../../features/profile/edit_profile_screen.dart';
-import '../../features/profile/about_screen.dart';
-import '../../features/profile/help_support_screen.dart';
-import '../../features/profile/change_password_screen.dart';
-import '../../features/profile/cubit/profile_cubit.dart';
-import '../../features/payslip/cubit/payslip_cubit.dart';
-import '../../features/payslip/payslip_screen.dart';
+import '../../features/attendance/cubit/attendance_cubit.dart';
+import '../../features/auth/cubit/auth_cubit.dart';
+import '../../features/auth/forgot_password_screen.dart';
+import '../../features/auth/login_screen.dart';
+import '../../features/auth/otp_screen.dart';
+import '../../features/auth/reset_password_screen.dart';
 import '../../features/employee_history/cubit/employee_history_cubit.dart';
 import '../../features/employee_history/employee_history_screen.dart';
 import '../../features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
 import '../../features/employee_of_month/presentation/screens/employee_of_month_screen.dart';
+import '../../features/home/cubit/home_cubit.dart';
+import '../../features/home/home_screen.dart';
+import '../../features/hr/cubit/employees_cubit.dart';
+import '../../features/hr/hr_assignments_screen.dart';
+import '../../features/hr/hr_departments_screen.dart';
+import '../../features/hr/hr_employees_screen.dart';
+import '../../features/hr/hr_home_screen.dart';
 import '../../features/leaves/leaves_screen.dart';
-import '../../features/requests/all_requests_screen.dart';
-import '../../features/requests/requests_screen.dart';
-import '../../features/attendance/cubit/attendance_cubit.dart';
+import '../../features/main/main_screen.dart';
+import '../../features/meetings/presentation/cubit/meetings_cubit.dart';
+import '../../features/meetings/presentation/screens/meetings_screen.dart';
+import '../../features/missions/create_mission_screen.dart';
+import '../../features/missions/cubit/assignment_cubit.dart';
+import '../../features/missions/missions_screen.dart';
+import '../../features/notifications/cubit/notifications_cubit.dart';
+import '../../features/notifications/cubit/send_notification_cubit.dart';
+import '../../features/notifications/send_notification_screen.dart';
+import '../../features/organization/cubit/organization_chart_cubit.dart';
+import '../../features/organization/organization_chart_screen.dart';
 import '../../features/overtime/cubit/overtime_cubit.dart';
 import '../../features/overtime/overtime_screen.dart';
-import '../../features/missions/cubit/assignment_cubit.dart';
-import '../../features/organization/cubit/organization_chart_cubit.dart';
-import '../../features/admin/cubit/admin_requests_cubit.dart';
-import '../../features/home/cubit/home_cubit.dart';
-import '../../features/hr/cubit/employees_cubit.dart';
-import '../../features/notifications/cubit/notifications_cubit.dart';
-import '../../features/meetings/presentation/screens/meetings_screen.dart';
-import '../../features/meetings/presentation/cubit/meetings_cubit.dart';
-import '../../features/notifications/send_notification_screen.dart';
-import '../../features/notifications/cubit/send_notification_cubit.dart';
+import '../../features/payslip/cubit/payslip_cubit.dart';
+import '../../features/payslip/payslip_screen.dart';
+import '../../features/penalties/penalties_screen.dart';
+import '../../features/bonuses/bonuses_screen.dart';
+import '../../features/bonuses/cubit/bonuses_cubit.dart';
+import '../../features/admin/payroll_screen.dart';
+import '../../features/profile/about_screen.dart';
+import '../../features/profile/change_password_screen.dart';
+import '../../features/profile/cubit/profile_cubit.dart';
+import '../../features/profile/edit_profile_screen.dart';
+import '../../features/profile/full_profile_screen.dart';
+import '../../features/profile/help_support_screen.dart';
+import '../../features/profile/profile_screen.dart';
+import '../../features/reports/cubit/reports_cubit.dart';
+import '../../features/reports/screens/reports_hub_screen.dart';
+import '../../features/requests/all_requests_screen.dart';
+import '../../features/requests/requests_screen.dart';
+import '../../features/splash/splash_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -200,8 +208,9 @@ class AppRouter {
         path: '/meetings',
         name: 'superAdminMeetings',
         builder: (context, state) => BlocProvider(
-          create: (_) =>
-              getIt<MeetingsCubit>()..loadMeetings()..loadDepartments(),
+          create: (_) => getIt<MeetingsCubit>()
+            ..loadMeetings()
+            ..loadDepartments(),
           child: const MeetingsScreen(),
         ),
       ),
@@ -394,6 +403,43 @@ class AppRouter {
         builder: (context, state) => BlocProvider(
           create: (_) => getIt<EmployeeOfMonthCubit>()..loadData(),
           child: const EmployeeOfMonthScreen(),
+        ),
+      ),
+
+      // Reports Routes (Super Admin)
+      GoRoute(
+        path: '/reports',
+        name: 'reports',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<ReportsCubit>(),
+          child: const ReportsHubScreen(),
+        ),
+      ),
+
+      // Payroll Route (Super Admin)
+      GoRoute(
+        path: '/payroll',
+        name: 'payroll',
+        builder: (context, state) => const PayrollScreen(),
+      ),
+
+      // Penalties Route (Super Admin)
+      GoRoute(
+        path: '/penalties',
+        name: 'penalties',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<PenaltiesCubit>(),
+          child: const PenaltiesScreen(),
+        ),
+      ),
+
+      // Bonuses Route (Super Admin)
+      GoRoute(
+        path: '/bonuses',
+        name: 'bonuses',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<BonusesCubit>(),
+          child: const BonusesScreen(),
         ),
       ),
     ],

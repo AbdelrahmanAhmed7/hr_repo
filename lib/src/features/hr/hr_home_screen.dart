@@ -6,6 +6,7 @@ import 'package:mediconsult_internal/src/features/attendance/cubit/attendance_st
 import '../../core/services/attendance_handler.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/egyptian_holidays.dart';
 import '../attendance/cubit/attendance_cubit.dart';
 import '../auth/services/auth_storage_service.dart';
@@ -219,6 +220,13 @@ class _HRHomeScreenContentState extends State<_HRHomeScreenContent> {
                                   onViewAllRequests: _handleViewAllRequests,
                                   onViewHolidays: _handleViewHolidays,
                                 ),
+                                // Send Notification
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                                  child: _HrSendNotificationCard(
+                                    onTap: () => context.push('/send-notification'),
+                                  ),
+                                ),
                                 HrDepartmentSnapshot(data: hrState.data),
                                 if (_upcomingHoliday != null)
                                   UpcomingLeaveSection(
@@ -243,6 +251,83 @@ class _HRHomeScreenContentState extends State<_HRHomeScreenContent> {
           },
         );
       },
+    );
+  }
+}
+
+// ─── Send Notification Card ──────────────────────────────────────────────────
+
+class _HrSendNotificationCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _HrSendNotificationCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'إرسال إشعار',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'إرسال إشعار للموظفين',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

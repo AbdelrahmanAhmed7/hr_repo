@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/organization_models.dart';
 
 /// Service for exporting organization chart data
@@ -17,10 +18,12 @@ class ExportService {
     // final imageFile = File(imagePath);
     // await imageFile.writeAsBytes(imageBytes);
     // await Share.shareFiles([imagePath]);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('تصدير كصورة: تحتاج إضافة package screenshot أو widget_to_image'),
+        content: Text(
+          'تصدير كصورة: تحتاج إضافة package screenshot أو widget_to_image',
+        ),
         duration: Duration(seconds: 3),
       ),
     );
@@ -46,7 +49,7 @@ class ExportService {
     // final pdfFile = File(pdfPath);
     // await pdfFile.writeAsBytes(bytes);
     // await Share.shareFiles([pdfPath]);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('تصدير كـ PDF: تحتاج إضافة package pdf'),
@@ -61,25 +64,6 @@ class ExportService {
     required OrganizationData organizationData,
     required BuildContext context,
   }) async {
-    // TODO: Implement with excel package
-    // Example:
-    // final excel = Excel.createExcel();
-    // final sheet = excel['Organization Chart'];
-    // // Add headers
-    // sheet.cell(CellIndex.indexByString('A1')).value = 'الاسم';
-    // sheet.cell(CellIndex.indexByString('B1')).value = 'القسم';
-    // sheet.cell(CellIndex.indexByString('C1')).value = 'المنصب';
-    // // Add data
-    // for (var dept in organizationData.departments) {
-    //   // Add manager and employees
-    // }
-    // final bytes = excel.encode();
-    // final directory = await getApplicationDocumentsDirectory();
-    // final excelPath = '${directory.path}/org_chart_${DateTime.now().millisecondsSinceEpoch}.xlsx';
-    // final excelFile = File(excelPath);
-    // await excelFile.writeAsBytes(bytes);
-    // await Share.shareFiles([excelPath]);
-    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('تصدير كـ Excel: تحتاج إضافة package excel'),
@@ -143,7 +127,10 @@ class ExportService {
               ),
               const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.picture_as_pdf_outlined, color: Colors.red),
+                leading: const Icon(
+                  Icons.picture_as_pdf_outlined,
+                  color: Colors.red,
+                ),
                 title: const Text('تصدير كـ PDF'),
                 subtitle: const Text('ملف PDF قابل للطباعة'),
                 onTap: () {
@@ -156,7 +143,10 @@ class ExportService {
               ),
               const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.table_chart_outlined, color: Colors.blue),
+                leading: const Icon(
+                  Icons.table_chart_outlined,
+                  color: Colors.blue,
+                ),
                 title: const Text('تصدير كـ Excel'),
                 subtitle: const Text('ملف Excel قابل للتعديل'),
                 onTap: () {
@@ -175,4 +165,3 @@ class ExportService {
     );
   }
 }
-

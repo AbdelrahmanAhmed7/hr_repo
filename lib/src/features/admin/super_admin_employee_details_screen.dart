@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../home/models/recent_activity.dart';
 import '../../shared/widgets/empty_state_widget.dart';
-import 'super_admin_request_details_screen.dart';
+import 'widgets/admin_request_card.dart';
 import 'models/super_admin_dashboard_response.dart';
 
 class SuperAdminEmployeeDetailsScreen extends StatefulWidget {
@@ -109,16 +110,8 @@ class _SuperAdminEmployeeDetailsScreenState
               sliver: SliverList.separated(
                 itemCount: _filtered.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, i) => _RequestCard(
-                  request: _filtered[i],
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => SuperAdminRequestDetailsScreen(
-                        request: _filtered[i],
-                        employee: emp,
-                      ),
-                    ),
-                  ),
+                itemBuilder: (context, i) => AdminRequestCard(
+                  request: RecentActivity.fromSuperAdminRequest(_filtered[i]),
                 ),
               ),
             ),
@@ -366,148 +359,5 @@ class _StatChip extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ─── Request Card ─────────────────────────────────────────────────────────────
-
-class _RequestCard extends StatelessWidget {
-  final SuperAdminRequest request;
-  final VoidCallback onTap;
-  const _RequestCard({required this.request, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final typeInfo = _typeInfo(request.type);
-    final statusInfo = _statusInfo(request.status);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.border.withValues(alpha: 0.3),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: typeInfo.$2.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(typeInfo.$1, color: typeInfo.$2, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(typeInfo.$3,
-                      style: AppTextStyles.titleSmall
-                          .copyWith(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 3),
-                  Text(
-                    _dateText(),
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                  if (request.reason != null &&
-                      request.reason!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      request.reason!,
-                      style: AppTextStyles.bodySmall
-                          .copyWith(color: AppColors.textTertiary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusInfo.$1.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: statusInfo.$1.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(statusInfo.$2,
-                      style: AppTextStyles.labelSmall.copyWith(
-                          color: statusInfo.$1,
-                          fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(height: 4),
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.textTertiary, size: 18),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _dateText() {
-    if (request.date != null) return request.date!;
-    if (request.startDate != null) {
-      if (request.endDate != null && request.endDate != request.startDate) {
-        return '${request.startDate} → ${request.endDate}';
-      }
-      return request.startDate!;
-    }
-    return _formatCreatedAt(request.createdAt);
-  }
-
-  String _formatCreatedAt(String createdAt) {
-    try {
-      final dt = DateTime.parse(createdAt);
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-    } catch (_) {
-      return createdAt;
-    }
-  }
-
-  (IconData, Color, String) _typeInfo(String type) {
-    switch (type.toLowerCase()) {
-      case 'leave':
-        return (Icons.beach_access_rounded, const Color(0xFF9C27B0), 'إجازة');
-      case 'permission':
-        return (Icons.exit_to_app_rounded, AppColors.primary, 'إذن خروج');
-      case 'overtime':
-        return (Icons.more_time_rounded, AppColors.warning, 'عمل إضافي');
-      case 'assignment':
-        return (Icons.assignment_rounded, const Color(0xFFFF9800), 'مأمورية');
-      default:
-        return (Icons.help_outline_rounded, AppColors.textSecondary, type);
-    }
-  }
-
-  (Color, String) _statusInfo(String status) {
-    switch (status.toLowerCase()) {
-      case 'approved':
-      case 'accepted':
-        return (AppColors.success, 'مقبول');
-      case 'rejected':
-        return (AppColors.error, 'مرفوض');
-      default:
-        return (AppColors.warning, 'معلق');
-    }
   }
 }

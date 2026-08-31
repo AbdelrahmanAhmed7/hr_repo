@@ -2,7 +2,9 @@ import '../models/department_option.dart';
 import '../models/employee.dart';
 import '../models/employees_page_response.dart';
 import '../models/employee_upsert_request.dart';
+import '../models/employee_payslip.dart';
 import '../models/job_title_option.dart';
+import '../models/salary_calculation.dart';
 import '../services/employees_api_service.dart';
 
 class EmployeesRepository {
@@ -43,6 +45,30 @@ class EmployeesRepository {
 
   Future<Employee> getEmployeeDetails(String id) {
     return _service.getEmployeeDetails(id);
+  }
+
+  Future<SalaryCalculation> calculateSalary({
+    required String employeeId,
+    required int month,
+    required int year,
+  }) {
+    return _service.calculateSalary(
+      employeeId: employeeId,
+      month: month,
+      year: year,
+    );
+  }
+
+  Future<EmployeePayslip> getPayslip({
+    required String employeeId,
+    required int month,
+    required int year,
+  }) {
+    return _service.getPayslip(
+      employeeId: employeeId,
+      month: month,
+      year: year,
+    );
   }
 
   Future<void> createEmployee(EmployeeUpsertRequest request) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../admin/models/super_admin_dashboard_response.dart';
 import '../../notifications/models/notification.dart';
 import '../../permissions/models/permission_request.dart' as domain;
 
@@ -231,6 +232,76 @@ class RecentActivity {
   factory RecentActivity.fromHrRequestItem(dynamic item) {
     // Same logic as fromHomeRequestItem since the structure is identical
     return RecentActivity.fromHomeRequestItem(item);
+  }
+
+  /// Convert SuperAdminRequest from dashboard API to RecentActivity
+  factory RecentActivity.fromSuperAdminRequest(SuperAdminRequest r) {
+    RequestType type;
+    String title;
+    switch (r.type.toLowerCase()) {
+      case 'leave':
+        type = RequestType.leave;
+        title = 'إجازة';
+        break;
+      case 'permission':
+        type = RequestType.permission;
+        title = 'إذن خروج';
+        break;
+      case 'overtime':
+        type = RequestType.overtime;
+        title = 'عمل إضافي';
+        break;
+      case 'assignment':
+        type = RequestType.assignment;
+        title = 'مأمورية';
+        break;
+      default:
+        type = RequestType.other;
+        title = r.type;
+    }
+
+    RequestStatus status;
+    switch (r.status.toLowerCase()) {
+      case 'approved':
+      case 'accepted':
+        status = RequestStatus.approved;
+        break;
+      case 'rejected':
+        status = RequestStatus.rejected;
+        break;
+      default:
+        status = RequestStatus.pending;
+    }
+
+    String? description;
+    if (r.type.toLowerCase() == 'leave' && r.startDate != null && r.endDate != null) {
+      description = 'من ${r.startDate} إلى ${r.endDate}';
+    } else if (r.type.toLowerCase() == 'permission' && r.startTime != null && r.endTime != null) {
+      description = 'من ${r.startTime} إلى ${r.endTime}';
+    } else if (r.type.toLowerCase() == 'assignment' && r.where != null) {
+      description = r.where;
+    }
+
+    final date = _resolveRequestDate(r);
+    final startDate = r.startDate != null ? DateTime.tryParse(r.startDate!) : null;
+    final endDate = r.endDate != null ? DateTime.tryParse(r.endDate!) : null;
+
+    return RecentActivity(
+      id: r.id.toString(),
+      type: type,
+      status: status,
+      title: title,
+      date: date,
+      description: description ?? r.reason,
+      reason: r.reason,
+      userId: r.userId,
+      userName: r.employeeNameAr ?? r.employeeNameEn,
+      startDate: startDate,
+      endDate: endDate,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      location: r.where,
+    );
   }
 
   /// Convert NotificationModel to RecentActivity

@@ -87,6 +87,14 @@ import '../../features/meetings/data/datasources/meetings_service.dart';
 import '../../features/meetings/data/repositories/meetings_repository.dart';
 import '../../features/meetings/data/repositories/meetings_repository_impl.dart';
 import '../../features/meetings/presentation/cubit/meetings_cubit.dart';
+import '../../features/reports/services/reports_service.dart';
+import '../../features/reports/cubit/reports_cubit.dart';
+import '../../features/admin/department_requests/department_requests_service.dart';
+import '../../features/admin/department_requests/cubit/department_requests_cubit.dart';
+import '../../features/penalties/services/penalties_api_service.dart';
+import '../../features/penalties/cubit/penalties_cubit.dart';
+import '../../features/bonuses/services/bonuses_api_service.dart';
+import '../../features/bonuses/cubit/bonuses_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -209,6 +217,15 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<ManagementRequestsRepository>(
     () => ManagementRequestsRepository(getIt<ManagementRequestsDataSource>()),
   );
+  getIt.registerFactory<DepartmentRequestsService>(
+    () => DepartmentRequestsService(getIt<DioClient>().dio),
+  );
+  getIt.registerFactory<PenaltiesApiService>(
+    () => PenaltiesApiService(getIt<DioClient>()),
+  );
+  getIt.registerFactory<BonusesApiService>(
+    () => BonusesApiService(getIt<DioClient>()),
+  );
   getIt.registerLazySingleton<RequestsRefreshService>(
     () => RequestsRefreshService(),
   );
@@ -279,8 +296,20 @@ Future<void> setupServiceLocator() async {
     () => OvertimeCubit(getIt<OvertimeRepository>()),
   );
   getIt.registerFactory<AdminRequestsCubit>(() => AdminRequestsCubit());
+  getIt.registerFactory<DepartmentRequestsCubit>(
+    () => DepartmentRequestsCubit(service: getIt<DepartmentRequestsService>()),
+  );
+  getIt.registerFactory<PenaltiesCubit>(
+    () => PenaltiesCubit(getIt<PenaltiesApiService>()),
+  );
+  getIt.registerFactory<BonusesCubit>(
+    () => BonusesCubit(getIt<BonusesApiService>()),
+  );
   getIt.registerFactory<SuperAdminDashboardCubit>(
-    () => SuperAdminDashboardCubit(getIt<SuperAdminDashboardRepository>()),
+    () => SuperAdminDashboardCubit(
+      getIt<SuperAdminDashboardRepository>(),
+      getIt<SAAttendanceService>(),
+    ),
   );
   getIt.registerFactory<AdminDashboardCubit>(
     () => AdminDashboardCubit(getIt<AdminDashboardRepository>()),
@@ -351,6 +380,14 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<MeetingsCubit>(
     () => MeetingsCubit(getIt<MeetingsRepository>()),
+  );
+
+  // Reports
+  getIt.registerFactory<ReportsService>(
+    () => ReportsService(getIt<DioClient>()),
+  );
+  getIt.registerFactory<ReportsCubit>(
+    () => ReportsCubit(getIt<ReportsService>()),
   );
 
   getIt.registerFactory<SendNotificationCubit>(

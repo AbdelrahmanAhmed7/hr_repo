@@ -114,6 +114,7 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
                           context.read<SAAttendanceCubit>().applyDepartmentFilter(id),
                     ),
                     SAAttendanceStatsStrip(
+                      totalCount: state.totalEmployees,
                       presentCount: state.employeesWithAttendance,
                       absentCount: state.absentCount,
                       percentage: state.attendancePercentage,

@@ -50,6 +50,74 @@ class SuperAdminDashboardResponse {
     (sum, d) => sum + d.requests.where((r) => r.isPending).length,
   );
 
+  double get attendanceRate =>
+      totalEmployees > 0 ? presentToday / totalEmployees : 0;
+
+  int get lateEmployees {
+    final cutoff = _parseTime('09:16:00');
+    return _allEmployees
+        .where((e) => e.isPresent && _parseTime(e.todayAttendanceTime!) > cutoff)
+        .length;
+  }
+
+  int get earlyLeavers {
+    final cutoff = _parseTime('17:00:00');
+    return _allEmployees
+        .where(
+          (e) =>
+              e.todayDepartureTime != null &&
+              _parseTime(e.todayDepartureTime!) < cutoff,
+        )
+        .length;
+  }
+
+  int get stillAtWork => _allEmployees
+      .where((e) => e.isPresent && e.todayDepartureTime == null)
+      .length;
+
+  double get averageWorkHours {
+    final hours = _allEmployees
+        .where((e) => e.isPresent && e.todayDepartureTime != null)
+        .map((e) {
+      final in_ = _parseTime(e.todayAttendanceTime!);
+      final out = _parseTime(e.todayDepartureTime!);
+      return (out - in_) / 3600.0;
+    }).where((h) => h > 0 && h < 24);
+    if (hours.isEmpty) return 0;
+    return hours.reduce((a, b) => a + b) / hours.length;
+  }
+
+  int get pendingLeaves => departments.fold(
+    0,
+    (sum, d) => sum + d.requests.where((r) => r.isPending && r.type == 'leave').length,
+  );
+
+  int get pendingPermissions => departments.fold(
+    0,
+    (sum, d) => sum + d.requests.where((r) => r.isPending && r.type == 'permission').length,
+  );
+
+  int get pendingMissions => departments.fold(
+    0,
+    (sum, d) => sum + d.requests.where((r) => r.isPending && r.type == 'mission').length,
+  );
+
+  List<SuperAdminDeptEmployee> get _allEmployees =>
+      departments.expand((d) => d.employees).toList();
+
+  static int _parseTime(String raw) {
+    try {
+      final parts = raw.split(':');
+      if (parts.length >= 3) {
+        return int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60 + int.parse(parts[2]);
+      }
+      if (parts.length == 2) {
+        return int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
   factory SuperAdminDashboardResponse.fromJson(Map<String, dynamic> json) {
     return SuperAdminDashboardResponse(
       greeting: json['greeting'] as String? ?? '',

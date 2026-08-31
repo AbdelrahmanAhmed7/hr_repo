@@ -5,7 +5,9 @@ import '../models/department_option.dart';
 import '../models/employee.dart';
 import '../models/employees_page_response.dart';
 import '../models/employee_upsert_request.dart';
+import '../models/employee_payslip.dart';
 import '../models/job_title_option.dart';
+import '../models/salary_calculation.dart';
 import '../repository/employees_repository.dart';
 import 'employees_state.dart';
 
@@ -331,6 +333,30 @@ class EmployeesCubit extends Cubit<EmployeesState> {
 
   Future<Employee> getEmployeeDetails(String employeeId) {
     return _repository.getEmployeeDetails(employeeId);
+  }
+
+  Future<SalaryCalculation> calculateSalary({
+    required String employeeId,
+    required int month,
+    required int year,
+  }) {
+    return _repository.calculateSalary(
+      employeeId: employeeId,
+      month: month,
+      year: year,
+    );
+  }
+
+  Future<EmployeePayslip> getPayslip({
+    required String employeeId,
+    required int month,
+    required int year,
+  }) {
+    return _repository.getPayslip(
+      employeeId: employeeId,
+      month: month,
+      year: year,
+    );
   }
 
   Future<bool> createEmployee({
