@@ -321,51 +321,92 @@ class _MonthSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.border.withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            onPressed: onPrev,
-            icon: const Icon(Icons.chevron_right_rounded),
-            color: AppColors.primary,
-          ),
-          Column(
-            children: [
-              Text(
-                _monthName(month),
-                style: AppTextStyles.titleSmall.copyWith(
-                  fontWeight: FontWeight.w800,
+          _MonthNavButton(onPressed: onPrev, icon: Icons.chevron_right_rounded),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.calendar_month_rounded,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
                 ),
-              ),
-              Text(
-                '$year',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'فترة موظف الشهر',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_monthName(month)} $year',
+                      style: AppTextStyles.titleMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          IconButton(
+          _MonthNavButton(
             onPressed: isAtCurrentMonth ? null : onNext,
-            icon: const Icon(Icons.chevron_left_rounded),
-            color: isAtCurrentMonth
-                ? AppColors.textTertiary
-                : AppColors.primary,
+            icon: Icons.chevron_left_rounded,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MonthNavButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final IconData icon;
+
+  const _MonthNavButton({required this.onPressed, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      color: enabled ? AppColors.primary : AppColors.textTertiary,
+      style: IconButton.styleFrom(
+        backgroundColor: enabled
+            ? AppColors.primary.withValues(alpha: 0.08)
+            : AppColors.backgroundSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

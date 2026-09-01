@@ -4,6 +4,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/searchable_dropdown_field.dart';
 import '../cubit/punch_cubit.dart';
 import '../cubit/punch_state.dart';
 
@@ -131,47 +132,65 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                       _QuickDateChip(
                         label: 'اليوم',
                         icon: Icons.today_rounded,
-                        isActive: _isRange(state, _dateOnly(DateTime.now()),
-                            _dateOnly(DateTime.now())),
+                        isActive: _isRange(
+                          state,
+                          _dateOnly(DateTime.now()),
+                          _dateOnly(DateTime.now()),
+                        ),
                         onTap: () => context.read<PunchCubit>().goToToday(),
                       ),
                       _QuickDateChip(
                         label: 'أمس',
                         icon: Icons.history_rounded,
                         isActive: _isRange(
-                            state,
-                            _dateOnly(DateTime.now().subtract(
-                                const Duration(days: 1))),
-                            _dateOnly(DateTime.now().subtract(
-                                const Duration(days: 1)))),
+                          state,
+                          _dateOnly(
+                            DateTime.now().subtract(const Duration(days: 1)),
+                          ),
+                          _dateOnly(
+                            DateTime.now().subtract(const Duration(days: 1)),
+                          ),
+                        ),
                         onTap: () {
-                          final d = DateTime.now().subtract(const Duration(days: 1));
-                          context
-                              .read<PunchCubit>()
-                              .applyDateFilter(from: _startOfDay(d), to: _endOfDay(d));
+                          final d = DateTime.now().subtract(
+                            const Duration(days: 1),
+                          );
+                          context.read<PunchCubit>().applyDateFilter(
+                            from: _startOfDay(d),
+                            to: _endOfDay(d),
+                          );
                         },
                       ),
                       _QuickDateChip(
                         label: 'الأسبوع',
                         icon: Icons.view_week_rounded,
-                        isActive: _isRange(state, _weekStart(), _dateOnly(DateTime.now())),
+                        isActive: _isRange(
+                          state,
+                          _weekStart(),
+                          _dateOnly(DateTime.now()),
+                        ),
                         onTap: () {
                           final now = DateTime.now();
-                          context
-                              .read<PunchCubit>()
-                              .applyDateFilter(from: _weekStart(), to: _dateOnly(now));
+                          context.read<PunchCubit>().applyDateFilter(
+                            from: _weekStart(),
+                            to: _dateOnly(now),
+                          );
                         },
                       ),
                       _QuickDateChip(
                         label: 'الشهر',
                         icon: Icons.calendar_month_rounded,
                         isActive: _isRange(
-                            state, _monthStart(), _dateOnly(DateTime.now())),
+                          state,
+                          _monthStart(),
+                          _dateOnly(DateTime.now()),
+                        ),
                         onTap: () {
                           final now = DateTime.now();
-                          context
-                              .read<PunchCubit>()
-                              .applyDateFilter(from: _monthStart(), to: _dateOnly(now));
+                          context.read<PunchCubit>().applyDateFilter(
+                            from: _monthStart(),
+                            to: _dateOnly(now),
+                          );
                         },
                       ),
                     ],
@@ -204,20 +223,14 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                               return null;
                             },
                             items: [
-                              const DropdownMenuItem<String?>(
+                              const SearchableDropdownItem<String?>(
                                 value: null,
-                                child: _DropdownItemText(
-                                  icon: Icons.group_rounded,
-                                  text: 'كل الموظفين',
-                                ),
+                                label: 'كل الموظفين',
                               ),
                               ...state.employeeOptions.map(
-                                (opt) => DropdownMenuItem<String?>(
+                                (opt) => SearchableDropdownItem<String?>(
                                   value: opt.userId,
-                                  child: _DropdownItemText(
-                                    icon: Icons.person_rounded,
-                                    text: opt.name,
-                                  ),
+                                  label: opt.name,
                                 ),
                               ),
                             ],
@@ -231,7 +244,9 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                               }
                               if (id != null) {
                                 context.read<PunchCubit>().selectEmployee(
-                                    opt?.userId, opt?.name);
+                                  opt?.userId,
+                                  opt?.name,
+                                );
                               } else {
                                 context
                                     .read<PunchCubit>()
@@ -240,8 +255,8 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                             },
                             onClear: state.selectedEmployeeName != null
                                 ? () => context
-                                    .read<PunchCubit>()
-                                    .clearEmployeeFilter()
+                                      .read<PunchCubit>()
+                                      .clearEmployeeFilter()
                                 : null,
                           ),
                         ),
@@ -265,31 +280,24 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                               return null;
                             },
                             items: [
-                              const DropdownMenuItem<int?>(
+                              const SearchableDropdownItem<int?>(
                                 value: null,
-                                child: _DropdownItemText(
-                                  icon: Icons.apartment_rounded,
-                                  text: 'كل الأقسام',
-                                ),
+                                label: 'كل الأقسام',
                               ),
                               ...state.departments.map(
-                                (dept) => DropdownMenuItem<int?>(
+                                (dept) => SearchableDropdownItem<int?>(
                                   value: dept.id,
-                                  child: _DropdownItemText(
-                                    icon: Icons.business_rounded,
-                                    text: dept.name,
-                                  ),
+                                  label: dept.name,
                                 ),
                               ),
                             ],
                             onChanged: (id) => context
                                 .read<PunchCubit>()
                                 .applyDepartmentFilter(id),
-                            onClear:
-                                state.selectedDepartmentId != null
+                            onClear: state.selectedDepartmentId != null
                                 ? () => context
-                                    .read<PunchCubit>()
-                                    .applyDepartmentFilter(null)
+                                      .read<PunchCubit>()
+                                      .applyDepartmentFilter(null)
                                 : null,
                           ),
                         ),
@@ -303,14 +311,15 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                 const Divider(height: 1, color: AppColors.border),
                 Builder(
                   builder: (context) {
-                    final dept = state.departments
-                        .where((d) => d.id == state.selectedDepartmentId)
-                        .toList()
-                        .isEmpty
+                    final dept =
+                        state.departments
+                            .where((d) => d.id == state.selectedDepartmentId)
+                            .toList()
+                            .isEmpty
                         ? null
                         : state.departments
-                            .where((d) => d.id == state.selectedDepartmentId)
-                            .first;
+                              .where((d) => d.id == state.selectedDepartmentId)
+                              .first;
                     final deptName = state.selectedDepartmentId != null
                         ? dept?.name ?? 'القسم'
                         : null;
@@ -324,7 +333,8 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                         children: [
                           if (state.showDateChip)
                             _ActiveChip(
-                              label: '${DateFormat('d/M', 'ar').format(state.fromDate)}'
+                              label:
+                                  '${DateFormat('d/M', 'ar').format(state.fromDate)}'
                                   ' — ${DateFormat('d/M', 'ar').format(state.toDate)}',
                               onRemove: () =>
                                   context.read<PunchCubit>().goToToday(),
@@ -385,9 +395,8 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
   }
 
   String _formatDisplayDate(DateTime from, DateTime to) {
-    final isSame = from.year == to.year &&
-        from.month == to.month &&
-        from.day == to.day;
+    final isSame =
+        from.year == to.year && from.month == to.month && from.day == to.day;
     if (isSame) {
       return DateFormat('EEEE، d MMMM yyyy', 'ar').format(from);
     }
@@ -438,9 +447,9 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                   Text(
                     'تصفية السجلات',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -507,8 +516,7 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            cubit.applyDateFilter(
-                                from: tempFrom, to: tempTo);
+                            cubit.applyDateFilter(from: tempFrom, to: tempTo);
                             Navigator.pop(ctx);
                           },
                           style: ElevatedButton.styleFrom(
@@ -546,7 +554,7 @@ class _PunchFilterDropdown<T> extends StatelessWidget {
   final bool isLoading;
   final String? selectedLabel;
   final T? value;
-  final List<DropdownMenuItem<T?>> items;
+  final List<SearchableDropdownItem<T?>> items;
   final ValueChanged<T?> onChanged;
   final String? Function(T?) labelOf;
   final VoidCallback? onClear;
@@ -587,48 +595,19 @@ class _PunchFilterDropdown<T> extends StatelessWidget {
                 Icon(
                   icon,
                   size: 18,
-                  color:
-                      isActive ? AppColors.primary : AppColors.textTertiary,
+                  color: isActive ? AppColors.primary : AppColors.textTertiary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<T?>(
-                      value: value,
-                      isExpanded: true,
-                      isDense: true,
-                      hint: Text(
-                        isLoading ? 'جاري التحميل...' : placeholder,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                      icon: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20,
-                        color: isActive
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                      items: items,
-                      selectedItemBuilder: (context) => items
-                          .map(
-                            (item) => Text(
-                              labelOf(item.value) ?? placeholder,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: onChanged,
-                    ),
+                  child: SearchableDropdownField<T>(
+                    value: value,
+                    labelText: placeholder,
+                    hintText: isLoading ? 'جاري التحميل...' : placeholder,
+                    searchHintText: 'بحث',
+                    items: items,
+                    onChanged: onChanged,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ],
@@ -646,31 +625,6 @@ class _PunchFilterDropdown<T> extends StatelessWidget {
             ),
           ),
         ],
-      ],
-    );
-  }
-}
-
-// ─── Dropdown Item Text ─────────────────────────────────────────────────────
-
-class _DropdownItemText extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _DropdownItemText({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 15, color: AppColors.textSecondary),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(fontSize: 13),
-          maxLines: 1,
-        ),
       ],
     );
   }
@@ -748,9 +702,7 @@ class _ActiveChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

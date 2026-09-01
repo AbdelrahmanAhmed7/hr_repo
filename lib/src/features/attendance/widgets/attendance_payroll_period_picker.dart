@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/searchable_dropdown_field.dart';
 import '../models/payroll_period.dart';
 import '../utils/attendance_formatters.dart';
 
@@ -46,37 +47,28 @@ class AttendancePayrollPeriodPicker extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.filter_alt_rounded, color: AppColors.primary),
+            child: const Icon(
+              Icons.filter_alt_rounded,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<PayrollPeriod>(
-                isExpanded: true,
-                value: selected,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.textSecondary),
-                items: periods.map((p) {
-                  return DropdownMenuItem<PayrollPeriod>(
-                    value: p,
-                    child: Text(
-                      _formatPayrollLabel(p),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  onChanged(value);
-                },
-              ),
+            child: SearchableDropdownField<PayrollPeriod>(
+              value: selected,
+              labelText: 'الفترة',
+              searchHintText: 'ابحث عن فترة',
+              isDense: true,
+              items: periods.map((p) {
+                return SearchableDropdownItem<PayrollPeriod?>(
+                  value: p,
+                  label: _formatPayrollLabel(p),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                onChanged(value);
+              },
             ),
           ),
         ],

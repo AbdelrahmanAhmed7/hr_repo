@@ -17,7 +17,9 @@ import 'super_admin_department_screen.dart';
 // ─── Helpers: numbers from attendance API (matches attendance screen) ─────────
 
 int _presentCount(SuperAdminDashboardState state) =>
-    state.todayAttendance?.employeesWithAttendance ?? state.data?.presentToday ?? 0;
+    state.todayAttendance?.employeesWithAttendance ??
+    state.data?.presentToday ??
+    0;
 
 int _totalEmployeesCount(SuperAdminDashboardState state) =>
     state.todayAttendance?.totalEmployees ?? state.data?.totalEmployees ?? 0;
@@ -38,13 +40,14 @@ int _lateCount(SuperAdminDashboardState state) {
   }).length;
 }
 
-
 int _parseTime(String raw) {
   try {
     final clean = raw.split('.')[0];
     final parts = clean.split(':');
     if (parts.length >= 3) {
-      return int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60 + int.parse(parts[2]);
+      return int.parse(parts[0]) * 3600 +
+          int.parse(parts[1]) * 60 +
+          int.parse(parts[2]);
     }
     if (parts.length == 2) {
       return int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60;
@@ -87,9 +90,9 @@ class SuperAdminHomeScreen extends StatelessWidget {
         }
 
         final data = state.data;
-        final activeDepartments = data?.departments
-            .where((d) => d.employees.isNotEmpty)
-            .toList() ?? [];
+        final activeDepartments =
+            data?.departments.where((d) => d.employees.isNotEmpty).toList() ??
+            [];
 
         return Scaffold(
           backgroundColor: AppColors.backgroundSecondary,
@@ -127,7 +130,8 @@ class SuperAdminHomeScreen extends StatelessWidget {
                   ),
 
                   // ── Top Performers (yesterday) ──
-                  if (state.yesterdaySummary.isNotEmpty || state.yesterdayPairs.isNotEmpty)
+                  if (state.yesterdaySummary.isNotEmpty ||
+                      state.yesterdayPairs.isNotEmpty)
                     SliverToBoxAdapter(
                       child: _TopPerformersCard(
                         summary: state.yesterdaySummary,
@@ -136,51 +140,17 @@ class SuperAdminHomeScreen extends StatelessWidget {
                       ),
                     ),
 
-                  // ── Quick Actions (Send Notification + Employee of Month) ──
+                  // ── Quick Actions ──
                   SliverToBoxAdapter(
                     child: _SuperAdminQuickActions(
-                      onSendNotification: () => context.push('/send-notification'),
-                      onEmployeeOfMonth: () => context.push('/employee-of-month'),
-                    ),
-                  ),
-
-                  // ── Payroll ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _PayrollEntryCard(
-                        onTap: () => context.push('/payroll'),
-                      ),
-                    ),
-                  ),
-
-                  // ── Penalties ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _PenaltiesEntryCard(
-                        onTap: () => context.push('/penalties'),
-                      ),
-                    ),
-                  ),
-
-                  // ── Bonuses ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _BonusesEntryCard(
-                        onTap: () => context.push('/bonuses'),
-                      ),
-                    ),
-                  ),
-
-                  // ── Meetings ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                      child: _MeetingsEntryCard(
-                        onTap: () => context.pushNamed('superAdminMeetings'),
-                      ),
+                      onSendNotification: () =>
+                          context.push('/send-notification'),
+                      onEmployeeOfMonth: () =>
+                          context.push('/employee-of-month'),
+                      onPayroll: () => context.push('/payroll'),
+                      onPenalties: () => context.push('/penalties'),
+                      onBonuses: () => context.push('/bonuses'),
+                      onMeetings: () => context.pushNamed('superAdminMeetings'),
                     ),
                   ),
 
@@ -314,64 +284,111 @@ class _KpiRow extends StatelessWidget {
 class _SuperAdminQuickActions extends StatelessWidget {
   final VoidCallback onSendNotification;
   final VoidCallback onEmployeeOfMonth;
+  final VoidCallback onPayroll;
+  final VoidCallback onPenalties;
+  final VoidCallback onBonuses;
+  final VoidCallback onMeetings;
 
   const _SuperAdminQuickActions({
     required this.onSendNotification,
     required this.onEmployeeOfMonth,
+    required this.onPayroll,
+    required this.onPenalties,
+    required this.onBonuses,
+    required this.onMeetings,
   });
 
   @override
   Widget build(BuildContext context) {
+    final actions = [
+      _QuickActionData(
+        icon: Icons.payments_rounded,
+        title: 'كشف الرواتب',
+        subtitle: 'حساب وعرض كشف رواتب الموظفين الشهري',
+        color: AppColors.primary,
+        onTap: onPayroll,
+      ),
+      _QuickActionData(
+        icon: Icons.gavel_rounded,
+        title: 'إدارة الجزاءات',
+        subtitle: 'تسجيل ومتابعة جزاءات الموظفين',
+        color: AppColors.error,
+        onTap: onPenalties,
+      ),
+      _QuickActionData(
+        icon: Icons.workspace_premium_rounded,
+        title: 'إدارة المكافآت',
+        subtitle: 'تسجيل ومتابعة مكافآت الموظفين',
+        color: AppColors.success,
+        onTap: onBonuses,
+      ),
+      _QuickActionData(
+        icon: Icons.send_rounded,
+        title: 'إرسال إشعار',
+        subtitle: 'إرسال إشعار للموظفين',
+        color: AppColors.primary,
+        onTap: onSendNotification,
+      ),
+      _QuickActionData(
+        icon: Icons.emoji_events_rounded,
+        title: 'موظف الشهر',
+        subtitle: 'إدارة وحساب الفائزين',
+        color: const Color(0xFF1E3A8A),
+        onTap: onEmployeeOfMonth,
+      ),
+      _QuickActionData(
+        icon: Icons.groups_rounded,
+        title: 'الاجتماعات',
+        subtitle: 'إنشاء وإدارة اجتماعات الموظفين',
+        color: const Color(0xFF7C3AED),
+        onTap: onMeetings,
+      ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.send_rounded,
-              title: 'إرسال إشعار',
-              subtitle: 'إرسال إشعار للموظفين',
-              color: AppColors.primary,
-              onTap: onSendNotification,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.emoji_events_rounded,
-              title: 'موظف الشهر',
-              subtitle: 'إدارة وحساب الفائزين',
-              color: const Color(0xFF1E3A8A),
-              onTap: onEmployeeOfMonth,
-            ),
-          ),
-        ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: actions
+            .map(
+              (action) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _QuickActionCard(action: action),
+              ),
+            )
+            .toList(),
       ),
     );
   }
 }
 
-class _QuickActionCard extends StatelessWidget {
+class _QuickActionData {
   final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
 
-  const _QuickActionCard({
+  const _QuickActionData({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
     required this.onTap,
   });
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final _QuickActionData action;
+
+  const _QuickActionCard({required this.action});
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: action.onTap,
         borderRadius: BorderRadius.circular(16),
         child: Ink(
           padding: const EdgeInsets.all(14),
@@ -393,10 +410,10 @@ class _QuickActionCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: action.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(action.icon, color: action.color, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -404,7 +421,7 @@ class _QuickActionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      action.title,
                       style: AppTextStyles.titleSmall.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -413,11 +430,11 @@ class _QuickActionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      subtitle,
+                      action.subtitle,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -645,28 +662,167 @@ class _TopPerformersCard extends StatelessWidget {
                 final userPairs = e.value;
                 final count = userPairs.length;
                 final empName = userPairs.first.employeeName;
-                final detailLines = userPairs.map((p) {
-                  final ci = _formatTime(p.checkIn);
-                  final co = p.checkOut != null ? _formatTime(p.checkOut!) : '—';
-                  return '  $ci → $co';
-                }).join('\n');
                 return _ExpandablePerformerRow(
                   medal: i < 3 ? ['🥇', '🥈', '🥉'][i] : '',
                   name: empName,
                   badge: '$count مرة',
                   badgeColor: AppColors.primary,
-                  expandedChild: Text(
-                    detailLines,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.6,
-                    ),
+                  expandedChild: _PunchPairDetails(
+                    pairs: userPairs,
+                    formatTime: _formatTime,
                   ),
                 );
               }),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PunchPairDetails extends StatelessWidget {
+  final List<PunchPairModel> pairs;
+  final String Function(String) formatTime;
+
+  const _PunchPairDetails({required this.pairs, required this.formatTime});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'تفاصيل مرات الدخول والخروج المسجلة أمس',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...pairs.asMap().entries.map((entry) {
+            final index = entry.key + 1;
+            final pair = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(bottom: index == pairs.length ? 0 : 8),
+              child: _PunchPairDetailRow(
+                index: index,
+                checkIn: formatTime(pair.checkIn),
+                checkOut: pair.checkOut == null
+                    ? 'لم يتم تسجيل خروج'
+                    : formatTime(pair.checkOut!),
+                hasCheckOut: pair.checkOut != null,
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _PunchPairDetailRow extends StatelessWidget {
+  final int index;
+  final String checkIn;
+  final String checkOut;
+  final bool hasCheckOut;
+
+  const _PunchPairDetailRow({
+    required this.index,
+    required this.checkIn,
+    required this.checkOut,
+    required this.hasCheckOut,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            '$index',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _PunchTimePill(
+                icon: Icons.login_rounded,
+                label: 'دخول',
+                value: checkIn,
+                color: AppColors.success,
+              ),
+              _PunchTimePill(
+                icon: Icons.logout_rounded,
+                label: 'خروج',
+                value: checkOut,
+                color: hasCheckOut ? AppColors.error : AppColors.warning,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PunchTimePill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _PunchTimePill({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            '$label: $value',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -698,9 +854,7 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           title,
-          style: AppTextStyles.titleSmall.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: AppTextStyles.titleSmall.copyWith(fontWeight: FontWeight.w800),
         ),
       ],
     );
@@ -774,7 +928,8 @@ class _ExpandablePerformerRow extends StatefulWidget {
   });
 
   @override
-  State<_ExpandablePerformerRow> createState() => _ExpandablePerformerRowState();
+  State<_ExpandablePerformerRow> createState() =>
+      _ExpandablePerformerRowState();
 }
 
 class _ExpandablePerformerRowState extends State<_ExpandablePerformerRow> {
@@ -804,7 +959,10 @@ class _ExpandablePerformerRowState extends State<_ExpandablePerformerRow> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: widget.badgeColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -819,7 +977,9 @@ class _ExpandablePerformerRowState extends State<_ExpandablePerformerRow> {
                 ),
                 const SizedBox(width: 4),
                 Icon(
-                  _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  _expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   size: 18,
                   color: AppColors.textSecondary,
                 ),
@@ -829,7 +989,7 @@ class _ExpandablePerformerRowState extends State<_ExpandablePerformerRow> {
           if (_expanded) ...[
             const SizedBox(height: 6),
             Padding(
-              padding: const EdgeInsets.only(left: 32),
+              padding: const EdgeInsetsDirectional.only(start: 32),
               child: widget.expandedChild,
             ),
           ],
@@ -953,8 +1113,8 @@ class _DepartmentCard extends StatelessWidget {
                     attendanceRate >= 0.8
                         ? AppColors.success
                         : attendanceRate >= 0.5
-                            ? AppColors.warning
-                            : AppColors.error,
+                        ? AppColors.warning
+                        : AppColors.error,
                   ),
                 ),
               ),
@@ -968,322 +1128,6 @@ class _DepartmentCard extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Meetings Entry Card ─────────────────────────────────────────────────────
-
-class _MeetingsEntryCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _MeetingsEntryCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.border.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.groups_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'الاجتماعات',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'إنشاء وإدارة اجتماعات الموظفين',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary,
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Penalties Entry Card ────────────────────────────────────────────────────
-
-class _PenaltiesEntryCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _PenaltiesEntryCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.border.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.error, Color(0xFFFF7043)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.gavel_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'إدارة الجزاءات',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'تسجيل ومتابعة جزاءات الموظفين',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary,
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Bonuses Entry Card ──────────────────────────────────────────────────────
-
-class _BonusesEntryCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BonusesEntryCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.border.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.success, Color(0xFF4CAF50)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'إدارة المكافآت',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'تسجيل ومتابعة مكافآت الموظفين',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary,
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Payroll Entry Card ─────────────────────────────────────────────────────
-
-class _PayrollEntryCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _PayrollEntryCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.border.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.payments_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'كشف الرواتب',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'حساب وعرض كشف رواتب الموظفين الشهري',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary,
-                size: 22,
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -1539,10 +1383,7 @@ class _SuperAdminHeader extends StatelessWidget {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _StatChip(
-                      label: 'الأقسام',
-                      count: data!.totalDepartments,
-                    ),
+                    _StatChip(label: 'الأقسام', count: data!.totalDepartments),
                     const SizedBox(width: 8),
                     _StatChip(
                       label: 'الموظفون',
@@ -1575,11 +1416,7 @@ class _StatChip extends StatelessWidget {
   final int count;
   final VoidCallback? onTap;
 
-  const _StatChip({
-    required this.label,
-    required this.count,
-    this.onTap,
-  });
+  const _StatChip({required this.label, required this.count, this.onTap});
 
   @override
   Widget build(BuildContext context) {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/app_exception.dart';
+import '../../shared/widgets/searchable_dropdown_field.dart';
 import '../hr/models/employee.dart';
 import '../hr/models/employee_payslip.dart';
 import '../hr/models/salary_calculation.dart';
@@ -28,8 +29,18 @@ class _PayrollScreenState extends State<PayrollScreen> {
   int _year = DateTime.now().year;
 
   static const _months = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
   ];
 
   @override
@@ -41,7 +52,11 @@ class _PayrollScreenState extends State<PayrollScreen> {
   Future<void> _loadEmployees() async {
     try {
       final repo = getIt<EmployeesRepository>();
-      final page = await repo.getEmployees(pageNumber: 1, pageSize: 1000);
+      final page = await repo.getEmployees(
+        pageNumber: 1,
+        pageSize: 1000,
+        isActive: true,
+      );
       if (!mounted) return;
       setState(() {
         _employees = page.items;
@@ -94,8 +109,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -181,52 +198,27 @@ class _PayrollScreenState extends State<PayrollScreen> {
               style: TextStyle(fontSize: 13, color: AppColors.error),
             )
           else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundSecondary,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  width: 1.5,
-                ),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedEmployee?.id,
-                  isExpanded: true,
-                  isDense: true,
-                  hint: const Text(
-                    'اختر الموظف',
-                    style: TextStyle(color: AppColors.textTertiary),
-                  ),
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                  iconEnabledColor: AppColors.primary,
-                  iconSize: 20,
-                  items: _employees
-                      .map(
-                        (e) => DropdownMenuItem<String>(
-                          value: e.id,
-                          child:
-                              Text(e.fullName, overflow: TextOverflow.ellipsis),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (id) {
-                    if (id == null) return;
-                    setState(() {
-                      _selectedEmployee =
-                          _employees.firstWhere((e) => e.id == id);
-                      _result = null;
-                      _error = null;
-                    });
-                  },
-                ),
-              ),
+            SearchableDropdownField<String>(
+              value: _selectedEmployee?.id,
+              hintText: 'اختر الموظف',
+              searchHintText: 'ابحث عن موظف',
+              isDense: true,
+              items: _employees
+                  .map(
+                    (e) => SearchableDropdownItem<String?>(
+                      value: e.id,
+                      label: e.fullName,
+                    ),
+                  )
+                  .toList(),
+              onChanged: (id) {
+                if (id == null) return;
+                setState(() {
+                  _selectedEmployee = _employees.firstWhere((e) => e.id == id);
+                  _result = null;
+                  _error = null;
+                });
+              },
             ),
         ],
       ),
@@ -256,21 +248,44 @@ class _PayrollScreenState extends State<PayrollScreen> {
           Row(
             children: [
               Expanded(
-                child: _Dropdown<int>(
+                child: SearchableDropdownField<int>(
                   value: _month,
-                  items: List<int>.generate(12, (i) => i + 1),
-                  itemLabel: (m) => _months[m - 1],
-                  onChanged: (v) => setState(() => _month = v),
+                  labelText: 'الشهر',
+                  searchHintText: 'ابحث عن شهر',
+                  items: List<int>.generate(12, (i) => i + 1)
+                      .map(
+                        (m) => SearchableDropdownItem<int?>(
+                          value: m,
+                          label: _months[m - 1],
+                        ),
+                      )
+                      .toList(),
+                  isDense: true,
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() => _month = v);
+                  },
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _Dropdown<int>(
+                child: SearchableDropdownField<int>(
                   value: _year,
-                  items: List<int>.generate(
-                      5, (i) => DateTime.now().year - i),
-                  itemLabel: (y) => y.toString(),
-                  onChanged: (v) => setState(() => _year = v),
+                  labelText: 'السنة',
+                  searchHintText: 'ابحث عن سنة',
+                  items: List<int>.generate(5, (i) => DateTime.now().year - i)
+                      .map(
+                        (y) => SearchableDropdownItem<int?>(
+                          value: y,
+                          label: y.toString(),
+                        ),
+                      )
+                      .toList(),
+                  isDense: true,
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() => _year = v);
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -293,8 +308,9 @@ class _PayrollScreenState extends State<PayrollScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(Icons.search_rounded, size: 18),
@@ -344,7 +360,11 @@ class _PayrollScreenState extends State<PayrollScreen> {
           _Row('البدلات', _fmt(d.allowances.total)),
           if (d.bonusAmount != 0) _Row('المكافآت', _fmt(d.bonusAmount)),
           const Divider(height: 20, color: AppColors.border),
-          _Row('إجمالي الخصومات', _fmt(d.deductions.total), color: AppColors.error),
+          _Row(
+            'إجمالي الخصومات',
+            _fmt(d.deductions.total),
+            color: AppColors.error,
+          ),
           if (d.taxAmount != 0) _Row('الضرائب', _fmt(d.taxAmount)),
           const Divider(height: 20, color: AppColors.border),
           _Row('صافي الراتب', _fmt(d.netSalary), strong: true),
@@ -381,16 +401,30 @@ class _PayrollScreenState extends State<PayrollScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Row('تأخير (${dd.lateHours.toStringAsFixed(0)} ساعة)', _fmt(dd.lateAmount)),
+          _Row(
+            'تأخير (${dd.lateHours.toStringAsFixed(0)} ساعة)',
+            _fmt(dd.lateAmount),
+          ),
           if (d.lateDates.isNotEmpty) ...[
             const SizedBox(height: 6),
-            _DateChips(dates: d.lateDates, color: AppColors.error, label: 'تأخير'),
+            _DateChips(
+              dates: d.lateDates,
+              color: AppColors.error,
+              label: 'تأخير',
+            ),
           ],
           const SizedBox(height: 8),
-          _Row('غياب (${dd.absenceDays.toStringAsFixed(0)} يوم)', _fmt(dd.absenceAmount)),
+          _Row(
+            'غياب (${dd.absenceDays.toStringAsFixed(0)} يوم)',
+            _fmt(dd.absenceAmount),
+          ),
           if (d.absenceDates.isNotEmpty) ...[
             const SizedBox(height: 6),
-            _DateChips(dates: d.absenceDates, color: AppColors.error, label: 'غياب'),
+            _DateChips(
+              dates: d.absenceDates,
+              color: AppColors.error,
+              label: 'غياب',
+            ),
           ],
           const SizedBox(height: 8),
           _Row('جزاءات', _fmt(dd.penaltiesAmount)),
@@ -446,11 +480,18 @@ class _PayrollScreenState extends State<PayrollScreen> {
           _Row('أيام العمل الفعلية', '${d.totalWorkingDays} يوم'),
           const Divider(height: 20, color: AppColors.border),
           _Row('ساعات العمل', '${d.hoursWorked.toStringAsFixed(2)} ساعة'),
-          _Row('الساعات الإضافية', '${d.overtimeHours.toStringAsFixed(2)} ساعة'),
+          _Row(
+            'الساعات الإضافية',
+            '${d.overtimeHours.toStringAsFixed(2)} ساعة',
+          ),
           _Row('أجر الساعات الإضافية', _fmt(d.overtimePay)),
           if (d.overtimeDates.isNotEmpty) ...[
             const SizedBox(height: 6),
-            _DateChips(dates: d.overtimeDates, color: AppColors.success, label: 'إضافي'),
+            _DateChips(
+              dates: d.overtimeDates,
+              color: AppColors.success,
+              label: 'إضافي',
+            ),
           ],
           if (d.shiftRate != 0) ...[
             const Divider(height: 20, color: AppColors.border),
@@ -461,25 +502,54 @@ class _PayrollScreenState extends State<PayrollScreen> {
             const Divider(height: 20, color: AppColors.border),
             const _SubHeader('بيانات الشيفت الشهرية'),
             if (d.shiftMonthlyRequiredWorkingDays != 0)
-              _Row('أيام العمل المطلوبة', '${d.shiftMonthlyRequiredWorkingDays} يوم'),
+              _Row(
+                'أيام العمل المطلوبة',
+                '${d.shiftMonthlyRequiredWorkingDays} يوم',
+              ),
             if (d.shiftMonthlyRequiredHours != 0)
-              _Row('الساعات المطلوبة', '${d.shiftMonthlyRequiredHours.toStringAsFixed(1)} ساعة'),
+              _Row(
+                'الساعات المطلوبة',
+                '${d.shiftMonthlyRequiredHours.toStringAsFixed(1)} ساعة',
+              ),
             if (d.shiftMonthlyActualHours != 0)
-              _Row('الساعات الفعلية', '${d.shiftMonthlyActualHours.toStringAsFixed(1)} ساعة'),
+              _Row(
+                'الساعات الفعلية',
+                '${d.shiftMonthlyActualHours.toStringAsFixed(1)} ساعة',
+              ),
             if (d.shiftMonthlyMissingHours != 0)
-              _Row('الساعات الناقصة', '${d.shiftMonthlyMissingHours.toStringAsFixed(1)} ساعة', color: AppColors.error),
+              _Row(
+                'الساعات الناقصة',
+                '${d.shiftMonthlyMissingHours.toStringAsFixed(1)} ساعة',
+                color: AppColors.error,
+              ),
             if (d.shiftMonthlyDeductionDays != 0)
-              _Row(' أيام خصم', '${d.shiftMonthlyDeductionDays} يوم', color: AppColors.error),
+              _Row(
+                ' أيام خصم',
+                '${d.shiftMonthlyDeductionDays} يوم',
+                color: AppColors.error,
+              ),
             if (d.shiftMonthlyAbsentDays != 0)
-              _Row('أيام غياب', '${d.shiftMonthlyAbsentDays} يوم', color: AppColors.error),
+              _Row(
+                'أيام غياب',
+                '${d.shiftMonthlyAbsentDays} يوم',
+                color: AppColors.error,
+              ),
             if (d.shiftMonthlyHourDeficitDays != 0)
-              _Row('أيام عجز الساعات', '${d.shiftMonthlyHourDeficitDays} يوم', color: AppColors.error),
+              _Row(
+                'أيام عجز الساعات',
+                '${d.shiftMonthlyHourDeficitDays} يوم',
+                color: AppColors.error,
+              ),
           ],
           if (d.incompleteDates.isNotEmpty) ...[
             const Divider(height: 20, color: AppColors.border),
             const _SubHeader('أيام الحضور الناقص'),
             const SizedBox(height: 6),
-            _DateChips(dates: d.incompleteDates, color: AppColors.warning, label: 'ناقص'),
+            _DateChips(
+              dates: d.incompleteDates,
+              color: AppColors.warning,
+              label: 'ناقص',
+            ),
           ],
           if (d.employeeStatusNote?.isNotEmpty == true) ...[
             const Divider(height: 20, color: AppColors.border),
@@ -515,9 +585,17 @@ class _PayrollScreenState extends State<PayrollScreen> {
           if (d.settlementAmount != 0)
             _Row('التسوية', _fmt(d.settlementAmount)),
           if (d.settlementAdditions != 0)
-            _Row('تسويات إضافية', _fmt(d.settlementAdditions), color: AppColors.success),
+            _Row(
+              'تسويات إضافية',
+              _fmt(d.settlementAdditions),
+              color: AppColors.success,
+            ),
           if (d.settlementDeductions != 0)
-            _Row('تسويات خصم', _fmt(d.settlementDeductions), color: AppColors.error),
+            _Row(
+              'تسويات خصم',
+              _fmt(d.settlementDeductions),
+              color: AppColors.error,
+            ),
           if (d.settlementDetails.isNotEmpty) ...[
             const SizedBox(height: 8),
             for (final s in d.settlementDetails)
@@ -587,10 +665,7 @@ class _SectionCard extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.all(16), child: child),
         ],
       ),
     );
@@ -605,8 +680,9 @@ class _SummaryBig extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text =
-        amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
+    final text = amount.toStringAsFixed(
+      amount.truncateToDouble() == amount ? 0 : 2,
+    );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -647,8 +723,10 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labelColor = color ?? (strong ? AppColors.primary : AppColors.textSecondary);
-    final valueColor = color ?? (strong ? AppColors.primary : AppColors.textPrimary);
+    final labelColor =
+        color ?? (strong ? AppColors.primary : AppColors.textSecondary);
+    final valueColor =
+        color ?? (strong ? AppColors.primary : AppColors.textPrimary);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -704,7 +782,11 @@ class _DateChips extends StatelessWidget {
   final Color color;
   final String label;
 
-  const _DateChips({required this.dates, required this.color, required this.label});
+  const _DateChips({
+    required this.dates,
+    required this.color,
+    required this.label,
+  });
 
   String _fmtDate(String iso) {
     final d = DateTime.tryParse(iso);
@@ -765,12 +847,20 @@ class _DetailChip extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Text(
             value,
-            style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -798,65 +888,9 @@ class _ErrorBox extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline_rounded, color: AppColors.error),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
+          Expanded(child: Text(message, style: const TextStyle(fontSize: 12))),
           TextButton(onPressed: onRetry, child: const Text('إعادة المحاولة')),
         ],
-      ),
-    );
-  }
-}
-
-class _Dropdown<T> extends StatelessWidget {
-  final T value;
-  final List<T> items;
-  final String Function(T) itemLabel;
-  final ValueChanged<T> onChanged;
-
-  const _Dropdown({
-    required this.value,
-    required this.items,
-    required this.itemLabel,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.15),
-          width: 1.5,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          isExpanded: true,
-          dropdownColor: Colors.white,
-          isDense: true,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
-          iconEnabledColor: AppColors.primary,
-          iconSize: 20,
-          items: items
-              .map((item) =>
-                  DropdownMenuItem(value: item, child: Text(itemLabel(item))))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
       ),
     );
   }

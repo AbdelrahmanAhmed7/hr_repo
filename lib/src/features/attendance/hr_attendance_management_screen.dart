@@ -9,6 +9,7 @@ import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/searchable_dropdown_field.dart';
 import 'models/attendance_list_response.dart';
 import 'repository/attendance_repository.dart';
 
@@ -511,29 +512,29 @@ class _FilterPanel extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final isCompact = constraints.maxWidth < 420;
-              final checkInFilter = DropdownButtonFormField<bool?>(
-                initialValue: isCheckIn,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Check-in Filter'),
+              final checkInFilter = SearchableDropdownField<bool>(
+                value: isCheckIn,
+                labelText: 'Check-in Filter',
+                searchHintText: 'Search check-in status',
                 items: const [
-                  DropdownMenuItem<bool?>(value: null, child: Text('All')),
-                  DropdownMenuItem<bool?>(value: true, child: Text('In Only')),
-                  DropdownMenuItem<bool?>(
+                  SearchableDropdownItem<bool?>(value: null, label: 'All'),
+                  SearchableDropdownItem<bool?>(value: true, label: 'In Only'),
+                  SearchableDropdownItem<bool?>(
                     value: false,
-                    child: Text('No Check-in'),
+                    label: 'No Check-in',
                   ),
                 ],
                 onChanged: onIsCheckInChanged,
               );
 
-              final pageSizeFilter = DropdownButtonFormField<int>(
-                initialValue: pageSize,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Page Size'),
+              final pageSizeFilter = SearchableDropdownField<int>(
+                value: pageSize,
+                labelText: 'Page Size',
+                searchHintText: 'Search page size',
                 items: const [
-                  DropdownMenuItem(value: 25, child: Text('25')),
-                  DropdownMenuItem(value: 50, child: Text('50')),
-                  DropdownMenuItem(value: 100, child: Text('100')),
+                  SearchableDropdownItem<int?>(value: 25, label: '25'),
+                  SearchableDropdownItem<int?>(value: 50, label: '50'),
+                  SearchableDropdownItem<int?>(value: 100, label: '100'),
                 ],
                 onChanged: onPageSizeChanged,
               );

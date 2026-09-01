@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../shared/components/custom_button.dart';
 import '../../shared/components/custom_text_field.dart';
 import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/searchable_dropdown_field.dart';
 import 'cubit/send_notification_cubit.dart';
 import 'cubit/send_notification_state.dart';
 
@@ -65,8 +66,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
         scrolledUnderElevation: 0,
       ),
       body: BlocConsumer<SendNotificationCubit, SendNotificationState>(
-        listenWhen: (previous, current) =>
-            previous.status != current.status,
+        listenWhen: (previous, current) => previous.status != current.status,
         listener: (context, state) {
           if (state.status == SendNotificationStatus.success) {
             CustomToast.showSuccess('تم إرسال الإشعار بنجاح');
@@ -74,13 +74,12 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
           }
         },
         builder: (context, state) {
-          final isSending =
-              state.status == SendNotificationStatus.loading;
+          final isSending = state.status == SendNotificationStatus.loading;
           final errorMessage =
               state.status == SendNotificationStatus.failure &&
-                      (state.errorMessage?.trim().isNotEmpty ?? false)
-                  ? state.errorMessage
-                  : null;
+                  (state.errorMessage?.trim().isNotEmpty ?? false)
+              ? state.errorMessage
+              : null;
 
           return SafeArea(
             top: false,
@@ -100,8 +99,8 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                     prefixIcon: Icons.title_rounded,
                     controller: _titleController,
                     textInputAction: TextInputAction.next,
-                    errorText: _showValidation &&
-                            _titleController.text.trim().isEmpty
+                    errorText:
+                        _showValidation && _titleController.text.trim().isEmpty
                         ? 'العنوان مطلوب'
                         : null,
                     onChanged: (_) {
@@ -116,7 +115,8 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                     controller: _messageController,
                     maxLines: 5,
                     maxLength: 500,
-                    errorText: _showValidation &&
+                    errorText:
+                        _showValidation &&
                             _messageController.text.trim().isEmpty
                         ? 'نص الإشعار مطلوب'
                         : null,
@@ -128,9 +128,9 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                   Text(
                     'استهداف الإشعار',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -139,8 +139,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                         child: _TargetCard(
                           icon: Icons.groups_rounded,
                           label: 'كل الموظفين',
-                          selected:
-                              state.target == SendNotificationTarget.all,
+                          selected: state.target == SendNotificationTarget.all,
                           onTap: () => context
                               .read<SendNotificationCubit>()
                               .setTarget(SendNotificationTarget.all),
@@ -187,7 +186,8 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                     _Label(text: 'الموظف المستهدف *'),
                     const SizedBox(height: 8),
                     _buildEmployeeField(state),
-                    if (_showValidation && state.selectedEmployeeId == null) ...[
+                    if (_showValidation &&
+                        state.selectedEmployeeId == null) ...[
                       const SizedBox(height: 6),
                       _InlineError(message: 'اختر الموظف المستهدف'),
                     ],
@@ -240,35 +240,19 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
       );
     }
 
-    return _DropdownContainer(
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: state.selectedDepartmentId,
-          isExpanded: true,
-          isDense: true,
-          hint: const Text(
-            'اختر القسم',
-            style: TextStyle(color: AppColors.textTertiary),
-          ),
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textSecondary,
-          ),
-          items: state.departments
-              .map(
-                (dept) => DropdownMenuItem<int?>(
-                  value: dept.id,
-                  child: Text(
-                    dept.name,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: (id) =>
-              context.read<SendNotificationCubit>().selectDepartment(id),
-        ),
-      ),
+    return SearchableDropdownField<int>(
+      value: state.selectedDepartmentId,
+      hintText: 'اختر القسم',
+      searchHintText: 'ابحث عن قسم',
+      isDense: true,
+      items: state.departments
+          .map(
+            (dept) =>
+                SearchableDropdownItem<int?>(value: dept.id, label: dept.name),
+          )
+          .toList(),
+      onChanged: (id) =>
+          context.read<SendNotificationCubit>().selectDepartment(id),
     );
   }
 
@@ -284,35 +268,21 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
       );
     }
 
-    return _DropdownContainer(
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: state.selectedEmployeeId,
-          isExpanded: true,
-          isDense: true,
-          hint: const Text(
-            'اختر الموظف',
-            style: TextStyle(color: AppColors.textTertiary),
-          ),
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textSecondary,
-          ),
-          items: state.employees
-              .map(
-                (recipient) => DropdownMenuItem<String?>(
-                  value: recipient.id,
-                  child: Text(
-                    recipient.name,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: (id) =>
-              context.read<SendNotificationCubit>().selectEmployee(id),
-        ),
-      ),
+    return SearchableDropdownField<String>(
+      value: state.selectedEmployeeId,
+      hintText: 'اختر الموظف',
+      searchHintText: 'ابحث عن موظف',
+      isDense: true,
+      items: state.employees
+          .map(
+            (recipient) => SearchableDropdownItem<String?>(
+              value: recipient.id,
+              label: recipient.name,
+            ),
+          )
+          .toList(),
+      onChanged: (id) =>
+          context.read<SendNotificationCubit>().selectEmployee(id),
     );
   }
 }
@@ -387,26 +357,6 @@ class _Label extends StatelessWidget {
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
       ),
-    );
-  }
-}
-
-class _DropdownContainer extends StatelessWidget {
-  final Widget child;
-
-  const _DropdownContainer({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: child,
     );
   }
 }

@@ -9,6 +9,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../shared/widgets/error_state_widget.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/shimmer_loading.dart';
+import '../../shared/widgets/searchable_dropdown_field.dart';
 import '../attendance/cubit/sa_attendance_cubit.dart';
 import '../attendance/cubit/sa_attendance_state.dart';
 import '../attendance/widgets/sa_attendance_date_navigator.dart';
@@ -83,7 +84,8 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
                       )
                     else
                       IconButton(
-                        onPressed: () => context.read<SAAttendanceCubit>().exportPdf(),
+                        onPressed: () =>
+                            context.read<SAAttendanceCubit>().exportPdf(),
                         icon: const Icon(Icons.picture_as_pdf_rounded),
                         tooltip: 'تصدير PDF',
                       ),
@@ -103,15 +105,19 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
                   children: [
                     SAAttendanceDateNavigator(
                       selectedDate: state.selectedDate,
-                      onPrevious: () => context.read<SAAttendanceCubit>().goToPreviousDay(),
-                      onNext: () => context.read<SAAttendanceCubit>().goToNextDay(),
-                      onToday: () => context.read<SAAttendanceCubit>().goToToday(),
+                      onPrevious: () =>
+                          context.read<SAAttendanceCubit>().goToPreviousDay(),
+                      onNext: () =>
+                          context.read<SAAttendanceCubit>().goToNextDay(),
+                      onToday: () =>
+                          context.read<SAAttendanceCubit>().goToToday(),
                     ),
                     _DepartmentFilterBar(
                       departments: state.departments,
                       selectedDepartmentId: state.selectedDepartmentId,
-                      onDepartmentChanged: (id) =>
-                          context.read<SAAttendanceCubit>().applyDepartmentFilter(id),
+                      onDepartmentChanged: (id) => context
+                          .read<SAAttendanceCubit>()
+                          .applyDepartmentFilter(id),
                     ),
                     SAAttendanceStatsStrip(
                       totalCount: state.totalEmployees,
@@ -126,11 +132,10 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
                     ),
                     SAAttendanceSearchBar(
                       query: state.searchQuery,
-                      onChanged: (query) => context.read<SAAttendanceCubit>().applySearch(query),
+                      onChanged: (query) =>
+                          context.read<SAAttendanceCubit>().applySearch(query),
                     ),
-                    Expanded(
-                      child: _buildBody(context, state),
-                    ),
+                    Expanded(child: _buildBody(context, state)),
                   ],
                 );
               },
@@ -195,8 +200,7 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
         return ErrorStateWidget(
           error: state.errorMessage ?? 'حدث خطأ غير متوقع',
           buttonLabel: 'إعادة المحاولة',
-          onRetry: () =>
-              context.read<SAAttendanceCubit>().loadAttendance(),
+          onRetry: () => context.read<SAAttendanceCubit>().loadAttendance(),
         );
       case SAAttendanceStatus.success:
         if (state.filteredRecords.isEmpty) {
@@ -223,9 +227,9 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
         return SAAttendanceEmployeeRow(
           record: record,
           isExpanded: state.expandedEmployeeId == record.employeeName,
-          onTap: () => context
-              .read<SAAttendanceCubit>()
-              .toggleExpand(record.employeeName),
+          onTap: () => context.read<SAAttendanceCubit>().toggleExpand(
+            record.employeeName,
+          ),
         );
       },
     );
@@ -308,57 +312,28 @@ class _DepartmentFilterBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.apartment_rounded,
-            size: 18,
-            color: AppColors.primary,
-          ),
+          Icon(Icons.apartment_rounded, size: 18, color: AppColors.primary),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int?>(
-                value: selectedDepartmentId,
-                isExpanded: true,
-                isDense: true,
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: AppColors.textSecondary,
+            child: SearchableDropdownField<int>(
+              value: selectedDepartmentId,
+              labelText: 'القسم',
+              hintText: 'كل الأقسام',
+              searchHintText: 'ابحث عن قسم',
+              isDense: true,
+              items: [
+                const SearchableDropdownItem<int?>(
+                  value: null,
+                  label: 'كل الأقسام',
                 ),
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-                hint: Text(
-                  'كل الأقسام',
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: AppColors.textSecondary,
+                ...departments.map(
+                  (dept) => SearchableDropdownItem<int?>(
+                    value: dept.id,
+                    label: dept.name,
                   ),
                 ),
-                items: [
-                  DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text(
-                      'كل الأقسام',
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  ...departments.map(
-                    (dept) => DropdownMenuItem<int?>(
-                      value: dept.id,
-                      child: Text(
-                        dept.name,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: onDepartmentChanged,
-              ),
+              ],
+              onChanged: onDepartmentChanged,
             ),
           ),
           if (selectedDepartmentId != null) ...[
@@ -693,14 +668,17 @@ class _PunchTabContent extends StatelessWidget {
             Expanded(
               child: Builder(
                 builder: (context) {
-                  if (state.summaryStatus == PunchStatus.loading && state.summaryItems.isEmpty) {
+                  if (state.summaryStatus == PunchStatus.loading &&
+                      state.summaryItems.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  if (state.summaryStatus == PunchStatus.error && state.summaryItems.isEmpty) {
+                  if (state.summaryStatus == PunchStatus.error &&
+                      state.summaryItems.isEmpty) {
                     return ErrorStateWidget(
                       error: state.errorMessage ?? 'حدث خطأ',
                       buttonLabel: 'إعادة المحاولة',
-                      onRetry: () => context.read<PunchCubit>().loadSummary(refresh: true),
+                      onRetry: () =>
+                          context.read<PunchCubit>().loadSummary(refresh: true),
                     );
                   }
                   if (state.summaryItems.isEmpty) {

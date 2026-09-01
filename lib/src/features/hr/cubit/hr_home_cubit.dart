@@ -11,7 +11,7 @@ class HrHomeCubit extends Cubit<HrHomeState> {
   final EmployeesRepository _employeesRepository;
 
   HrHomeCubit(this._repository, this._employeesRepository)
-      : super(HrHomeState.initial()) {
+    : super(HrHomeState.initial()) {
     loadHrHomeData();
   }
 
@@ -21,7 +21,11 @@ class HrHomeCubit extends Cubit<HrHomeState> {
     try {
       final results = await Future.wait<dynamic>([
         _repository.getHrHomeData(),
-        _employeesRepository.getEmployees(pageNumber: 1, pageSize: 5),
+        _employeesRepository.getEmployees(
+          pageNumber: 1,
+          pageSize: 5,
+          isActive: true,
+        ),
       ]);
 
       final data = results[0] as HrHomeResponse;
@@ -34,7 +38,9 @@ class HrHomeCubit extends Cubit<HrHomeState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: AppException.from(e).message));
+      emit(
+        state.copyWith(isLoading: false, error: AppException.from(e).message),
+      );
     }
   }
 

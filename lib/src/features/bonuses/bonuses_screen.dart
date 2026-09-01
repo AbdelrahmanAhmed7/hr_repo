@@ -8,6 +8,7 @@ import 'package:mediconsult_internal/src/features/bonuses/models/employee_bonus.
 import 'package:mediconsult_internal/src/features/hr/models/employee.dart';
 import 'package:mediconsult_internal/src/features/hr/repository/employees_repository.dart';
 import 'package:mediconsult_internal/src/shared/components/custom_toast.dart';
+import 'package:mediconsult_internal/src/shared/widgets/searchable_dropdown_field.dart';
 
 import '../../core/services/service_locator.dart';
 
@@ -31,7 +32,11 @@ class _BonusesScreenState extends State<BonusesScreen> {
   Future<void> _loadEmployees() async {
     try {
       final repo = getIt<EmployeesRepository>();
-      final page = await repo.getEmployees(pageNumber: 1, pageSize: 1000);
+      final page = await repo.getEmployees(
+        pageNumber: 1,
+        pageSize: 1000,
+        isActive: true,
+      );
       if (!mounted) return;
       setState(() {
         _employees = page.items;
@@ -133,47 +138,22 @@ class _BonusesScreenState extends State<BonusesScreen> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.15),
-          width: 1.5,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: state.selectedEmployeeId,
-          isExpanded: true,
-          isDense: true,
-          hint: const Text(
-            'اختر الموظف',
-            style: TextStyle(color: AppColors.textTertiary),
-          ),
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-          ),
-          iconEnabledColor: AppColors.primary,
-          iconSize: 20,
-          items: _employees
-              .map(
-                (e) => DropdownMenuItem<String>(
-                  value: e.id,
-                  child: Text(e.fullName, overflow: TextOverflow.ellipsis),
-                ),
-              )
-              .toList(),
-          onChanged: (id) {
-            if (id == null) return;
-            final emp = _employees.firstWhere((e) => e.id == id);
-            context.read<BonusesCubit>().selectEmployee(emp.id, emp.fullName);
-          },
-        ),
-      ),
+    return SearchableDropdownField<String>(
+      value: state.selectedEmployeeId,
+      hintText: 'اختر الموظف',
+      searchHintText: 'ابحث عن موظف',
+      isDense: true,
+      items: _employees
+          .map(
+            (e) =>
+                SearchableDropdownItem<String?>(value: e.id, label: e.fullName),
+          )
+          .toList(),
+      onChanged: (id) {
+        if (id == null) return;
+        final emp = _employees.firstWhere((e) => e.id == id);
+        context.read<BonusesCubit>().selectEmployee(emp.id, emp.fullName);
+      },
     );
   }
 
@@ -248,9 +228,7 @@ class _BonusesScreenState extends State<BonusesScreen> {
           ),
           BonusesStatus.failure => _buildErrorBox(state.error),
           _ =>
-            state.bonuses.isEmpty
-                ? const _EmptyList()
-                : _buildBonusList(state),
+            state.bonuses.isEmpty ? const _EmptyList() : _buildBonusList(state),
         },
       ],
     );
@@ -428,7 +406,11 @@ class _EmptyList extends StatelessWidget {
       ),
       child: const Column(
         children: [
-          Icon(Icons.card_giftcard_rounded, color: AppColors.textTertiary, size: 40),
+          Icon(
+            Icons.card_giftcard_rounded,
+            color: AppColors.textTertiary,
+            size: 40,
+          ),
           SizedBox(height: 10),
           Text(
             'لا توجد مكافآت لهذا الموظف',
@@ -532,7 +514,9 @@ class _BonusDialogState extends State<_BonusDialog> {
             const SizedBox(height: 8),
             TextField(
               controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: _inputDecoration('مثال: 500'),
             ),
             const SizedBox(height: 16),

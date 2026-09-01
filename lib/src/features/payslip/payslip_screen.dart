@@ -11,6 +11,7 @@ import '../../core/utils/app_exception.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/error_state_widget.dart';
+import '../../shared/widgets/searchable_dropdown_field.dart';
 import 'cubit/payslip_cubit.dart';
 import 'cubit/payslip_state.dart';
 import 'models/payslip.dart';
@@ -61,14 +62,12 @@ class _PayslipScreenState extends State<PayslipScreen> {
         CustomToast.showInfo(
           result.message.isNotEmpty
               ? result.message
-              : 'تم تجهيز الملف، لكن تعذر فتحه تلقائيًا.'
+              : 'تم تجهيز الملف، لكن تعذر فتحه تلقائيًا.',
         );
       }
     } catch (e) {
       if (!mounted) return;
-      CustomToast.showError(
-        AppException.from(e).message,
-      );
+      CustomToast.showError(AppException.from(e).message);
     }
   }
 
@@ -141,7 +140,8 @@ class _PayslipScreenState extends State<PayslipScreen> {
                         iconColor: AppColors.info,
                       ),
                     )
-                  else if (state.payslip != null && state.payslip!.isEmployeeNotActive)
+                  else if (state.payslip != null &&
+                      state.payslip!.isEmployeeNotActive)
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: EmptyStateWidget(
@@ -279,7 +279,11 @@ class _PayslipScreenState extends State<PayslipScreen> {
                               ),
                               _MoneyRow(
                                 label: 'إجمالي البدلات',
-                                value: state.payslip!.salaryDetails.allowances.total,
+                                value: state
+                                    .payslip!
+                                    .salaryDetails
+                                    .allowances
+                                    .total,
                                 positive: true,
                               ),
                             ],
@@ -517,7 +521,8 @@ class _PayslipHeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: state.pdfStatus == PayslipPdfStatus.downloading ||
+            onPressed:
+                state.pdfStatus == PayslipPdfStatus.downloading ||
                     isFuturePeriod
                 ? null
                 : onOpenPdf,
@@ -594,6 +599,8 @@ class _PayslipFilterCard extends StatelessWidget {
               Expanded(
                 child: _DropdownField<int>(
                   value: selectedMonth,
+                  label: 'الشهر',
+                  searchHintText: 'ابحث عن شهر',
                   items: List<int>.generate(12, (index) => index + 1),
                   itemLabel: _monthName,
                   onChanged: onMonthChanged,
@@ -603,6 +610,8 @@ class _PayslipFilterCard extends StatelessWidget {
               Expanded(
                 child: _DropdownField<int>(
                   value: selectedYear,
+                  label: 'السنة',
+                  searchHintText: 'ابحث عن سنة',
                   items: years,
                   itemLabel: (year) => year.toString(),
                   onChanged: onYearChanged,
@@ -618,12 +627,16 @@ class _PayslipFilterCard extends StatelessWidget {
 
 class _DropdownField<T> extends StatelessWidget {
   final T value;
+  final String label;
+  final String searchHintText;
   final List<T> items;
   final String Function(T value) itemLabel;
   final ValueChanged<T> onChanged;
 
   const _DropdownField({
     required this.value,
+    required this.label,
+    required this.searchHintText,
     required this.items,
     required this.itemLabel,
     required this.onChanged,
@@ -631,28 +644,15 @@ class _DropdownField<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<T>(
-      initialValue: value,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: AppColors.background,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-      ),
+    return SearchableDropdownField<T>(
+      value: value,
+      labelText: label,
+      searchHintText: searchHintText,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       items: items
           .map(
             (item) =>
-                DropdownMenuItem<T>(value: item, child: Text(itemLabel(item))),
+                SearchableDropdownItem<T?>(value: item, label: itemLabel(item)),
           )
           .toList(),
       onChanged: (value) {
@@ -761,17 +761,17 @@ class _DatesSection extends StatelessWidget {
     final futureAbsences = <String>[];
 
     for (final dateStr in payslip.salaryDetails.absenceDates) {
-  try {
-    final date = DateTime.parse(dateStr);
-    if (date.isAfter(today)) {
-      futureAbsences.add(dateStr);
-    } else {
-      pastAbsences.add(dateStr);
+      try {
+        final date = DateTime.parse(dateStr);
+        if (date.isAfter(today)) {
+          futureAbsences.add(dateStr);
+        } else {
+          pastAbsences.add(dateStr);
+        }
+      } catch (_) {
+        pastAbsences.add(dateStr);
+      }
     }
-  } catch (_) {
-    pastAbsences.add(dateStr);
-  }
-}
 
     return _SectionCard(
       title: 'أيام التأخير والغياب',
@@ -803,6 +803,7 @@ class _DatesSection extends StatelessWidget {
     );
   }
 }
+
 class _DateListBlock extends StatelessWidget {
   final String title;
   final List<String> dates;
@@ -859,9 +860,9 @@ class _DateListBlock extends StatelessWidget {
         if (normalized.isEmpty)
           Text(
             emptyLabel,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           )
         else
           Wrap(
@@ -870,7 +871,10 @@ class _DateListBlock extends StatelessWidget {
             children: normalized.map((date) {
               final formatted = _tryFormatDate(date);
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: chipColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(999),
@@ -1188,7 +1192,8 @@ String _employeeMetaLine(Payslip payslip) {
   final parts = <String>[
     if (payslip.fullNameAr.trim().isNotEmpty) payslip.fullNameAr,
     if ((payslip.jobTitle ?? '').trim().isNotEmpty) payslip.jobTitle!,
-    if ((payslip.employmentMode ?? '').trim().isNotEmpty) payslip.employmentMode!,
+    if ((payslip.employmentMode ?? '').trim().isNotEmpty)
+      payslip.employmentMode!,
     if ((payslip.departmentName ?? '').trim().isNotEmpty)
       payslip.departmentName!,
   ];

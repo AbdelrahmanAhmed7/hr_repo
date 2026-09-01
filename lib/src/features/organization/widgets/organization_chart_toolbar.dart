@@ -6,6 +6,7 @@ import '../cubit/organization_chart_state.dart';
 import '../models/organization_models.dart';
 import '../models/view_mode.dart';
 import 'organization_chart_search_bar.dart';
+import '../../../shared/widgets/searchable_dropdown_field.dart';
 
 /// Toolbar widget for organization chart with portrait and landscape layouts
 class OrganizationChartToolbar extends StatelessWidget {
@@ -83,7 +84,8 @@ class OrganizationChartToolbar extends StatelessWidget {
           child: OrganizationChartSearchBar(
             controller: searchController,
             onChanged: (value) => cubit.searchEmployees(value),
-            resultCount: state.searchQuery != null && state.searchQuery!.isNotEmpty
+            resultCount:
+                state.searchQuery != null && state.searchQuery!.isNotEmpty
                 ? state.employees?.where((e) => e.isHighlighted).length
                 : state.employees?.length,
             employees: state.employees,
@@ -108,7 +110,10 @@ class OrganizationChartToolbar extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.easeOutCubic,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primary : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
@@ -153,7 +158,8 @@ class OrganizationChartToolbar extends StatelessWidget {
           child: OrganizationChartSearchBar(
             controller: searchController,
             onChanged: (value) => cubit.searchEmployees(value),
-            resultCount: state.searchQuery != null && state.searchQuery!.isNotEmpty
+            resultCount:
+                state.searchQuery != null && state.searchQuery!.isNotEmpty
                 ? state.employees?.where((e) => e.isHighlighted).length
                 : state.employees?.length,
             employees: state.employees,
@@ -193,35 +199,24 @@ class OrganizationChartToolbar extends StatelessWidget {
         // Filter dropdown
         SizedBox(
           width: 200,
-          child: DropdownButtonFormField<int?>(
-            initialValue: selectedDepartmentId,
-            isExpanded: true,
-            decoration: InputDecoration(
-              labelText: 'فلترة حسب القسم',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              isDense: true,
+          child: SearchableDropdownField<int>(
+            value: selectedDepartmentId,
+            labelText: 'فلترة حسب القسم',
+            searchHintText: 'ابحث عن قسم',
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
             ),
+            isDense: true,
             items: [
-              const DropdownMenuItem<int?>(
+              const SearchableDropdownItem<int?>(
                 value: null,
-                child: Text(
-                  'جميع الأقسام',
-                  overflow: TextOverflow.ellipsis,
-                ),
+                label: 'جميع الأقسام',
               ),
               ...departments.map((dept) {
-                return DropdownMenuItem<int?>(
+                return SearchableDropdownItem<int?>(
                   value: dept.id,
-                  child: Text(
-                    dept.name,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  label: dept.name,
                 );
               }),
             ],
@@ -232,4 +227,3 @@ class OrganizationChartToolbar extends StatelessWidget {
     );
   }
 }
-

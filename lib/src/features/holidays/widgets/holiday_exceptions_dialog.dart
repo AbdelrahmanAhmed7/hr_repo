@@ -317,7 +317,7 @@ class _AddExceptionDialogState extends State<_AddExceptionDialog> {
     try {
       // Load both employees and departments in parallel
       final results = await Future.wait([
-        _employeesService.getEmployees(pageSize: 500),
+        _employeesService.getEmployees(pageSize: 500, isActive: true),
         _employeesService.getDepartments(),
       ]);
 

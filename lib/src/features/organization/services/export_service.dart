@@ -2,23 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../models/organization_models.dart';
 
-/// Service for exporting organization chart data
 class ExportService {
-  /// Export organization chart as image
-  /// Note: Requires screenshot package for actual implementation
   static Future<void> exportAsImage({
     required OrganizationData organizationData,
     required BuildContext context,
   }) async {
-    // TODO: Implement with screenshot or widget_to_image package
-    // Example:
-    // final imageBytes = await screenshotController.capture();
-    // final directory = await getApplicationDocumentsDirectory();
-    // final imagePath = '${directory.path}/org_chart_${DateTime.now().millisecondsSinceEpoch}.png';
-    // final imageFile = File(imagePath);
-    // await imageFile.writeAsBytes(imageBytes);
-    // await Share.shareFiles([imagePath]);
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(

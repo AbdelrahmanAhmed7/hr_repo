@@ -5,6 +5,7 @@ import 'package:open_file/open_file.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_exception.dart';
 import '../../../shared/components/custom_toast.dart';
+import '../../../shared/widgets/searchable_dropdown_field.dart';
 import '../cubit/attendance_cubit.dart';
 import '../cubit/attendance_state.dart';
 
@@ -75,10 +76,7 @@ class AttendanceMonthlyPdfCard extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primaryDark,
-                        ],
+                        colors: [AppColors.primary, AppColors.primaryDark],
                       ),
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
@@ -103,20 +101,22 @@ class AttendanceMonthlyPdfCard extends StatelessWidget {
                       children: [
                         Text(
                           'تقرير الحضور الشهري',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'اختر الشهر والسنة ثم حمّل تقرير حضورك',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
                       ],
                     ),
@@ -177,13 +177,12 @@ class AttendanceMonthlyPdfCard extends StatelessWidget {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
-                    : const Icon(
-                        Icons.download_rounded,
-                        size: 22,
-                      ),
+                    : const Icon(Icons.download_rounded, size: 22),
                 label: Text(
                   isDownloading ? 'جاري التحميل...' : 'تحميل التقرير',
                   style: const TextStyle(
@@ -250,41 +249,22 @@ class _CustomDropdown<T> extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundSecondary,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              isExpanded: true,
-              dropdownColor: Colors.white,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-              iconEnabledColor: AppColors.primary,
-              iconSize: 26,
-              items: items
-                  .map(
-                    (item) => DropdownMenuItem<T>(
-                      value: item,
-                      child: Text(itemLabel(item)),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) onChanged(v);
-              },
-            ),
-          ),
+        SearchableDropdownField<T>(
+          value: value,
+          labelText: label,
+          searchHintText: 'بحث',
+          isDense: true,
+          items: items
+              .map(
+                (item) => SearchableDropdownItem<T?>(
+                  value: item,
+                  label: itemLabel(item),
+                ),
+              )
+              .toList(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
         ),
       ],
     );

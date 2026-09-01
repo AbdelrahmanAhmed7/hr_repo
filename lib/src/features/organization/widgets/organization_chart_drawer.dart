@@ -7,6 +7,7 @@ import '../models/organization_models.dart';
 import 'organization_chart_legend.dart';
 import 'organization_chart_view_mode_selector.dart';
 import 'organization_chart_statistics_dashboard.dart';
+import '../../../shared/widgets/searchable_dropdown_field.dart';
 
 /// Drawer for organization chart settings and view modes
 class OrganizationChartDrawer extends StatelessWidget {
@@ -42,10 +43,7 @@ class OrganizationChartDrawer extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.primary,
-                        AppColors.primaryDark,
-                      ],
+                      colors: [AppColors.primary, AppColors.primaryDark],
                     ),
                   ),
                   child: Row(
@@ -98,7 +96,9 @@ class OrganizationChartDrawer extends StatelessWidget {
                         selectedMode: state.viewMode,
                         onModeChanged: (mode) {
                           cubit.changeViewMode(mode);
-                          Navigator.of(context).pop(); // Close drawer after selection
+                          Navigator.of(
+                            context,
+                          ).pop(); // Close drawer after selection
                         },
                       ),
                       const SizedBox(height: 24),
@@ -109,56 +109,38 @@ class OrganizationChartDrawer extends StatelessWidget {
                         title: 'الفلترة',
                       ),
                       const SizedBox(height: 12),
-                      DropdownButtonFormField<int?>(
-                        initialValue: selectedDepartmentId,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          labelText: 'فلترة حسب القسم',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
+                      SearchableDropdownField<int>(
+                        value: selectedDepartmentId,
+                        labelText: 'فلترة حسب القسم',
+                        searchHintText: 'ابحث عن قسم',
                         items: [
-                          const DropdownMenuItem<int?>(
+                          const SearchableDropdownItem<int?>(
                             value: null,
-                            child: Text('جميع الأقسام'),
+                            label: 'جميع الأقسام',
                           ),
                           ...departments.map((dept) {
-                            return DropdownMenuItem<int?>(
+                            return SearchableDropdownItem<int?>(
                               value: dept.id,
-                              child: Text(dept.name),
+                              label: dept.name,
                             );
                           }),
                         ],
                         onChanged: onDepartmentChanged,
                       ),
                       const SizedBox(height: 12),
-                      DropdownButtonFormField<EmployeeLevel?>(
-                        initialValue: state.filteredLevel,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          labelText: 'فلترة حسب المستوى',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
+                      SearchableDropdownField<EmployeeLevel>(
+                        value: state.filteredLevel,
+                        labelText: 'فلترة حسب المستوى',
+                        searchHintText: 'ابحث عن مستوى',
                         items: [
-                          const DropdownMenuItem<EmployeeLevel?>(
+                          const SearchableDropdownItem<EmployeeLevel?>(
                             value: null,
-                            child: Text('جميع المستويات'),
+                            label: 'جميع المستويات',
                           ),
                           ...EmployeeLevel.values.map((level) {
-                            return DropdownMenuItem<EmployeeLevel?>(
+                            return SearchableDropdownItem<EmployeeLevel?>(
                               value: level,
-                              child: Text(level.displayName),
+                              label: level.displayName,
                             );
                           }),
                         ],
@@ -198,7 +180,10 @@ class OrganizationChartDrawer extends StatelessWidget {
                       const SizedBox(height: 12),
                       // Reset Button
                       ListTile(
-                        leading: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                        leading: const Icon(
+                          Icons.refresh_rounded,
+                          color: AppColors.primary,
+                        ),
                         title: const Text('إعادة تعيين'),
                         subtitle: const Text('إعادة تعيين الهيكل التنظيمي'),
                         onTap: () {
@@ -220,10 +205,14 @@ class OrganizationChartDrawer extends StatelessWidget {
                       // Toggle Orientation Button
                       ListTile(
                         leading: Icon(
-                          state.isHorizontal ? Icons.swap_vert_rounded : Icons.swap_horiz_rounded,
+                          state.isHorizontal
+                              ? Icons.swap_vert_rounded
+                              : Icons.swap_horiz_rounded,
                           color: AppColors.primary,
                         ),
-                        title: Text(state.isHorizontal ? 'وضع رأسي' : 'وضع أفقي'),
+                        title: Text(
+                          state.isHorizontal ? 'وضع رأسي' : 'وضع أفقي',
+                        ),
                         subtitle: const Text('تغيير اتجاه الشجرة'),
                         onTap: () {
                           cubit.toggleOrientation();
@@ -237,7 +226,10 @@ class OrganizationChartDrawer extends StatelessWidget {
                       const SizedBox(height: 8),
                       // Export Button
                       ListTile(
-                        leading: const Icon(Icons.download_rounded, color: AppColors.primary),
+                        leading: const Icon(
+                          Icons.download_rounded,
+                          color: AppColors.primary,
+                        ),
                         title: const Text('تصدير'),
                         subtitle: const Text('تصدير الهيكل التنظيمي'),
                         onTap: () {
@@ -272,12 +264,11 @@ class OrganizationChartDrawer extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
       ],
     );
   }
 }
-
