@@ -2,6 +2,7 @@ class AttendanceListResponse {
   final List<AttendanceItem> attendances;
   final int totalEmployees;
   final int employeesWithAttendance;
+  final int employeesAbsent;
   final int employeesWithDeparture;
   final int totalDays;
   final int pageNumber;
@@ -12,6 +13,7 @@ class AttendanceListResponse {
     required this.attendances,
     required this.totalEmployees,
     required this.employeesWithAttendance,
+    required this.employeesAbsent,
     required this.employeesWithDeparture,
     required this.totalDays,
     required this.pageNumber,
@@ -24,10 +26,14 @@ class AttendanceListResponse {
 
     return AttendanceListResponse(
       attendances: attendancesRaw
-          .map((item) => AttendanceItem.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map(
+            (item) =>
+                AttendanceItem.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList(),
       totalEmployees: _toInt(json['totalEmployees']),
       employeesWithAttendance: _toInt(json['employeesWithAttendance']),
+      employeesAbsent: _toInt(json['employeesAbsent']),
       employeesWithDeparture: _toInt(json['employeesWithDeparture']),
       totalDays: _toInt(json['totalDays']),
       pageNumber: _toInt(json['pageNumber'], fallback: 1),
@@ -41,6 +47,8 @@ class AttendanceListResponse {
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
+
+  int get absentCount => employeesAbsent;
 }
 
 class AttendanceItem {
@@ -93,7 +101,8 @@ class AttendanceItem {
     );
   }
 
-  bool get hasCheckedIn => attendanceTime != null && attendanceTime!.trim().isNotEmpty;
+  bool get hasCheckedIn =>
+      attendanceTime != null && attendanceTime!.trim().isNotEmpty;
 
   bool get hasCheckedOut =>
       departureTime != null && departureTime!.trim().isNotEmpty;

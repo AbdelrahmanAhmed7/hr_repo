@@ -24,6 +24,7 @@ class SAAttendanceState {
   final List<AttendanceRecordModel> filteredRecords;
   final int totalEmployees;
   final int employeesWithAttendance;
+  final int employeesAbsent;
   final int employeesWithDeparture;
   final double attendancePercentage;
   final DateTime selectedDate;
@@ -44,6 +45,7 @@ class SAAttendanceState {
     this.filteredRecords = const [],
     this.totalEmployees = 0,
     this.employeesWithAttendance = 0,
+    this.employeesAbsent = 0,
     this.employeesWithDeparture = 0,
     this.attendancePercentage = 0,
     required this.selectedDate,
@@ -59,9 +61,8 @@ class SAAttendanceState {
     this.departments = const [],
   });
 
-  factory SAAttendanceState.initial() => SAAttendanceState(
-        selectedDate: DateTime.now(),
-      );
+  factory SAAttendanceState.initial() =>
+      SAAttendanceState(selectedDate: DateTime.now());
 
   SAAttendanceState copyWith({
     SAAttendanceStatus? status,
@@ -69,6 +70,7 @@ class SAAttendanceState {
     List<AttendanceRecordModel>? filteredRecords,
     int? totalEmployees,
     int? employeesWithAttendance,
+    int? employeesAbsent,
     int? employeesWithDeparture,
     double? attendancePercentage,
     DateTime? selectedDate,
@@ -94,10 +96,10 @@ class SAAttendanceState {
       totalEmployees: totalEmployees ?? this.totalEmployees,
       employeesWithAttendance:
           employeesWithAttendance ?? this.employeesWithAttendance,
+      employeesAbsent: employeesAbsent ?? this.employeesAbsent,
       employeesWithDeparture:
           employeesWithDeparture ?? this.employeesWithDeparture,
-      attendancePercentage:
-          attendancePercentage ?? this.attendancePercentage,
+      attendancePercentage: attendancePercentage ?? this.attendancePercentage,
       selectedDate: selectedDate ?? this.selectedDate,
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
@@ -116,7 +118,7 @@ class SAAttendanceState {
     );
   }
 
-  int get absentCount => totalEmployees - employeesWithAttendance;
+  int get absentCount => employeesAbsent;
 
   bool get hasActiveFilters =>
       startDate != null ||

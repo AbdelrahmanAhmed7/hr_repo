@@ -4,6 +4,7 @@ class AttendanceResponseModel {
   final List<AttendanceRecordModel> attendances;
   final int totalEmployees;
   final int employeesWithAttendance;
+  final int employeesAbsent;
   final int employeesWithDeparture;
   final int totalDays;
   final int pageNumber;
@@ -14,6 +15,7 @@ class AttendanceResponseModel {
     required this.attendances,
     required this.totalEmployees,
     required this.employeesWithAttendance,
+    required this.employeesAbsent,
     required this.employeesWithDeparture,
     required this.totalDays,
     required this.pageNumber,
@@ -26,11 +28,15 @@ class AttendanceResponseModel {
 
     return AttendanceResponseModel(
       attendances: attendancesRaw
-          .map((item) => AttendanceRecordModel.fromJson(
-              Map<String, dynamic>.from(item as Map)))
+          .map(
+            (item) => AttendanceRecordModel.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
           .toList(),
       totalEmployees: _toInt(json['totalEmployees']),
       employeesWithAttendance: _toInt(json['employeesWithAttendance']),
+      employeesAbsent: _toInt(json['employeesAbsent']),
       employeesWithDeparture: _toInt(json['employeesWithDeparture']),
       totalDays: _toInt(json['totalDays']),
       pageNumber: _toInt(json['pageNumber'], fallback: 1),
@@ -45,8 +51,9 @@ class AttendanceResponseModel {
     return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
 
-  int get absentCount => totalEmployees - employeesWithAttendance;
+  int get absentCount => employeesAbsent;
 
-  double get attendancePercentage =>
-      totalEmployees == 0 ? 0 : (employeesWithAttendance / totalEmployees) * 100;
+  double get attendancePercentage => totalEmployees == 0
+      ? 0
+      : (employeesWithAttendance / totalEmployees) * 100;
 }

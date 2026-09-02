@@ -15,8 +15,8 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
   final Map<String, int?> _employeeDeptMap = {};
 
   SAAttendanceCubit(this._repository, {Dio? dio})
-      : _dio = dio,
-        super(SAAttendanceState.initial());
+    : _dio = dio,
+      super(SAAttendanceState.initial());
 
   String _formatApiDate(DateTime date) {
     return DateFormat('MM-dd-yyyy').format(date);
@@ -39,8 +39,9 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
 
         final data = _asMap(response.data);
         final items = (data['items'] as List<dynamic>? ?? const [])
-            .map((item) =>
-                DepartmentOption.fromJson(item as Map<String, dynamic>))
+            .map(
+              (item) => DepartmentOption.fromJson(item as Map<String, dynamic>),
+            )
             .toList();
 
         departments.addAll(items);
@@ -66,10 +67,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
       do {
         final response = await _dio.get(
           '/api/Auth/users',
-          queryParameters: {
-            'pageNumber': currentPage,
-            'pageSize': 100,
-          },
+          queryParameters: {'pageNumber': currentPage, 'pageSize': 100},
         );
 
         final data = _asMap(response.data);
@@ -121,6 +119,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
           records: response.attendances,
           totalEmployees: response.totalEmployees,
           employeesWithAttendance: response.employeesWithAttendance,
+          employeesAbsent: response.employeesAbsent,
           employeesWithDeparture: response.employeesWithDeparture,
           attendancePercentage: response.attendancePercentage,
           selectedDate: targetDate,
@@ -160,6 +159,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
           records: response.attendances,
           totalEmployees: response.totalEmployees,
           employeesWithAttendance: response.employeesWithAttendance,
+          employeesAbsent: response.employeesAbsent,
           employeesWithDeparture: response.employeesWithDeparture,
           attendancePercentage: response.attendancePercentage,
           selectedDate: startDate,
@@ -208,34 +208,41 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
   }
 
   void applyDeviceTypeFilter(int? deviceType) {
-    emit(state.copyWith(
-      deviceTypeFilter: deviceType,
-      clearDeviceTypeFilter: deviceType == null,
-    ));
+    emit(
+      state.copyWith(
+        deviceTypeFilter: deviceType,
+        clearDeviceTypeFilter: deviceType == null,
+      ),
+    );
     _applyFilterAndSearch();
   }
 
   void applyDepartmentFilter(int? departmentId) {
-    emit(state.copyWith(
-      selectedDepartmentId: departmentId,
-      clearDepartmentId: departmentId == null,
-    ));
+    emit(
+      state.copyWith(
+        selectedDepartmentId: departmentId,
+        clearDepartmentId: departmentId == null,
+      ),
+    );
     _applyFilterAndSearch();
   }
 
   void clearAllFilters() {
-    emit(state.copyWith(
-      activeFilter: AttendanceFilter.all,
-      searchQuery: '',
-      clearDeviceTypeFilter: true,
-      clearDepartmentId: true,
-    ));
+    emit(
+      state.copyWith(
+        activeFilter: AttendanceFilter.all,
+        searchQuery: '',
+        clearDeviceTypeFilter: true,
+        clearDepartmentId: true,
+      ),
+    );
     _applyFilterAndSearch();
   }
 
   void toggleExpand(String employeeName) {
-    final newExpanded =
-        state.expandedEmployeeId == employeeName ? null : employeeName;
+    final newExpanded = state.expandedEmployeeId == employeeName
+        ? null
+        : employeeName;
     emit(state.copyWith(expandedEmployeeId: newExpanded));
   }
 
@@ -277,19 +284,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
           .toList();
     }
 
-    // Recompute stats from filtered data
-    final total = filtered.length;
-    final withAttendance = filtered.where((r) => !r.isAbsent).length;
-    final withDeparture = filtered.where((r) => r.hasDeparted).length;
-    final percentage = total > 0 ? (withAttendance / total) * 100.0 : 0.0;
-
-    emit(state.copyWith(
-      filteredRecords: filtered,
-      totalEmployees: total,
-      employeesWithAttendance: withAttendance,
-      employeesWithDeparture: withDeparture,
-      attendancePercentage: percentage,
-    ));
+    emit(state.copyWith(filteredRecords: filtered));
   }
 
   Future<void> exportPdf() async {
@@ -297,10 +292,7 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
 
     try {
       final now = DateTime.now();
-      await _repository.downloadMonthlyPdf(
-        month: now.month,
-        year: now.year,
-      );
+      await _repository.downloadMonthlyPdf(month: now.month, year: now.year);
 
       emit(state.copyWith(isExportingPdf: false));
     } catch (e) {

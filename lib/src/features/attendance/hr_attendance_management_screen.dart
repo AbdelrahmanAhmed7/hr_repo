@@ -619,6 +619,13 @@ class _SummaryStrip extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: _SummaryChip(
+                label: 'Absent',
+                value: '${data?.absentCount ?? 0}',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _SummaryChip(
                 label: 'With Check-out',
                 value: '${data?.employeesWithDeparture ?? 0}',
               ),
