@@ -28,6 +28,12 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>نحتاج Face ID لتسجيل الحضور والانصراف بشكل آمن</string>
+	<key>NSCameraUsageDescription</key>
+	<string>يستخدم Medi HR الكاميرا للسماح لك بالتقاط ورفع المستندات أو الصور المرتبطة بملفك الوظيفي عند الحاجة.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يستخدم Medi HR مكتبة الصور للسماح لك باختيار ورفع المستندات أو الصور المرتبطة بملفك الوظيفي عند الحاجة.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>يستخدم Medi HR موقعك للتحقق من نطاق العمل عند تسجيل الحضور أو الانصراف، بما يتوافق مع إعدادات مؤسستك.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>نحتاج الموقع للتحقق من أنك في نطاق العمل عند تسجيل الحضور أو الانصراف أثناء استخدام التطبيق</string>
 	<key>UIApplicationSceneManifest</key>
