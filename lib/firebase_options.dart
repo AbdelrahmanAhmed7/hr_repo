@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '346765064484',
     projectId: 'medi-internal',
     storageBucket: 'medi-internal.firebasestorage.app',
-    iosBundleId: 'com.example.mediconsultInternal',
+    iosBundleId: 'com.medihr.app',
   );
 }
