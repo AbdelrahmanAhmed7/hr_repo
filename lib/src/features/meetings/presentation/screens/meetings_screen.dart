@@ -4,6 +4,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/components/custom_toast.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_state_widget.dart';
 import '../../data/models/meeting_model.dart';
@@ -29,14 +30,15 @@ class MeetingsScreen extends StatelessWidget {
 
     if (created == true && context.mounted) {
       CustomToast.showSuccess(
-        meeting == null
-            ? 'تم إنشاء الاجتماع بنجاح'
-            : 'تم تعديل الاجتماع بنجاح',
+        meeting == null ? 'تم إنشاء الاجتماع بنجاح' : 'تم تعديل الاجتماع بنجاح',
       );
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context, MeetingModel meeting) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    MeetingModel meeting,
+  ) async {
     final deleted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -163,6 +165,7 @@ class MeetingsScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: AppColors.backgroundSecondary,
           appBar: AppBar(
+            leading: const AppBackButton(),
             title: const Text('الاجتماعات'),
             backgroundColor: AppColors.surface,
             surfaceTintColor: Colors.transparent,

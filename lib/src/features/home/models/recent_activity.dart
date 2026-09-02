@@ -3,19 +3,9 @@ import '../../admin/models/super_admin_dashboard_response.dart';
 import '../../notifications/models/notification.dart';
 import '../../permissions/models/permission_request.dart' as domain;
 
-enum RequestType {
-  leave,
-  permission,
-  overtime,
-  assignment,
-  other,
-}
+enum RequestType { leave, permission, overtime, assignment, other }
 
-enum RequestStatus {
-  pending,
-  approved,
-  rejected,
-}
+enum RequestStatus { pending, approved, rejected }
 
 class RecentActivity {
   final String id;
@@ -62,6 +52,53 @@ class RecentActivity {
     this.deductionType,
   });
 
+  RecentActivity copyWith({
+    String? id,
+    RequestType? type,
+    RequestStatus? status,
+    String? title,
+    DateTime? date,
+    String? description,
+    String? userId,
+    String? userName,
+    int? remainingVacationBalance,
+    String? reason,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? startTime,
+    String? endTime,
+    String? location,
+    String? leaveType,
+    String? rejectionReason,
+    double? totalHours,
+    double? amount,
+    String? deductionType,
+  }) {
+    return RecentActivity(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      title: title ?? this.title,
+      date: date ?? this.date,
+      description: description ?? this.description,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      remainingVacationBalance:
+          remainingVacationBalance ?? this.remainingVacationBalance,
+      reason: reason ?? this.reason,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      location: location ?? this.location,
+      leaveType: leaveType ?? this.leaveType,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+      totalHours: totalHours ?? this.totalHours,
+      amount: amount ?? this.amount,
+      deductionType: deductionType ?? this.deductionType,
+    );
+  }
+
   String get typeText {
     switch (type) {
       case RequestType.leave:
@@ -98,8 +135,6 @@ class RecentActivity {
         return const Color(0xFFC41E3A); // error
     }
   }
-
-
 
   /// Convert PermissionRequest to RecentActivity
   factory RecentActivity.fromPermissionRequest(
@@ -274,16 +309,22 @@ class RecentActivity {
     }
 
     String? description;
-    if (r.type.toLowerCase() == 'leave' && r.startDate != null && r.endDate != null) {
+    if (r.type.toLowerCase() == 'leave' &&
+        r.startDate != null &&
+        r.endDate != null) {
       description = 'من ${r.startDate} إلى ${r.endDate}';
-    } else if (r.type.toLowerCase() == 'permission' && r.startTime != null && r.endTime != null) {
+    } else if (r.type.toLowerCase() == 'permission' &&
+        r.startTime != null &&
+        r.endTime != null) {
       description = 'من ${r.startTime} إلى ${r.endTime}';
     } else if (r.type.toLowerCase() == 'assignment' && r.where != null) {
       description = r.where;
     }
 
     final date = _resolveRequestDate(r);
-    final startDate = r.startDate != null ? DateTime.tryParse(r.startDate!) : null;
+    final startDate = r.startDate != null
+        ? DateTime.tryParse(r.startDate!)
+        : null;
     final endDate = r.endDate != null ? DateTime.tryParse(r.endDate!) : null;
 
     return RecentActivity(
@@ -323,14 +364,17 @@ class RecentActivity {
 
     RequestStatus requestStatus = RequestStatus.pending;
     final text = notification.title.toLowerCase();
-    if (text.contains('موافقة') || text.contains('accepted') || text.contains('approved')) {
+    if (text.contains('موافقة') ||
+        text.contains('accepted') ||
+        text.contains('approved')) {
       requestStatus = RequestStatus.approved;
     } else if (text.contains('رفض') || text.contains('rejected')) {
       requestStatus = RequestStatus.rejected;
     }
 
     String summary = notification.title;
-    if (notification.description != null && notification.description!.isNotEmpty) {
+    if (notification.description != null &&
+        notification.description!.isNotEmpty) {
       summary += '\n\n${notification.description}';
     }
 
@@ -429,4 +473,3 @@ class RecentActivity {
     }
   }
 }
-

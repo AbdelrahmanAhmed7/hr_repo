@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconsult_internal/src/core/theme/app_colors.dart';
 import 'package:mediconsult_internal/src/core/utils/device_fingerprint.dart';
 import 'package:mediconsult_internal/src/core/utils/app_exception.dart';
+import 'package:mediconsult_internal/src/shared/widgets/app_back_button.dart';
 
 class DeviceFingerprintDiagnosticScreen extends StatefulWidget {
   const DeviceFingerprintDiagnosticScreen({super.key});
@@ -57,9 +58,7 @@ class _DeviceFingerprintDiagnosticScreenState
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('إعادة تعيين'),
           ),
         ],
@@ -77,6 +76,7 @@ class _DeviceFingerprintDiagnosticScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('تشخيص بصمة المستخدم'),
         actions: [
           IconButton(
@@ -89,10 +89,10 @@ class _DeviceFingerprintDiagnosticScreenState
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? _buildError()
-                : _diagnostics == null
-                    ? const Center(child: Text('لا توجد بيانات'))
-                    : _buildContent(),
+            ? _buildError()
+            : _diagnostics == null
+            ? const Center(child: Text('لا توجد بيانات'))
+            : _buildContent(),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
@@ -134,10 +134,7 @@ class _DeviceFingerprintDiagnosticScreenState
             const SizedBox(height: 8),
             Text(
               _error!,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -181,7 +178,10 @@ class _DeviceFingerprintDiagnosticScreenState
           _buildCard('المصدر', d['source']),
           _buildCard('User ID', d['userId']),
           _buildCard('رقم الموبايل (مخفي)', d['phone']),
-          _buildCard('مستخدم مسجل؟', d['isAuthenticated'] == true ? 'نعم' : 'لا'),
+          _buildCard(
+            'مستخدم مسجل؟',
+            d['isAuthenticated'] == true ? 'نعم' : 'لا',
+          ),
           _buildCard('تاريخ الإنشاء', d['generatedAt']),
         ],
       ),

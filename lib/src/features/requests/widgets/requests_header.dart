@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../shared/widgets/app_back_button.dart';
 
 class RequestsHeader extends StatelessWidget {
   final String title;
@@ -14,6 +15,7 @@ class RequestsHeader extends StatelessWidget {
   final Color accentColor;
   final String? actionLabel;
   final VoidCallback? onActionPressed;
+  final bool showBackButton;
 
   const RequestsHeader({
     super.key,
@@ -27,6 +29,7 @@ class RequestsHeader extends StatelessWidget {
     this.accentColor = AppColors.primaryLight,
     this.actionLabel,
     this.onActionPressed,
+    this.showBackButton = true,
   });
 
   @override
@@ -36,11 +39,7 @@ class RequestsHeader extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F1F46),
-            Color(0xFF173C7A),
-            Color(0xFF2354A5),
-          ],
+          colors: [Color(0xFF0F1F46), Color(0xFF173C7A), Color(0xFF2354A5)],
         ),
         boxShadow: [
           BoxShadow(
@@ -59,6 +58,13 @@ class RequestsHeader extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  if (showBackButton) ...[
+                    AppBackButton(
+                      iconColor: Colors.white,
+                      backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Container(
                     width: 52,
                     height: 52,
@@ -222,10 +228,7 @@ class _MonthDropdown extends StatelessWidget {
   final int? selectedMonth;
   final ValueChanged<int?> onChanged;
 
-  const _MonthDropdown({
-    required this.selectedMonth,
-    required this.onChanged,
-  });
+  const _MonthDropdown({required this.selectedMonth, required this.onChanged});
 
   static const _months = <MapEntry<int?, String>>[
     MapEntry(null, 'كل الشهور'),

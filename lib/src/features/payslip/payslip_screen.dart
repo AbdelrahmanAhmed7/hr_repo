@@ -193,6 +193,10 @@ class _PayslipScreenState extends State<PayslipScreen> {
                           const SizedBox(height: 14),
                           _DatesSection(payslip: state.payslip!),
                           const SizedBox(height: 14),
+                          _WorkingHoursDetailsSection(
+                            details: state.payslip!.salaryDetails,
+                          ),
+                          const SizedBox(height: 14),
                           _SectionCard(
                             title: 'الملخص المالي',
                             subtitle:
@@ -262,6 +266,15 @@ class _PayslipScreenState extends State<PayslipScreen> {
                                     .insurance,
                               ),
                               _MoneyRow(
+                                label: 'إضافي',
+                                value: state
+                                    .payslip!
+                                    .salaryDetails
+                                    .allowances
+                                    .additional,
+                                positive: true,
+                              ),
+                              _MoneyRow(
                                 label: 'بدلات أخرى',
                                 value: state
                                     .payslip!
@@ -276,6 +289,21 @@ class _PayslipScreenState extends State<PayslipScreen> {
                               _MoneyRow(
                                 label: 'أجر إضافي',
                                 value: state.payslip!.salaryDetails.overtimePay,
+                              ),
+                              _MoneyRow(
+                                label: 'تسويات إضافة',
+                                value: state
+                                    .payslip!
+                                    .salaryDetails
+                                    .settlementAdditions,
+                                positive: true,
+                              ),
+                              _MoneyRow(
+                                label: 'قيمة التسوية',
+                                value: state
+                                    .payslip!
+                                    .salaryDetails
+                                    .settlementAmount,
                               ),
                               _MoneyRow(
                                 label: 'إجمالي البدلات',
@@ -359,6 +387,15 @@ class _PayslipScreenState extends State<PayslipScreen> {
                                 negative: true,
                               ),
                               _MoneyRow(
+                                label: 'تسويات خصم',
+                                value: state
+                                    .payslip!
+                                    .salaryDetails
+                                    .deductions
+                                    .settlementDeductions,
+                                negative: true,
+                              ),
+                              _MoneyRow(
                                 label: 'الضرائب',
                                 value: state.payslip!.salaryDetails.taxAmount,
                                 negative: true,
@@ -413,6 +450,22 @@ class _PayslipScreenState extends State<PayslipScreen> {
                               ),
                             ],
                           ),
+                          if (state
+                                  .payslip!
+                                  .salaryDetails
+                                  .settlementDetails
+                                  .isNotEmpty ||
+                              state
+                                  .payslip!
+                                  .salaryDetails
+                                  .deductions
+                                  .penaltyDetails
+                                  .isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _DetailsListsSection(
+                              details: state.payslip!.salaryDetails,
+                            ),
+                          ],
                         ]),
                       ),
                     ),
@@ -783,6 +836,15 @@ class _DatesSection extends StatelessWidget {
           emptyLabel: 'لا يوجد أيام تأخير مسجلة',
           chipColor: AppColors.warning,
         ),
+        if (payslip.salaryDetails.incompleteDates.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _DateListBlock(
+            title: 'أيام الحضور الناقص',
+            dates: payslip.salaryDetails.incompleteDates,
+            emptyLabel: 'لا يوجد أيام حضور ناقص',
+            chipColor: AppColors.info,
+          ),
+        ],
         const SizedBox(height: 12),
         _DateListBlock(
           title: 'أيام الغياب',
@@ -799,6 +861,110 @@ class _DatesSection extends StatelessWidget {
             chipColor: AppColors.info,
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _WorkingHoursDetailsSection extends StatelessWidget {
+  final SalaryDetails details;
+
+  const _WorkingHoursDetailsSection({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'تفاصيل الحضور والعمل',
+      subtitle: 'ساعات العمل والشيفتات والأيام المؤثرة على حساب المرتب.',
+      children: [
+        _InfoRow('أيام العمل المدفوعة', '${details.paidShiftDays} يوم'),
+        _InfoRow('إجمالي أيام العمل', '${details.totalWorkingDays} يوم'),
+        _InfoRow('ساعات العمل', '${_formatNumber(details.hoursWorked)} ساعة'),
+        _InfoRow(
+          'الساعات الإضافية',
+          '${_formatNumber(details.overtimeHours)} ساعة',
+        ),
+        _MoneyRow(label: 'أجر الساعات الإضافية', value: details.overtimePay),
+        if (details.overtimeDates.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _DateListBlock(
+            title: 'أيام العمل الإضافي',
+            dates: details.overtimeDates,
+            emptyLabel: '',
+            chipColor: AppColors.success,
+          ),
+        ],
+        if (details.shiftRate != null && details.shiftRate != 0) ...[
+          const Divider(height: 24),
+          _MoneyRow(label: 'أجر يوم الشيفت', value: details.shiftRate!),
+        ],
+        if (details.shiftMonthlyRequiredWorkingDays != 0 ||
+            details.shiftMonthlyRequiredHours != 0 ||
+            details.shiftMonthlyActualHours != 0 ||
+            details.shiftMonthlyMissingHours != 0 ||
+            details.shiftMonthlyDeductionDays != 0 ||
+            details.shiftMonthlyAbsentDays != 0 ||
+            details.shiftMonthlyHourDeficitDays != 0) ...[
+          const Divider(height: 24),
+          _InfoRow(
+            'أيام العمل المطلوبة',
+            '${details.shiftMonthlyRequiredWorkingDays} يوم',
+          ),
+          _InfoRow(
+            'الساعات المطلوبة',
+            '${_formatNumber(details.shiftMonthlyRequiredHours)} ساعة',
+          ),
+          _InfoRow(
+            'الساعات الفعلية',
+            '${_formatNumber(details.shiftMonthlyActualHours)} ساعة',
+          ),
+          _InfoRow(
+            'الساعات الناقصة',
+            '${_formatNumber(details.shiftMonthlyMissingHours)} ساعة',
+            valueColor: AppColors.error,
+          ),
+          _InfoRow(
+            'أيام خصم الشيفت',
+            '${details.shiftMonthlyDeductionDays} يوم',
+            valueColor: AppColors.error,
+          ),
+          _InfoRow(
+            'أيام غياب الشيفت',
+            '${details.shiftMonthlyAbsentDays} يوم',
+            valueColor: AppColors.error,
+          ),
+          _InfoRow(
+            'أيام عجز الساعات',
+            '${details.shiftMonthlyHourDeficitDays} يوم',
+            valueColor: AppColors.error,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _DetailsListsSection extends StatelessWidget {
+  final SalaryDetails details;
+
+  const _DetailsListsSection({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'تفاصيل إضافية',
+      subtitle: 'بنود التسويات والجزاءات كما وردت من نظام الرواتب.',
+      children: [
+        if (details.settlementDetails.isNotEmpty)
+          _TextDetailsBlock(
+            title: 'تفاصيل التسويات',
+            details: details.settlementDetails,
+          ),
+        if (details.settlementDetails.isNotEmpty &&
+            details.deductions.penaltyDetails.isNotEmpty)
+          const SizedBox(height: 14),
+        if (details.deductions.penaltyDetails.isNotEmpty)
+          _PenaltyDetails(details: details.deductions.penaltyDetails),
       ],
     );
   }
@@ -895,6 +1061,70 @@ class _DateListBlock extends StatelessWidget {
   }
 }
 
+class _TextDetailsBlock extends StatelessWidget {
+  final String title;
+  final List<String> details;
+
+  const _TextDetailsBlock({required this.title, required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final values = details
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (values.isEmpty)
+          Text(
+            'لا توجد تفاصيل',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          )
+        else
+          ...values.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 7),
+                    child: Icon(
+                      Icons.circle,
+                      size: 6,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 String _tryFormatDate(String value) {
   final parsed = DateTime.tryParse(value);
   if (parsed == null) return value;
@@ -944,6 +1174,42 @@ class _SectionCard extends StatelessWidget {
           const SizedBox(height: 16),
           ...children,
           ?footer,
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _InfoRow(this.label, this.value, {this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: valueColor ?? AppColors.textPrimary,
+            ),
+          ),
         ],
       ),
     );
@@ -1020,7 +1286,7 @@ class _MoneyRow extends StatelessWidget {
 }
 
 class _PenaltyDetails extends StatelessWidget {
-  final List<String> details;
+  final List<PayslipPenaltyDetail> details;
 
   const _PenaltyDetails({required this.details});
 
@@ -1038,8 +1304,21 @@ class _PenaltyDetails extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        ...details.map(
-          (detail) => Padding(
+        ...details.map((detail) {
+          final mainValue = detail.isDayPenalty
+              ? '${_formatNumber(detail.days)} يوم'
+              : _formatMoney(detail.amount);
+          final date = detail.penaltyDate == null
+              ? null
+              : _tryFormatDate(detail.penaltyDate!);
+          final reason = detail.reason ?? detail.description;
+          final title = detail.isDayPenalty
+              ? 'جزاء أيام'
+              : detail.isAmountPenalty
+              ? 'جزاء مبلغ'
+              : 'جزاء';
+
+          return Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1050,17 +1329,51 @@ class _PenaltyDetails extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    detail,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$title: $mainValue',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (reason != null && reason.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          reason,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                      if (date != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          date,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textTertiary),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
+                if (!detail.isDayPenalty && detail.amount == 0)
+                  const SizedBox.shrink()
+                else if (detail.isDayPenalty && detail.amount > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatMoney(detail.amount),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ],
             ),
-          ),
-        ),
+          );
+        }),
       ],
     );
   }

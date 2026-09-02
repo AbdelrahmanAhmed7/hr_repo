@@ -8,6 +8,7 @@ import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../home/models/home_api_response.dart';
 import '../home/models/recent_activity.dart';
 import '../home/widgets/recent_activity_card.dart';
@@ -19,10 +20,7 @@ import 'widgets/requests_header.dart';
 class RequestsScreen extends StatefulWidget {
   final int initialTab;
 
-  const RequestsScreen({
-    super.key,
-    this.initialTab = 0,
-  });
+  const RequestsScreen({super.key, this.initialTab = 0});
 
   @override
   State<RequestsScreen> createState() => _RequestsScreenState();
@@ -154,7 +152,9 @@ class _RequestsScreenState extends State<RequestsScreen>
 
     // Parse date
     DateTime date = DateTime.now();
-    final dateStr = item.createdAt.isNotEmpty ? item.createdAt : (item.startDate ?? '');
+    final dateStr = item.createdAt.isNotEmpty
+        ? item.createdAt
+        : (item.startDate ?? '');
     if (dateStr.isNotEmpty) {
       final parsed = DateTime.tryParse(dateStr);
       if (parsed != null) date = parsed;
@@ -166,7 +166,9 @@ class _RequestsScreenState extends State<RequestsScreen>
     final endDate = item.endDate ?? '';
     if (type == 'leave' && startDate.isNotEmpty && endDate.isNotEmpty) {
       description = 'من $startDate إلى $endDate';
-    } else if (type == 'permission' && item.startTime != null && item.endTime != null) {
+    } else if (type == 'permission' &&
+        item.startTime != null &&
+        item.endTime != null) {
       description = 'من ${item.startTime} إلى ${item.endTime}';
     } else if (type == 'assignment' && item.where != null) {
       description = item.where;
@@ -213,19 +215,28 @@ class _RequestsScreenState extends State<RequestsScreen>
   List<RecentActivity> get _currentList {
     switch (_selectedFilterIndex) {
       case 1:
-        return _allRequests.where((r) => r.status == RequestStatus.pending).toList();
+        return _allRequests
+            .where((r) => r.status == RequestStatus.pending)
+            .toList();
       case 2:
-        return _allRequests.where((r) => r.status == RequestStatus.approved).toList();
+        return _allRequests
+            .where((r) => r.status == RequestStatus.approved)
+            .toList();
       case 3:
-        return _allRequests.where((r) => r.status == RequestStatus.rejected).toList();
+        return _allRequests
+            .where((r) => r.status == RequestStatus.rejected)
+            .toList();
       default:
         return _allRequests;
     }
   }
 
-  int get _pendingCount => _allRequests.where((r) => r.status == RequestStatus.pending).length;
-  int get _approvedCount => _allRequests.where((r) => r.status == RequestStatus.approved).length;
-  int get _rejectedCount => _allRequests.where((r) => r.status == RequestStatus.rejected).length;
+  int get _pendingCount =>
+      _allRequests.where((r) => r.status == RequestStatus.pending).length;
+  int get _approvedCount =>
+      _allRequests.where((r) => r.status == RequestStatus.approved).length;
+  int get _rejectedCount =>
+      _allRequests.where((r) => r.status == RequestStatus.rejected).length;
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +249,14 @@ class _RequestsScreenState extends State<RequestsScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        backgroundColor: AppColors.backgroundSecondary,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
+        top: false,
         bottom: false,
         child: RefreshIndicator(
           onRefresh: _loadData,
@@ -263,6 +281,7 @@ class _RequestsScreenState extends State<RequestsScreen>
                   onActionPressed: canOpenAllRequests
                       ? () => context.push('/all-requests')
                       : null,
+                  showBackButton: false,
                 ),
               ),
               if (canOpenAllRequests)
@@ -305,7 +324,9 @@ class _RequestsScreenState extends State<RequestsScreen>
                                 label: Text(
                                   _tabs[index].label,
                                   style: AppTextStyles.labelLarge.copyWith(
-                                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -313,14 +334,18 @@ class _RequestsScreenState extends State<RequestsScreen>
                                 selectedColor: AppColors.primary,
                                 backgroundColor: Colors.white,
                                 side: BorderSide(
-                                  color: isSelected ? AppColors.primary : AppColors.border,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.border,
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 onSelected: (selected) {
                                   if (selected) {
-                                    setState(() => _selectedFilterIndex = index);
+                                    setState(
+                                      () => _selectedFilterIndex = index,
+                                    );
                                   }
                                 },
                               ),
@@ -446,10 +471,26 @@ class _ActivityOverview extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _ActivityCountPill(label: 'الكل', value: '$totalCount', color: AppColors.primary),
-        _ActivityCountPill(label: 'معلقة', value: '$pendingCount', color: const Color(0xFFD97706)),
-        _ActivityCountPill(label: 'مقبولة', value: '$acceptedCount', color: const Color(0xFF0F7D3E)),
-        _ActivityCountPill(label: 'مرفوضة', value: '$rejectedCount', color: const Color(0xFFC41E3A)),
+        _ActivityCountPill(
+          label: 'الكل',
+          value: '$totalCount',
+          color: AppColors.primary,
+        ),
+        _ActivityCountPill(
+          label: 'معلقة',
+          value: '$pendingCount',
+          color: const Color(0xFFD97706),
+        ),
+        _ActivityCountPill(
+          label: 'مقبولة',
+          value: '$acceptedCount',
+          color: const Color(0xFF0F7D3E),
+        ),
+        _ActivityCountPill(
+          label: 'مرفوضة',
+          value: '$rejectedCount',
+          color: const Color(0xFFC41E3A),
+        ),
       ],
     );
   }
@@ -460,7 +501,11 @@ class _ActivityCountPill extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _ActivityCountPill({required this.label, required this.value, required this.color});
+  const _ActivityCountPill({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -472,7 +517,10 @@ class _ActivityCountPill extends StatelessWidget {
       ),
       child: Text(
         '$label $value',
-        style: AppTextStyles.labelSmall.copyWith(color: color, fontWeight: FontWeight.w800),
+        style: AppTextStyles.labelSmall.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:mediconsult_internal/src/features/admin/cubit/admin_requests_sta
 import '../../core/theme/app_colors.dart';
 import '../requests/widgets/requests_header.dart';
 import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/status_tabs_bar.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/skeleton/skeleton_list_item.dart';
@@ -94,78 +95,87 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
+        top: false,
         bottom: false,
         child: BlocBuilder<AdminRequestsCubit, AdminRequestsState>(
           builder: (context, state) {
             final cubit = context.read<AdminRequestsCubit>();
 
-              return NestedScrollView(
-                headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-                  return [
-                    SliverToBoxAdapter(
-                      child: RequestsHeader(
-                        title: 'إدارة الطلبات',
-                        subtitle: 'متابعة طلبات الموظفين والإجراءات عليها من مكان واحد',
-                        countLabel: _selectedMonth == null
-                            ? 'إجمالي الطلبات'
-                            : 'طلبات الشهر',
-                        requestCount: state.allRequests.length,
-                        selectedMonth: _selectedMonth,
-                        onMonthChanged: _handleMonthChanged,
-                        icon: Icons.request_quote_rounded,
-                        accentColor: const Color(0xFFFFB74D),
+            return NestedScrollView(
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                return [
+                  SliverToBoxAdapter(
+                    child: RequestsHeader(
+                      title: 'إدارة الطلبات',
+                      subtitle:
+                          'متابعة طلبات الموظفين والإجراءات عليها من مكان واحد',
+                      countLabel: _selectedMonth == null
+                          ? 'إجمالي الطلبات'
+                          : 'طلبات الشهر',
+                      requestCount: state.allRequests.length,
+                      selectedMonth: _selectedMonth,
+                      onMonthChanged: _handleMonthChanged,
+                      icon: Icons.request_quote_rounded,
+                      accentColor: const Color(0xFFFFB74D),
+                      showBackButton: false,
+                    ),
+                  ),
+                  // Tabs
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: StatusTabsSliverDelegate(
+                      StatusTabsBar(
+                        controller: _tabController,
+                        pendingLabel: 'قيد الانتظار',
                       ),
                     ),
-                    // Tabs
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: StatusTabsSliverDelegate(
-                        StatusTabsBar(
-                          controller: _tabController,
-                          pendingLabel: 'قيد الانتظار',
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
+                      child: _RequestsTypeFilterBar(
+                        selectedFilter: _selectedTypeFilter,
+                        onChanged: (filter) {
+                          setState(() => _selectedTypeFilter = filter);
+                        },
+                        leavesCount: _countByType(
+                          state.allRequests,
+                          RequestType.leave,
+                        ),
+                        permissionsCount: _countByType(
+                          state.allRequests,
+                          RequestType.permission,
+                        ),
+                        missionsCount: _countByType(
+                          state.allRequests,
+                          RequestType.assignment,
                         ),
                       ),
                     ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
-                        child: _RequestsTypeFilterBar(
-                          selectedFilter: _selectedTypeFilter,
-                          onChanged: (filter) {
-                            setState(() => _selectedTypeFilter = filter);
-                          },
-                          leavesCount: _countByType(
-                            state.allRequests,
-                            RequestType.leave,
-                          ),
-                          permissionsCount: _countByType(
-                            state.allRequests,
-                            RequestType.permission,
-                          ),
-                          missionsCount: _countByType(
-                            state.allRequests,
-                            RequestType.assignment,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ];
-                },
-                body: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildRequestsList(state.allRequests, cubit),
-                    _buildRequestsList(state.pendingRequests, cubit),
-                    _buildRequestsList(state.approvedRequests, cubit),
-                    _buildRequestsList(state.rejectedRequests, cubit),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildRequestsList(state.allRequests, cubit),
+                  _buildRequestsList(state.pendingRequests, cubit),
+                  _buildRequestsList(state.approvedRequests, cubit),
+                  _buildRequestsList(state.rejectedRequests, cubit),
+                ],
+              ),
+            );
+          },
         ),
-      );
+      ),
+    );
   }
 
   List<RecentActivity> _applyTypeFilter(List<RecentActivity> requests) {
@@ -185,10 +195,13 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
     }
   }
 
-  Widget _buildRequestsList(List<RecentActivity> requests, AdminRequestsCubit cubit) {
+  Widget _buildRequestsList(
+    List<RecentActivity> requests,
+    AdminRequestsCubit cubit,
+  ) {
     final filteredRequests = _applyTypeFilter(requests);
 
-    if (cubit.state.isLoading) {
+    if (cubit.state.isLoading && cubit.state.allRequests.isEmpty) {
       return ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
@@ -219,7 +232,9 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
                   icon: isFilteredOut
                       ? Icons.filter_alt_off_rounded
                       : Icons.inbox_outlined,
-                  title: isFilteredOut ? 'لا توجد نتائج لهذه الفلترة' : 'لا توجد طلبات',
+                  title: isFilteredOut
+                      ? 'لا توجد نتائج لهذه الفلترة'
+                      : 'لا توجد طلبات',
                   message: isFilteredOut
                       ? 'جرّب تغيير نوع الطلب أو اختيار تبويب حالة مختلف.'
                       : 'لم يتم العثور على أي طلبات في هذه الفئة بعد.',
@@ -250,7 +265,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
           final request = filteredRequests[index];
           return AdminRequestCard(
             request: request,
-            isLoading: false,
+            isLoading: cubit.state.processingRequestId == request.id,
             onApprove: request.status == RequestStatus.pending
                 ? () => _handleApprove(request.id, cubit)
                 : null,
@@ -364,18 +379,12 @@ class _TypeChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 17,
-                color: isSelected ? Colors.white : color,
-              ),
+              Icon(icon, size: 17, color: isSelected ? Colors.white : color),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: isSelected
-                      ? Colors.white
-                      : AppColors.textSecondary,
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -426,9 +435,7 @@ class _RejectReasonDialogState extends State<_RejectReasonDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -462,16 +469,16 @@ class _RejectReasonDialogState extends State<_RejectReasonDialog> {
                       Text(
                         'رفض الطلب',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'هل أنت متأكد من رفض هذا الطلب؟',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -483,19 +490,16 @@ class _RejectReasonDialogState extends State<_RejectReasonDialog> {
             Text(
               'سبب الرفض (اختياري)',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: AppColors.backgroundSecondary,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.border,
-                  width: 1,
-                ),
+                border: Border.all(color: AppColors.border, width: 1),
               ),
               child: TextField(
                 controller: _reasonController,

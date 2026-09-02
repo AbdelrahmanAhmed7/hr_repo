@@ -91,7 +91,7 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                       ),
                     IconButton(
                       icon: Icon(
-                        Icons.chevron_right_rounded,
+                        Icons.chevron_left_rounded,
                         color: state.isToday
                             ? AppColors.textTertiary
                             : AppColors.textSecondary,
@@ -111,7 +111,7 @@ class _PunchFilterBarState extends State<PunchFilterBar> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.chevron_left_rounded),
+                      icon: const Icon(Icons.chevron_right_rounded),
                       onPressed: () =>
                           context.read<PunchCubit>().goToPreviousDay(),
                     ),

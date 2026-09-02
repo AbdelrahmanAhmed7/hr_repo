@@ -9,6 +9,7 @@ import 'package:mediconsult_internal/src/features/penalties/cubit/penalties_cubi
 import 'package:mediconsult_internal/src/features/penalties/cubit/penalties_state.dart';
 import 'package:mediconsult_internal/src/features/penalties/models/penalty_type.dart';
 import 'package:mediconsult_internal/src/shared/components/custom_toast.dart';
+import 'package:mediconsult_internal/src/shared/widgets/app_back_button.dart';
 import 'package:mediconsult_internal/src/shared/widgets/searchable_dropdown_field.dart';
 
 import '../../core/services/service_locator.dart';
@@ -55,6 +56,7 @@ class _PenaltiesScreenState extends State<PenaltiesScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.backgroundSecondary,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,

@@ -5,6 +5,7 @@ import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/status_tabs_bar.dart';
 import '../auth/cubit/auth_cubit.dart';
 import '../home/models/recent_activity.dart';
@@ -90,8 +91,9 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
       // The /all endpoints are Super Admin only — other roles fall back to
       // the classic home-based requests list.
       if (authState.isSuperAdmin) {
-        all = await getIt<ManagementRequestsRepository>()
-            .getAllRequests(month: _selectedMonth);
+        all = await getIt<ManagementRequestsRepository>().getAllRequests(
+          month: _selectedMonth,
+        );
         pending = all
             .where((item) => item.status == RequestStatus.pending)
             .toList();
@@ -199,7 +201,14 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        backgroundColor: AppColors.backgroundSecondary,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
+        top: false,
         bottom: false,
         child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -218,6 +227,7 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
                   },
                   icon: Icons.inventory_2_rounded,
                   accentColor: AppColors.primaryLight,
+                  showBackButton: false,
                 ),
               ),
               SliverPersistentHeader(

@@ -9,6 +9,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../shared/widgets/error_state_widget.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/shimmer_loading.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/searchable_dropdown_field.dart';
 import '../attendance/cubit/sa_attendance_cubit.dart';
 import '../attendance/cubit/sa_attendance_state.dart';
@@ -20,7 +21,7 @@ import '../attendance/widgets/sa_attendance_employee_row.dart';
 import '../attendance/presentation/cubit/punch_cubit.dart';
 import '../attendance/presentation/cubit/punch_state.dart';
 import '../attendance/presentation/widgets/punch_filter_bar.dart';
-import '../attendance/presentation/widgets/punch_summary_list.dart';
+import '../attendance/presentation/widgets/punch_summary_employee_card.dart';
 
 class SuperAdminAttendanceScreen extends StatelessWidget {
   const SuperAdminAttendanceScreen({super.key});
@@ -56,6 +57,7 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
       child: Scaffold(
         backgroundColor: AppColors.backgroundSecondary,
         appBar: AppBar(
+          leading: const AppBackButton(),
           title: const Text('سجل الحضور والانصراف'),
           centerTitle: true,
           bottom: const TabBar(
@@ -101,41 +103,54 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
             // Tab 1: Attendance
             BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
               builder: (context, state) {
-                return Column(
-                  children: [
-                    SAAttendanceDateNavigator(
-                      selectedDate: state.selectedDate,
-                      onPrevious: () =>
-                          context.read<SAAttendanceCubit>().goToPreviousDay(),
-                      onNext: () =>
-                          context.read<SAAttendanceCubit>().goToNextDay(),
-                      onToday: () =>
-                          context.read<SAAttendanceCubit>().goToToday(),
+                return CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: SAAttendanceDateNavigator(
+                        selectedDate: state.selectedDate,
+                        onPrevious: () =>
+                            context.read<SAAttendanceCubit>().goToPreviousDay(),
+                        onNext: () =>
+                            context.read<SAAttendanceCubit>().goToNextDay(),
+                        onToday: () =>
+                            context.read<SAAttendanceCubit>().goToToday(),
+                      ),
                     ),
-                    _DepartmentFilterBar(
-                      departments: state.departments,
-                      selectedDepartmentId: state.selectedDepartmentId,
-                      onDepartmentChanged: (id) => context
-                          .read<SAAttendanceCubit>()
-                          .applyDepartmentFilter(id),
+                    SliverToBoxAdapter(
+                      child: _DepartmentFilterBar(
+                        departments: state.departments,
+                        selectedDepartmentId: state.selectedDepartmentId,
+                        onDepartmentChanged: (id) => context
+                            .read<SAAttendanceCubit>()
+                            .applyDepartmentFilter(id),
+                      ),
                     ),
-                    SAAttendanceStatsStrip(
-                      totalCount: state.totalEmployees,
-                      presentCount: state.employeesWithAttendance,
-                      absentCount: state.absentCount,
-                      percentage: state.attendancePercentage,
+                    SliverToBoxAdapter(
+                      child: SAAttendanceStatsStrip(
+                        totalCount: state.totalEmployees,
+                        presentCount: state.employeesWithAttendance,
+                        absentCount: state.absentCount,
+                        percentage: state.attendancePercentage,
+                      ),
                     ),
-                    SAAttendanceFilterBar(
-                      activeFilter: state.activeFilter,
-                      onFilterChanged: (filter) =>
-                          context.read<SAAttendanceCubit>().applyFilter(filter),
+                    SliverToBoxAdapter(
+                      child: SAAttendanceFilterBar(
+                        activeFilter: state.activeFilter,
+                        onFilterChanged: (filter) => context
+                            .read<SAAttendanceCubit>()
+                            .applyFilter(filter),
+                      ),
                     ),
-                    SAAttendanceSearchBar(
-                      query: state.searchQuery,
-                      onChanged: (query) =>
-                          context.read<SAAttendanceCubit>().applySearch(query),
+                    SliverToBoxAdapter(
+                      child: SAAttendanceSearchBar(
+                        query: state.searchQuery,
+                        onChanged: (query) => context
+                            .read<SAAttendanceCubit>()
+                            .applySearch(query),
+                      ),
                     ),
-                    Expanded(child: _buildBody(context, state)),
+                    _buildBodySliver(context, state),
                   ],
                 );
               },
@@ -191,24 +206,30 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
     );
   }
 
-  Widget _buildBody(BuildContext context, SAAttendanceState state) {
+  Widget _buildBodySliver(BuildContext context, SAAttendanceState state) {
     switch (state.status) {
       case SAAttendanceStatus.initial:
       case SAAttendanceStatus.loading:
         return _buildShimmer();
       case SAAttendanceStatus.error:
-        return ErrorStateWidget(
-          error: state.errorMessage ?? 'حدث خطأ غير متوقع',
-          buttonLabel: 'إعادة المحاولة',
-          onRetry: () => context.read<SAAttendanceCubit>().loadAttendance(),
+        return SliverFillRemaining(
+          hasScrollBody: false,
+          child: ErrorStateWidget(
+            error: state.errorMessage ?? 'حدث خطأ غير متوقع',
+            buttonLabel: 'إعادة المحاولة',
+            onRetry: () => context.read<SAAttendanceCubit>().loadAttendance(),
+          ),
         );
       case SAAttendanceStatus.success:
         if (state.filteredRecords.isEmpty) {
-          return EmptyStateWidget(
-            icon: Icons.event_busy_rounded,
-            title: 'لا يوجد سجلات',
-            message: 'لا توجد سجلات حضور لهذا التاريخ',
-            iconColor: AppColors.textTertiary,
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyStateWidget(
+              icon: Icons.event_busy_rounded,
+              title: 'لا يوجد سجلات',
+              message: 'لا توجد سجلات حضور لهذا التاريخ',
+              iconColor: AppColors.textTertiary,
+            ),
           );
         }
         return _buildList(context, state);
@@ -216,72 +237,76 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
   }
 
   Widget _buildList(BuildContext context, SAAttendanceState state) {
-    return ListView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.only(
         top: AppSpacing.sm,
         bottom: AppSpacing.xxxl,
       ),
-      itemCount: state.filteredRecords.length,
-      itemBuilder: (context, index) {
-        final record = state.filteredRecords[index];
-        return SAAttendanceEmployeeRow(
-          record: record,
-          isExpanded: state.expandedEmployeeId == record.employeeName,
-          onTap: () => context.read<SAAttendanceCubit>().toggleExpand(
-            record.employeeName,
-          ),
-        );
-      },
+      sliver: SliverList.builder(
+        itemCount: state.filteredRecords.length,
+        itemBuilder: (context, index) {
+          final record = state.filteredRecords[index];
+          return SAAttendanceEmployeeRow(
+            record: record,
+            isExpanded: state.expandedEmployeeId == record.employeeName,
+            onTap: () => context.read<SAAttendanceCubit>().toggleExpand(
+              record.employeeName,
+            ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildShimmer() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+    return SliverPadding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      sliver: SliverList.builder(
         itemCount: 8,
         itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppSizing.radiusMedium),
-            ),
-            child: Row(
-              children: [
-                const ShimmerPlaceholder(
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ShimmerPlaceholder(
-                        width: 120 + (index * 10).toDouble(),
-                        height: 14,
-                        borderRadius: 4,
-                      ),
-                      const SizedBox(height: 6),
-                      ShimmerPlaceholder(
-                        width: 80,
-                        height: 10,
-                        borderRadius: 4,
-                      ),
-                    ],
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppSizing.radiusMedium),
+              ),
+              child: Row(
+                children: [
+                  const ShimmerPlaceholder(
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
                   ),
-                ),
-                const ShimmerPlaceholder(
-                  width: 56,
-                  height: 22,
-                  borderRadius: 11,
-                ),
-              ],
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ShimmerPlaceholder(
+                          width: 120 + (index * 10).toDouble(),
+                          height: 14,
+                          borderRadius: 4,
+                        ),
+                        const SizedBox(height: 6),
+                        const ShimmerPlaceholder(
+                          width: 80,
+                          height: 10,
+                          borderRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const ShimmerPlaceholder(
+                    width: 56,
+                    height: 22,
+                    borderRadius: 11,
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -662,39 +687,71 @@ class _PunchTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<PunchCubit, PunchState>(
       builder: (context, state) {
-        return Column(
-          children: [
-            const PunchFilterBar(),
-            Expanded(
-              child: Builder(
-                builder: (context) {
-                  if (state.summaryStatus == PunchStatus.loading &&
-                      state.summaryItems.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (state.summaryStatus == PunchStatus.error &&
-                      state.summaryItems.isEmpty) {
-                    return ErrorStateWidget(
-                      error: state.errorMessage ?? 'حدث خطأ',
-                      buttonLabel: 'إعادة المحاولة',
-                      onRetry: () =>
-                          context.read<PunchCubit>().loadSummary(refresh: true),
-                    );
-                  }
-                  if (state.summaryItems.isEmpty) {
-                    return const EmptyStateWidget(
-                      icon: Icons.event_busy_rounded,
-                      title: 'لا يوجد بيانات',
-                      message: 'لم يتم العثور على سجلات في هذه الفترة',
-                    );
-                  }
-                  return const PunchSummaryList();
-                },
-              ),
-            ),
-          ],
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.metrics.pixels >=
+                notification.metrics.maxScrollExtent * 0.8) {
+              context.read<PunchCubit>().loadMoreSummary();
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              const SliverToBoxAdapter(child: PunchFilterBar()),
+              _buildPunchBodySliver(context, state),
+            ],
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildPunchBodySliver(BuildContext context, PunchState state) {
+    if (state.summaryStatus == PunchStatus.loading &&
+        state.summaryItems.isEmpty) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (state.summaryStatus == PunchStatus.error &&
+        state.summaryItems.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: ErrorStateWidget(
+          error: state.errorMessage ?? 'حدث خطأ',
+          buttonLabel: 'إعادة المحاولة',
+          onRetry: () => context.read<PunchCubit>().loadSummary(refresh: true),
+        ),
+      );
+    }
+    if (state.summaryItems.isEmpty) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: EmptyStateWidget(
+          icon: Icons.event_busy_rounded,
+          title: 'لا يوجد بيانات',
+          message: 'لم يتم العثور على سجلات في هذه الفترة',
+        ),
+      );
+    }
+
+    final items = state.filteredSummaryItems;
+    return SliverPadding(
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      sliver: SliverList.builder(
+        itemCount: items.length + (state.isLoadingMoreSummary ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == items.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          return PunchSummaryEmployeeCard(item: items[index]);
+        },
+      ),
     );
   }
 }

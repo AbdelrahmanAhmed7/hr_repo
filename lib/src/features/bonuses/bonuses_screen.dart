@@ -8,6 +8,7 @@ import 'package:mediconsult_internal/src/features/bonuses/models/employee_bonus.
 import 'package:mediconsult_internal/src/features/hr/models/employee.dart';
 import 'package:mediconsult_internal/src/features/hr/repository/employees_repository.dart';
 import 'package:mediconsult_internal/src/shared/components/custom_toast.dart';
+import 'package:mediconsult_internal/src/shared/widgets/app_back_button.dart';
 import 'package:mediconsult_internal/src/shared/widgets/searchable_dropdown_field.dart';
 
 import '../../core/services/service_locator.dart';
@@ -53,6 +54,7 @@ class _BonusesScreenState extends State<BonusesScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.backgroundSecondary,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,

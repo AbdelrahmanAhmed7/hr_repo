@@ -125,7 +125,7 @@ class _SuperAdminScreenBody extends StatelessWidget {
                     context,
                     0,
                     Icons.dashboard_outlined,
-                    'لوحة التحكم',
+                    'الرئيسية',
                   ),
                   _buildNavItem(context, 1, Icons.how_to_reg_rounded, 'الحضور'),
                   _buildNavItem(

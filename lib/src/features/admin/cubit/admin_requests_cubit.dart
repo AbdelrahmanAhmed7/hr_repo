@@ -79,10 +79,7 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
     } catch (e) {
       if (isClosed) return;
       emit(
-        state.copyWith(
-          isLoading: false,
-          error: AppException.from(e).message,
-        ),
+        state.copyWith(isLoading: false, error: AppException.from(e).message),
       );
     }
   }
@@ -106,7 +103,7 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
   }) async {
     if (isClosed) return false;
     try {
-      emit(state.copyWith(isLoading: true, clearError: true));
+      emit(state.copyWith(processingRequestId: requestId, clearError: true));
       final request = state.allRequests.firstWhere(
         (item) => item.id == requestId,
       );
@@ -145,18 +142,42 @@ class AdminRequestsCubit extends Cubit<AdminRequestsState> {
           break;
       }
 
-      await loadRequests();
+      _updateRequestLocally(
+        requestId: requestId,
+        status: status == 2 ? RequestStatus.approved : RequestStatus.rejected,
+        rejectionReason: rejectionReason,
+      );
       return true;
     } catch (e) {
       if (isClosed) return false;
       emit(
         state.copyWith(
-          isLoading: false,
           error: AppException.from(e).message,
+          clearProcessingRequest: true,
         ),
       );
       return false;
     }
+  }
+
+  void _updateRequestLocally({
+    required String requestId,
+    required RequestStatus status,
+    String? rejectionReason,
+  }) {
+    if (isClosed) return;
+    final updatedRequests = state.allRequests.map((item) {
+      if (item.id != requestId) return item;
+      return item.copyWith(status: status, rejectionReason: rejectionReason);
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+    emit(
+      state.copyWith(
+        allRequests: updatedRequests,
+        clearError: true,
+        clearProcessingRequest: true,
+      ),
+    );
   }
 
   Future<List<RecentActivity>> _loadAdminRequests({int? month}) async {

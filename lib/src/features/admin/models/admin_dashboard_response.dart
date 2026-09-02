@@ -211,6 +211,36 @@ class AdminRequest {
     this.reason,
   });
 
+  AdminRequest copyWith({
+    int? id,
+    String? type,
+    String? createdAt,
+    String? status,
+    String? userId,
+    String? date,
+    String? startDate,
+    String? endDate,
+    String? startTime,
+    String? endTime,
+    String? where,
+    String? reason,
+  }) {
+    return AdminRequest(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
+      userId: userId ?? this.userId,
+      date: date ?? this.date,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      where: where ?? this.where,
+      reason: reason ?? this.reason,
+    );
+  }
+
   factory AdminRequest.fromJson(Map<String, dynamic> json) {
     return AdminRequest(
       id: json['id'] as int? ?? 0,

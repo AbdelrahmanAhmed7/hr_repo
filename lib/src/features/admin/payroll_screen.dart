@@ -100,6 +100,31 @@ class _PayrollScreenState extends State<PayrollScreen> {
     return '$text ج.م';
   }
 
+  String _fmtNumber(double v) {
+    return v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
+  }
+
+  String _fmtFullDate(String iso) {
+    final d = DateTime.tryParse(iso);
+    if (d == null) return iso;
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  String _penaltyLabel(SalaryPenaltyDetail p) {
+    final parts = <String>[
+      p.isDayPenalty
+          ? 'جزاء أيام'
+          : p.isAmountPenalty
+          ? 'جزاء مبلغ'
+          : 'جزاء',
+      if ((p.reason ?? p.description)?.trim().isNotEmpty == true)
+        (p.reason ?? p.description)!.trim(),
+      if (p.penaltyDate?.trim().isNotEmpty == true)
+        _fmtFullDate(p.penaltyDate!),
+    ];
+    return parts.join(' - ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -434,8 +459,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: _DetailChip(
-                  label: p.description ?? 'جزاء',
-                  value: _fmt(p.amount),
+                  label: _penaltyLabel(p),
+                  value: p.isDayPenalty
+                      ? '${_fmtNumber(p.days)} يوم'
+                      : _fmt(p.amount),
                   color: AppColors.error,
                 ),
               ),

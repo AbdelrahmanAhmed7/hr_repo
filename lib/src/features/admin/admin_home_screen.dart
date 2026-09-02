@@ -28,7 +28,6 @@ import 'cubit/admin_permissions_cubit.dart';
 import 'cubit/admin_leaves_cubit.dart';
 import 'cubit/admin_assignments_cubit.dart';
 import 'cubit/admin_requests_cubit.dart';
-import 'cubit/admin_requests_state.dart';
 import 'models/admin_dashboard_response.dart';
 import 'models/admin_info.dart';
 import 'reports/reports_screen.dart';
@@ -613,9 +612,32 @@ class _RequestsSectionState extends State<_RequestsSection> {
   }
 }
 
-class _RequestCard extends StatelessWidget {
+class _RequestCard extends StatefulWidget {
   final AdminRequest request;
   const _RequestCard({required this.request});
+
+  @override
+  State<_RequestCard> createState() => _RequestCardState();
+}
+
+class _RequestCardState extends State<_RequestCard> {
+  late AdminRequest request;
+  bool _isUpdating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    request = widget.request;
+  }
+
+  @override
+  void didUpdateWidget(covariant _RequestCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.request.id != widget.request.id ||
+        oldWidget.request.status != widget.request.status) {
+      request = widget.request;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -758,42 +780,46 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: 12),
             const Divider(height: 1),
             const SizedBox(height: 10),
-            BlocBuilder<AdminRequestsCubit, AdminRequestsState>(
-              builder: (context, state) {
-                final isLoading = state.isLoading;
-                return Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: isLoading ? null : () => _reject(context),
-                        icon: const Icon(Icons.close_rounded, size: 16),
-                        label: const Text('رفض'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.error,
-                          side: const BorderSide(color: AppColors.error),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          textStyle: AppTextStyles.labelMedium,
-                        ),
-                      ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isUpdating ? null : () => _reject(context),
+                    icon: const Icon(Icons.close_rounded, size: 16),
+                    label: const Text('رفض'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      textStyle: AppTextStyles.labelMedium,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: isLoading ? null : () => _approve(context),
-                        icon: const Icon(Icons.check_rounded, size: 16),
-                        label: const Text('قبول'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          textStyle: AppTextStyles.labelMedium,
-                          elevation: 0,
-                        ),
-                      ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isUpdating ? null : () => _approve(context),
+                    icon: _isUpdating
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_rounded, size: 16),
+                    label: const Text('قبول'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      textStyle: AppTextStyles.labelMedium,
+                      elevation: 0,
                     ),
-                  ],
-                );
-              },
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -859,14 +885,28 @@ class _RequestCard extends StatelessWidget {
   }
 
   Future<void> _approve(BuildContext context) async {
+    setState(() => _isUpdating = true);
     final cubit = context.read<AdminRequestsCubit>();
     final ok = await cubit.approveRequest(request.id.toString());
     if (!context.mounted) return;
+    setState(() {
+      _isUpdating = false;
+      if (ok) {
+        request = request.copyWith(status: 'Approved');
+      }
+    });
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم قبول الطلب'),
           backgroundColor: AppColors.success,
+        ),
+      );
+    } else if (cubit.state.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(cubit.state.error!),
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -900,6 +940,7 @@ class _RequestCard extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
+    setState(() => _isUpdating = true);
     final cubit = context.read<AdminRequestsCubit>();
     final ok = await cubit.rejectRequest(
       request.id.toString(),
@@ -908,10 +949,23 @@ class _RequestCard extends StatelessWidget {
           : reasonController.text.trim(),
     );
     if (!context.mounted) return;
+    setState(() {
+      _isUpdating = false;
+      if (ok) {
+        request = request.copyWith(status: 'Rejected');
+      }
+    });
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم رفض الطلب'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } else if (cubit.state.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(cubit.state.error!),
           backgroundColor: AppColors.error,
         ),
       );

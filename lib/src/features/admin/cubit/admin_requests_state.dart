@@ -4,40 +4,57 @@ import 'package:mediconsult_internal/src/features/home/models/recent_activity.da
 class AdminRequestsState extends Equatable {
   final List<RecentActivity> allRequests;
   final bool isLoading;
+  final String? processingRequestId;
   final String? error;
 
   const AdminRequestsState({
     this.allRequests = const [],
     this.isLoading = false,
+    this.processingRequestId,
     this.error,
   });
 
   List<RecentActivity> get pendingRequests {
-    return allRequests.where((req) => req.status == RequestStatus.pending).toList();
+    return allRequests
+        .where((req) => req.status == RequestStatus.pending)
+        .toList();
   }
 
   List<RecentActivity> get approvedRequests {
-    return allRequests.where((req) => req.status == RequestStatus.approved).toList();
+    return allRequests
+        .where((req) => req.status == RequestStatus.approved)
+        .toList();
   }
 
   List<RecentActivity> get rejectedRequests {
-    return allRequests.where((req) => req.status == RequestStatus.rejected).toList();
+    return allRequests
+        .where((req) => req.status == RequestStatus.rejected)
+        .toList();
   }
 
   AdminRequestsState copyWith({
     List<RecentActivity>? allRequests,
     bool? isLoading,
+    String? processingRequestId,
     String? error,
     bool clearError = false,
+    bool clearProcessingRequest = false,
   }) {
     return AdminRequestsState(
       allRequests: allRequests ?? this.allRequests,
       isLoading: isLoading ?? this.isLoading,
+      processingRequestId: clearProcessingRequest
+          ? null
+          : (processingRequestId ?? this.processingRequestId),
       error: clearError ? null : (error ?? this.error),
     );
   }
 
   @override
-  List<Object?> get props => [allRequests, isLoading, error];
+  List<Object?> get props => [
+    allRequests,
+    isLoading,
+    processingRequestId,
+    error,
+  ];
 }
-

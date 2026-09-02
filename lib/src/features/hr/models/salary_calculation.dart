@@ -72,8 +72,7 @@ class SalaryCalculation {
   });
 
   factory SalaryCalculation.fromJson(Map<String, dynamic> json) {
-    double d(String key) =>
-        (json[key] as num?)?.toDouble() ?? 0;
+    double d(String key) => (json[key] as num?)?.toDouble() ?? 0;
     int i(String key) => (json[key] as num?)?.toInt() ?? 0;
 
     List<String> strList(String key) =>
@@ -87,20 +86,26 @@ class SalaryCalculation {
       totalEarnings: d('totalEarnings'),
       netSalary: d('netSalary'),
       allowances: SalaryAllowances.fromJson(
-          json['allowances'] as Map<String, dynamic>? ?? const {}),
+        json['allowances'] as Map<String, dynamic>? ?? const {},
+      ),
       deductions: SalaryDeductions.fromJson(
-          json['deductions'] as Map<String, dynamic>? ?? const {}),
+        json['deductions'] as Map<String, dynamic>? ?? const {},
+      ),
       insurance: SalaryInsurance.fromJson(
-          json['insurance'] as Map<String, dynamic>? ?? const {}),
+        json['insurance'] as Map<String, dynamic>? ?? const {},
+      ),
       insuranceSalary: d('insuranceSalary'),
       bonusAmount: d('bonusAmount'),
       settlementAmount: d('settlementAmount'),
       settlementAdditions: d('settlementAdditions'),
       settlementDeductions: d('settlementDeductions'),
-      settlementDetails: (json['settlementDetails'] as List<dynamic>? ?? const [])
-          .map((e) => SalarySettlementDetail.fromJson(
-              e as Map<String, dynamic>))
-          .toList(),
+      settlementDetails:
+          (json['settlementDetails'] as List<dynamic>? ?? const [])
+              .map(
+                (e) =>
+                    SalarySettlementDetail.fromJson(e as Map<String, dynamic>),
+              )
+              .toList(),
       taxAmount: d('taxAmount'),
       shiftRate: d('shiftRate'),
       paidShiftDays: i('paidShiftDays'),
@@ -201,23 +206,44 @@ class SalaryDeductions {
 }
 
 class SalaryPenaltyDetail {
+  final int? id;
   final String? description;
   final String? type;
+  final String? penaltyType;
+  final double days;
   final double amount;
+  final String? penaltyDate;
+  final String? reason;
 
   const SalaryPenaltyDetail({
+    this.id,
     this.description,
     this.type,
+    this.penaltyType,
+    required this.days,
     required this.amount,
+    this.penaltyDate,
+    this.reason,
   });
 
   factory SalaryPenaltyDetail.fromJson(Map<String, dynamic> json) {
     return SalaryPenaltyDetail(
+      id: (json['id'] as num?)?.toInt(),
       description: (json['description'] ?? json['name']) as String?,
       type: json['type'] as String?,
+      penaltyType: json['penaltyType']?.toString() ?? json['type']?.toString(),
+      days: (json['days'] as num?)?.toDouble() ?? 0,
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      penaltyDate: json['penaltyDate']?.toString(),
+      reason:
+          json['reason']?.toString() ??
+          json['description']?.toString() ??
+          json['name']?.toString(),
     );
   }
+
+  bool get isDayPenalty => (penaltyType ?? '').toLowerCase() == 'days';
+  bool get isAmountPenalty => (penaltyType ?? '').toLowerCase() == 'amount';
 }
 
 class SalarySettlementDetail {

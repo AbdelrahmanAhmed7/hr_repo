@@ -27,8 +27,18 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
   int _year = DateTime.now().year;
 
   static const _months = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
   ];
 
   Future<void> _load() async {
@@ -37,13 +47,11 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
       _error = null;
     });
     try {
-      final result = await context
-          .read<EmployeesCubit>()
-          .getPayslip(
-            employeeId: widget.employee.id,
-            month: _month,
-            year: _year,
-          );
+      final result = await context.read<EmployeesCubit>().getPayslip(
+        employeeId: widget.employee.id,
+        month: _month,
+        year: _year,
+      );
       if (!mounted) return;
       setState(() {
         _result = result;
@@ -60,9 +68,26 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
   }
 
   String _fmt(double v) {
-    final text =
-        v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
+    final text = v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
     return '$text ج.م';
+  }
+
+  String _fmtNumber(double v) {
+    return v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
+  }
+
+  String _penaltyLabel(SalaryPenaltyDetail p) {
+    final parts = <String>[
+      p.isDayPenalty
+          ? 'جزاء أيام'
+          : p.isAmountPenalty
+          ? 'جزاء مبلغ'
+          : 'جزاء',
+      if ((p.reason ?? p.description)?.trim().isNotEmpty == true)
+        (p.reason ?? p.description)!.trim(),
+      if (p.penaltyDate?.trim().isNotEmpty == true) p.penaltyDate!.trim(),
+    ];
+    return parts.join(' - ');
   }
 
   @override
@@ -75,8 +100,10 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -137,7 +164,8 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
             radius: 28,
             backgroundColor: Colors.white24,
             child: Text(
-              (e.fullName.isNotEmpty ? e.fullName.trim()[0] : '؟').toUpperCase(),
+              (e.fullName.isNotEmpty ? e.fullName.trim()[0] : '؟')
+                  .toUpperCase(),
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -165,10 +193,7 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
                   '${e.position ?? '--'} • ${e.department ?? '--'}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
                 ),
               ],
             ),
@@ -236,8 +261,7 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
               Expanded(
                 child: _Dropdown<int>(
                   value: _year,
-                  items: List<int>.generate(
-                      5, (i) => DateTime.now().year - i),
+                  items: List<int>.generate(5, (i) => DateTime.now().year - i),
                   itemLabel: (y) => y.toString(),
                   onChanged: (v) => setState(() => _year = v),
                 ),
@@ -260,8 +284,9 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(Icons.search_rounded, size: 18),
@@ -334,8 +359,8 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
             const SizedBox(height: 8),
             for (final p in dd.penaltyDetails)
               _Row(
-                p.description ?? 'جزاء',
-                _fmt(p.amount),
+                _penaltyLabel(p),
+                p.isDayPenalty ? '${_fmtNumber(p.days)} يوم' : _fmt(p.amount),
               ),
           ],
         ],
@@ -369,8 +394,10 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
           _Row('أيام عمل مدفوعة', '${d.paidShiftDays} يوم'),
           _Row('أيام عمل إجمالية', '${d.totalWorkingDays} يوم'),
           _Row('ساعات العمل', '${d.hoursWorked.toStringAsFixed(2)} ساعة'),
-          _Row('الساعات الإضافية',
-              '${d.overtimeHours.toStringAsFixed(2)} ساعة'),
+          _Row(
+            'الساعات الإضافية',
+            '${d.overtimeHours.toStringAsFixed(2)} ساعة',
+          ),
           _Row('أجر الساعات الإضافية', _fmt(d.overtimePay)),
           if (d.bonusAmount != 0) ...[
             const Divider(height: 20, color: AppColors.border),
@@ -445,10 +472,7 @@ class _SectionCard extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.all(16), child: child),
         ],
       ),
     );
@@ -463,8 +487,9 @@ class _SummaryBig extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text =
-        amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
+    final text = amount.toStringAsFixed(
+      amount.truncateToDouble() == amount ? 0 : 2,
+    );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -551,12 +576,7 @@ class _ErrorBox extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline_rounded, color: AppColors.error),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
+          Expanded(child: Text(message, style: const TextStyle(fontSize: 12))),
           TextButton(onPressed: onRetry, child: const Text('إعادة المحاولة')),
         ],
       ),
@@ -603,8 +623,10 @@ class _Dropdown<T> extends StatelessWidget {
           iconEnabledColor: AppColors.primary,
           iconSize: 20,
           items: items
-              .map((item) => DropdownMenuItem(
-                  value: item, child: Text(itemLabel(item))))
+              .map(
+                (item) =>
+                    DropdownMenuItem(value: item, child: Text(itemLabel(item))),
+              )
               .toList(),
           onChanged: (v) {
             if (v != null) onChanged(v);

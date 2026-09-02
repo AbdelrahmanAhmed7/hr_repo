@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/app_back_button.dart';
 import 'models/admin_statistics.dart';
 
 class AdminStatisticsScreen extends StatelessWidget {
@@ -20,6 +21,7 @@ class AdminStatisticsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('الإحصائيات'),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -61,9 +63,9 @@ class AdminStatisticsScreen extends StatelessWidget {
                       Text(
                         'نظرة عامة',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ],
                   ),
@@ -127,9 +129,9 @@ class AdminStatisticsScreen extends StatelessWidget {
                       Text(
                         'إحصائيات الحضور',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ],
                   ),
@@ -185,9 +187,9 @@ class AdminStatisticsScreen extends StatelessWidget {
                       Text(
                         'إحصائيات الإجازات',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ],
                   ),
@@ -232,24 +234,19 @@ class AdminStatisticsScreen extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
     );
   }
 }
-
-
-
-
-

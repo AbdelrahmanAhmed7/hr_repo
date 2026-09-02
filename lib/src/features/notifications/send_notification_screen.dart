@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../shared/components/custom_button.dart';
 import '../../shared/components/custom_text_field.dart';
 import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/searchable_dropdown_field.dart';
 import 'cubit/send_notification_cubit.dart';
 import 'cubit/send_notification_state.dart';
@@ -60,6 +61,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('إرسال إشعار'),
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,

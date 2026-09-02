@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class SystemSettingsScreen extends StatelessWidget {
   const SystemSettingsScreen({super.key});
@@ -9,6 +10,7 @@ class SystemSettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('إعدادات النظام'),
         backgroundColor: Colors.white,
         elevation: 0,
