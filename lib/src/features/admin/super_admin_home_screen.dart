@@ -76,7 +76,9 @@ String _formatTime(String raw) {
 }
 
 class SuperAdminHomeScreen extends StatelessWidget {
-  const SuperAdminHomeScreen({super.key});
+  final VoidCallback? onRequestsTap;
+
+  const SuperAdminHomeScreen({super.key, this.onRequestsTap});
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +110,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
                       dashboardState: state,
                       notificationCount: notifState.unreadCount,
                       onNotificationTap: () => context.push('/notifications'),
+                      onRequestsTap: onRequestsTap,
                     ),
                   ),
                 ),
@@ -126,6 +129,7 @@ class SuperAdminHomeScreen extends StatelessWidget {
                     child: _KpiRow(
                       data: data,
                       todayAttendance: state.todayAttendance,
+                      onRequestsTap: onRequestsTap,
                     ),
                   ),
 
@@ -203,7 +207,9 @@ class SuperAdminHomeScreen extends StatelessWidget {
 class _KpiRow extends StatelessWidget {
   final SuperAdminDashboardResponse data;
   final AttendanceResponseModel? todayAttendance;
-  const _KpiRow({required this.data, this.todayAttendance});
+  final VoidCallback? onRequestsTap;
+
+  const _KpiRow({required this.data, this.todayAttendance, this.onRequestsTap});
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +258,7 @@ class _KpiRow extends StatelessWidget {
                   label: 'الطلبات المعلقة',
                   value: '${data.pendingRequests}',
                   color: AppColors.warning,
-                  onTap: () => context.push('/all-requests?tab=1'),
+                  onTap: onRequestsTap,
                 ),
               ],
             ),
@@ -629,16 +635,13 @@ class _TopPerformersCard extends StatelessWidget {
             // ── Highest Hours ──
             if (topByHours.isNotEmpty) ...[
               _SectionTitle(
-                icon: Icons.emoji_events_rounded,
+                icon: Icons.schedule_rounded,
                 iconColor: AppColors.success,
                 title: 'الأعلى ساعات عمل أمس',
               ),
               const SizedBox(height: 12),
-              ...topByHours.asMap().entries.map((entry) {
-                final i = entry.key;
-                final e = entry.value;
+              ...topByHours.map((e) {
                 return _PerformerRow(
-                  medal: i < 3 ? ['🥇', '🥈', '🥉'][i] : '',
                   name: e.employeeName,
                   badge: _formatHours(e.workedHours),
                   badgeColor: AppColors.success,
@@ -656,14 +659,11 @@ class _TopPerformersCard extends StatelessWidget {
                 title: 'الأكثر دخولاً وخروجاً أمس',
               ),
               const SizedBox(height: 12),
-              ...topByPairs.asMap().entries.map((entry) {
-                final i = entry.key;
-                final e = entry.value;
+              ...topByPairs.map((e) {
                 final userPairs = e.value;
                 final count = userPairs.length;
                 final empName = userPairs.first.employeeName;
                 return _ExpandablePerformerRow(
-                  medal: i < 3 ? ['🥇', '🥈', '🥉'][i] : '',
                   name: empName,
                   badge: '$count مرة',
                   badgeColor: AppColors.primary,
@@ -862,13 +862,11 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _PerformerRow extends StatelessWidget {
-  final String medal;
   final String name;
   final String badge;
   final Color badgeColor;
 
   const _PerformerRow({
-    required this.medal,
     required this.name,
     required this.badge,
     required this.badgeColor,
@@ -880,8 +878,6 @@ class _PerformerRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Text(medal, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
           Expanded(
             child: Text(
               name,
@@ -913,14 +909,12 @@ class _PerformerRow extends StatelessWidget {
 }
 
 class _ExpandablePerformerRow extends StatefulWidget {
-  final String medal;
   final String name;
   final String badge;
   final Color badgeColor;
   final Widget expandedChild;
 
   const _ExpandablePerformerRow({
-    required this.medal,
     required this.name,
     required this.badge,
     required this.badgeColor,
@@ -946,8 +940,6 @@ class _ExpandablePerformerRowState extends State<_ExpandablePerformerRow> {
             behavior: HitTestBehavior.opaque,
             child: Row(
               children: [
-                Text(widget.medal, style: const TextStyle(fontSize: 16)),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.name,
@@ -1141,12 +1133,14 @@ class _SuperAdminHeader extends StatelessWidget {
   final SuperAdminDashboardState dashboardState;
   final int notificationCount;
   final VoidCallback onNotificationTap;
+  final VoidCallback? onRequestsTap;
 
   const _SuperAdminHeader({
     required this.data,
     required this.dashboardState,
     required this.notificationCount,
     required this.onNotificationTap,
+    this.onRequestsTap,
   });
 
   String _timeGreeting() {
@@ -1398,7 +1392,7 @@ class _SuperAdminHeader extends StatelessWidget {
                     _StatChip(
                       label: 'الطلبات',
                       count: data!.totalRequests,
-                      onTap: () => context.push('/all-requests'),
+                      onTap: onRequestsTap,
                     ),
                   ],
                 ),

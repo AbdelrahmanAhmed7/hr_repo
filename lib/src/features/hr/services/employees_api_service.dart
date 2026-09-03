@@ -62,6 +62,7 @@ class EmployeesApiService {
     int? branchId,
     int? jobId,
     bool? isActive,
+    String? status,
   }) async {
     final queryParameters = <String, dynamic>{
       'pageNumber': pageNumber,
@@ -71,6 +72,7 @@ class EmployeesApiService {
       'branchId': ?branchId,
       'jobId': ?jobId,
       'isActive': ?isActive,
+      if (status != null && status.trim().isNotEmpty) 'status': status.trim(),
     };
 
     final response = await _dioClient.dio.get(

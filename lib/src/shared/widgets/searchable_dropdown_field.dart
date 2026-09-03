@@ -50,7 +50,7 @@ class SearchableDropdownField<T> extends StatelessWidget {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           contentPadding: contentPadding,
           isDense: isDense,
-          suffixIcon: const Icon(Icons.search_rounded),
+          suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
         ),
         child: Text(
           selectedLabel ?? hintText ?? '',
@@ -131,107 +131,108 @@ class _SearchableDropdownSheetState<T>
       textDirection: TextDirection.rtl,
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
-        child: Container(
+        child: ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.78,
           ),
-          decoration: const BoxDecoration(
+          child: Material(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            clipBehavior: Clip.antiAlias,
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.title,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
-                        tooltip: 'إغلاق',
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: widget.searchHintText,
-                      prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _query.isEmpty
-                          ? null
-                          : IconButton(
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _query = '');
-                              },
-                              icon: const Icon(Icons.close_rounded),
-                              tooltip: 'مسح البحث',
-                            ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                          tooltip: 'إغلاق',
+                        ),
+                      ],
                     ),
-                    onChanged: (value) => setState(() => _query = value),
                   ),
-                ),
-                const Divider(height: 1),
-                Flexible(
-                  child: filteredItems.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Text('لا توجد نتائج'),
-                        )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: filteredItems.length,
-                          separatorBuilder: (context, index) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final item = filteredItems[index];
-                            final isSelected = item.value == widget.value;
-
-                            return ListTile(
-                              title: Text(
-                                item.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: widget.searchHintText,
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _query = '');
+                                },
+                                icon: const Icon(Icons.close_rounded),
+                                tooltip: 'مسح البحث',
                               ),
-                              trailing: isSelected
-                                  ? const Icon(
-                                      Icons.check_circle_rounded,
-                                      color: AppColors.primary,
-                                    )
-                                  : null,
-                              onTap: () {
-                                widget.onChanged(item.value);
-                                Navigator.of(context).pop();
-                              },
-                            );
-                          },
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                ),
-              ],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                      onChanged: (value) => setState(() => _query = value),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Flexible(
+                    child: filteredItems.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('لا توجد نتائج'),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: filteredItems.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = filteredItems[index];
+                              final isSelected = item.value == widget.value;
+
+                              return ListTile(
+                                title: Text(
+                                  item.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: isSelected
+                                    ? const Icon(
+                                        Icons.check_circle_rounded,
+                                        color: AppColors.primary,
+                                      )
+                                    : null,
+                                onTap: () {
+                                  widget.onChanged(item.value);
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

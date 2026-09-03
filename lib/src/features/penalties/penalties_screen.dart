@@ -188,7 +188,7 @@ class _PenaltiesScreenState extends State<PenaltiesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'جزاءات ${state.selectedEmployeeName ?? ''}',
+                    'الجزاءات',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

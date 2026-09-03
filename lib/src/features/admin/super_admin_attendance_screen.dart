@@ -6,11 +6,13 @@ import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/app_exception.dart';
 import '../../shared/widgets/error_state_widget.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/searchable_dropdown_field.dart';
+import '../../shared/widgets/server_unavailable_dialog.dart';
 import '../attendance/cubit/sa_attendance_cubit.dart';
 import '../attendance/cubit/sa_attendance_state.dart';
 import '../attendance/widgets/sa_attendance_date_navigator.dart';
@@ -98,69 +100,81 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
             ),
           ],
         ),
-        body: TabBarView(
-          children: [
-            // Tab 1: Attendance
-            BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
-              builder: (context, state) {
-                return CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: SAAttendanceDateNavigator(
-                        selectedDate: state.selectedDate,
-                        onPrevious: () =>
-                            context.read<SAAttendanceCubit>().goToPreviousDay(),
-                        onNext: () =>
-                            context.read<SAAttendanceCubit>().goToNextDay(),
-                        onToday: () =>
-                            context.read<SAAttendanceCubit>().goToToday(),
+        body: BlocListener<SAAttendanceCubit, SAAttendanceState>(
+          listenWhen: (previous, current) =>
+              previous.errorMessage != current.errorMessage &&
+              AppException.isServerUnavailableMessage(current.errorMessage),
+          listener: (context, state) {
+            showServerUnavailableDialog(
+              context,
+              onRetry: () => context.read<SAAttendanceCubit>().loadAttendance(),
+            );
+          },
+          child: TabBarView(
+            children: [
+              // Tab 1: Attendance
+              BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
+                builder: (context, state) {
+                  return CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: SAAttendanceDateNavigator(
+                          selectedDate: state.selectedDate,
+                          onPrevious: () => context
+                              .read<SAAttendanceCubit>()
+                              .goToPreviousDay(),
+                          onNext: () =>
+                              context.read<SAAttendanceCubit>().goToNextDay(),
+                          onToday: () =>
+                              context.read<SAAttendanceCubit>().goToToday(),
+                        ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: _DepartmentFilterBar(
-                        departments: state.departments,
-                        selectedDepartmentId: state.selectedDepartmentId,
-                        onDepartmentChanged: (id) => context
-                            .read<SAAttendanceCubit>()
-                            .applyDepartmentFilter(id),
+                      SliverToBoxAdapter(
+                        child: _DepartmentFilterBar(
+                          departments: state.departments,
+                          selectedDepartmentId: state.selectedDepartmentId,
+                          onDepartmentChanged: (id) => context
+                              .read<SAAttendanceCubit>()
+                              .applyDepartmentFilter(id),
+                        ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SAAttendanceStatsStrip(
-                        totalCount: state.totalEmployees,
-                        presentCount: state.employeesWithAttendance,
-                        absentCount: state.absentCount,
-                        percentage: state.attendancePercentage,
+                      SliverToBoxAdapter(
+                        child: SAAttendanceStatsStrip(
+                          totalCount: state.totalEmployees,
+                          presentCount: state.employeesWithAttendance,
+                          absentCount: state.absentCount,
+                          percentage: state.attendancePercentage,
+                        ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SAAttendanceFilterBar(
-                        activeFilter: state.activeFilter,
-                        onFilterChanged: (filter) => context
-                            .read<SAAttendanceCubit>()
-                            .applyFilter(filter),
+                      SliverToBoxAdapter(
+                        child: SAAttendanceFilterBar(
+                          activeFilter: state.activeFilter,
+                          onFilterChanged: (filter) => context
+                              .read<SAAttendanceCubit>()
+                              .applyFilter(filter),
+                        ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SAAttendanceSearchBar(
-                        query: state.searchQuery,
-                        onChanged: (query) => context
-                            .read<SAAttendanceCubit>()
-                            .applySearch(query),
+                      SliverToBoxAdapter(
+                        child: SAAttendanceSearchBar(
+                          query: state.searchQuery,
+                          onChanged: (query) => context
+                              .read<SAAttendanceCubit>()
+                              .applySearch(query),
+                        ),
                       ),
-                    ),
-                    _buildBodySliver(context, state),
-                  ],
-                );
-              },
-            ),
-            // Tab 2: Punch Summary
-            BlocProvider(
-              create: (ctx) => getIt<PunchCubit>(),
-              child: const _PunchTabContent(),
-            ),
-          ],
+                      _buildBodySliver(context, state),
+                    ],
+                  );
+                },
+              ),
+              // Tab 2: Punch Summary
+              BlocProvider(
+                create: (ctx) => getIt<PunchCubit>(),
+                child: const _PunchTabContent(),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -9,9 +9,12 @@ import '../../core/theme/app_colors.dart';
 import '../../features/hr/cubit/employees_cubit.dart';
 import '../../features/reports/cubit/reports_cubit.dart';
 import '../../features/reports/screens/reports_hub_screen.dart';
+import '../../shared/widgets/server_unavailable_dialog.dart';
 import 'cubit/super_admin_dashboard_cubit.dart';
+import 'cubit/super_admin_dashboard_state.dart';
 import 'super_admin_employees_screen.dart';
 import 'super_admin_home_screen.dart';
+import '../../core/utils/app_exception.dart';
 
 class SuperAdminScreen extends StatefulWidget {
   const SuperAdminScreen({super.key});
@@ -23,34 +26,53 @@ class SuperAdminScreen extends StatefulWidget {
 class _SuperAdminScreenState extends State<SuperAdminScreen> {
   int _currentIndex = 0;
   DateTime? _lastBackPress;
+  late final List<Widget> _screens;
 
-  final List<Widget> _screens = [
-    const SuperAdminHomeScreen(),
-    const SuperAdminAttendanceScreen(),
-    BlocProvider(
-      create: (_) => getIt<EmployeesCubit>(),
-      child: const SuperAdminEmployeesScreen(),
-    ),
-    BlocProvider(
-      create: (_) => getIt<DepartmentRequestsCubit>()..load(),
-      child: const DepartmentRequestsScreen(),
-    ),
-    BlocProvider(
-      create: (_) => getIt<ReportsCubit>(),
-      child: const ReportsHubScreen(),
-    ),
-  ];
+  void _goToRequests() => setState(() => _currentIndex = 3);
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      SuperAdminHomeScreen(onRequestsTap: _goToRequests),
+      const SuperAdminAttendanceScreen(),
+      BlocProvider(
+        create: (_) => getIt<EmployeesCubit>(),
+        child: const SuperAdminEmployeesScreen(),
+      ),
+      BlocProvider(
+        create: (_) => getIt<DepartmentRequestsCubit>()..load(),
+        child: const DepartmentRequestsScreen(),
+      ),
+      BlocProvider(
+        create: (_) => getIt<ReportsCubit>(),
+        child: const ReportsHubScreen(),
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<SuperAdminDashboardCubit>()..loadDashboard(),
-      child: _SuperAdminScreenBody(
-        currentIndex: _currentIndex,
-        screens: _screens,
-        lastBackPress: _lastBackPress,
-        onIndexChanged: (i) => setState(() => _currentIndex = i),
-        onBackPress: (dt) => _lastBackPress = dt,
+      child: BlocListener<SuperAdminDashboardCubit, SuperAdminDashboardState>(
+        listenWhen: (previous, current) =>
+            previous.error != current.error &&
+            AppException.isServerUnavailableMessage(current.error),
+        listener: (context, state) {
+          showServerUnavailableDialog(
+            context,
+            onRetry: () =>
+                context.read<SuperAdminDashboardCubit>().loadDashboard(),
+          );
+        },
+        child: _SuperAdminScreenBody(
+          currentIndex: _currentIndex,
+          screens: _screens,
+          lastBackPress: _lastBackPress,
+          onIndexChanged: (i) => setState(() => _currentIndex = i),
+          onBackPress: (dt) => _lastBackPress = dt,
+        ),
       ),
     );
   }

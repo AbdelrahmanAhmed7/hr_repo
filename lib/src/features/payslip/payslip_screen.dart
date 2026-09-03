@@ -191,11 +191,11 @@ class _PayslipScreenState extends State<PayslipScreen> {
                           const SizedBox(height: 14),
                           _NetSalaryCard(payslip: state.payslip!),
                           const SizedBox(height: 14),
-                          _DatesSection(payslip: state.payslip!),
-                          const SizedBox(height: 14),
                           _WorkingHoursDetailsSection(
                             details: state.payslip!.salaryDetails,
                           ),
+                          const SizedBox(height: 14),
+                          _DatesSection(payslip: state.payslip!),
                           const SizedBox(height: 14),
                           _SectionCard(
                             title: 'الملخص المالي',
@@ -836,15 +836,6 @@ class _DatesSection extends StatelessWidget {
           emptyLabel: 'لا يوجد أيام تأخير مسجلة',
           chipColor: AppColors.warning,
         ),
-        if (payslip.salaryDetails.incompleteDates.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _DateListBlock(
-            title: 'أيام الحضور الناقص',
-            dates: payslip.salaryDetails.incompleteDates,
-            emptyLabel: 'لا يوجد أيام حضور ناقص',
-            chipColor: AppColors.info,
-          ),
-        ],
         const SizedBox(height: 12),
         _DateListBlock(
           title: 'أيام الغياب',
@@ -877,15 +868,19 @@ class _WorkingHoursDetailsSection extends StatelessWidget {
       title: 'تفاصيل الحضور والعمل',
       subtitle: 'ساعات العمل والشيفتات والأيام المؤثرة على حساب المرتب.',
       children: [
-        _InfoRow('أيام العمل المدفوعة', '${details.paidShiftDays} يوم'),
-        _InfoRow('إجمالي أيام العمل', '${details.totalWorkingDays} يوم'),
         _InfoRow('ساعات العمل', '${_formatNumber(details.hoursWorked)} ساعة'),
         _InfoRow(
           'الساعات الإضافية',
           '${_formatNumber(details.overtimeHours)} ساعة',
         ),
         _MoneyRow(label: 'أجر الساعات الإضافية', value: details.overtimePay),
-        if (details.overtimeDates.isNotEmpty) ...[
+        if (details.overtimeDetails.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _OvertimeDetailsBlock(
+            title: 'أيام العمل الإضافي',
+            details: details.overtimeDetails,
+          ),
+        ] else if (details.overtimeDates.isNotEmpty) ...[
           const SizedBox(height: 12),
           _DateListBlock(
             title: 'أيام العمل الإضافي',
@@ -1057,6 +1052,171 @@ class _DateListBlock extends StatelessWidget {
             }).toList(),
           ),
       ],
+    );
+  }
+}
+
+class _OvertimeDetailsBlock extends StatefulWidget {
+  final String title;
+  final List<PayslipOvertimeDetail> details;
+
+  const _OvertimeDetailsBlock({required this.title, required this.details});
+
+  @override
+  State<_OvertimeDetailsBlock> createState() => _OvertimeDetailsBlockState();
+}
+
+class _OvertimeDetailsBlockState extends State<_OvertimeDetailsBlock> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final values =
+        widget.details.where((detail) => detail.date.trim().isNotEmpty).toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+
+    return Material(
+      color: AppColors.success.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.16)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: _expanded,
+            onExpansionChanged: (value) => setState(() => _expanded = value),
+            tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+            childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+            iconColor: AppColors.success,
+            collapsedIconColor: AppColors.success,
+            title: Text(
+              widget.title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${values.length} يوم',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                ),
+              ],
+            ),
+            children: [
+              ...values.map(
+                (detail) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 5,
+                        child: _OvertimeInlineMetric(
+                          label: 'التاريخ',
+                          value: _tryFormatDate(detail.date),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 4,
+                        child: _OvertimeInlineMetric(
+                          label: 'الساعات',
+                          value: '${_formatNumber(detail.hours)} ساعة',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 4,
+                        child: _OvertimeInlineMetric(
+                          label: 'الأجر',
+                          value: _formatMoney(detail.pay),
+                          valueColor: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OvertimeInlineMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _OvertimeInlineMetric({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        text: '$label\n',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+          fontSize: 9,
+        ),
+        children: [
+          TextSpan(
+            text: value,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: valueColor ?? AppColors.textPrimary,
+              fontWeight: FontWeight.w900,
+              height: 1.25,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

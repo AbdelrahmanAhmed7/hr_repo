@@ -154,6 +154,7 @@ class PayslipCubit extends Cubit<PayslipState> {
         lateDates: const [],
         incompleteDates: const [],
         overtimeDates: const [],
+        overtimeDetails: const [],
         shiftMonthlyRequiredWorkingDays: 0,
         shiftMonthlyRequiredHours: 0,
         shiftMonthlyActualHours: 0,

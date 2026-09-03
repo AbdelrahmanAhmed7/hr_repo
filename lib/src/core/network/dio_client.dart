@@ -10,10 +10,12 @@ import '../../features/auth/services/auth_storage_service.dart';
 import 'cache_interceptor.dart';
 
 class DioClient {
-  static const bool _enableNetworkLogs =
-      bool.fromEnvironment('ENABLE_NETWORK_LOGS');
+  static const bool _enableNetworkLogs = bool.fromEnvironment(
+    'ENABLE_NETWORK_LOGS',
+  );
   static const bool _allowBadCertificates =
-      bool.fromEnvironment('ALLOW_BAD_CERT') || bool.fromEnvironment('ALLOW_BAD_CERTIFICATES');
+      bool.fromEnvironment('ALLOW_BAD_CERT') ||
+      bool.fromEnvironment('ALLOW_BAD_CERTIFICATES');
 
   DioClient() {
     _dio = Dio(
@@ -82,33 +84,37 @@ class DioClient {
           // Handle 401 Unauthorized - token expired or invalid
           if (error.response?.statusCode == 401) {
             if (kDebugMode) {
-              print('DioClient: 401 Unauthorized - clearing auth and triggering logout');
+              print(
+                'DioClient: 401 Unauthorized - clearing auth and triggering logout',
+              );
             }
-            
+
             // Clear auth state
             await AuthStorageService.clearAuthState();
-            
+
             // Notify listeners about auth failure
             _authErrorController.add(AuthError.unauthorized);
-            
+
             // Don't retry, just pass the error
             handler.next(error);
             return;
           }
-          
+
           // Handle 403 Forbidden - user doesn't have permission
           if (error.response?.statusCode == 403) {
             if (kDebugMode) {
-              print('DioClient: 403 Forbidden - user lacks permission for this resource');
+              print(
+                'DioClient: 403 Forbidden - user lacks permission for this resource',
+              );
             }
-            
+
             // Notify listeners about permission error
             _authErrorController.add(AuthError.forbidden);
-            
+
             handler.next(error);
             return;
           }
-          
+
           // Pass other errors through
           handler.next(error);
         },
@@ -119,16 +125,13 @@ class DioClient {
   late final Dio _dio;
 
   Dio get dio => _dio;
-  
+
   // Stream to notify about auth errors
   static final _authErrorController = StreamController<AuthError>.broadcast();
   static Stream<AuthError> get authErrorStream => _authErrorController.stream;
 }
 
-enum AuthError {
-  unauthorized,
-  forbidden,
-}
+enum AuthError { unauthorized, forbidden }
 
 class _PlainTextJsonInterceptor extends Interceptor {
   @override
@@ -136,6 +139,21 @@ class _PlainTextJsonInterceptor extends Interceptor {
     final data = response.data;
     if (data is String) {
       final trimmed = data.trim();
+      final contentType =
+          response.headers.value(Headers.contentTypeHeader)?.toLowerCase() ??
+          '';
+
+      if (_isApiRequest(response.requestOptions) &&
+          _looksLikeHtml(trimmed, contentType)) {
+        handler.reject(
+          DioException.badResponse(
+            statusCode: response.statusCode ?? 502,
+            requestOptions: response.requestOptions,
+            response: response,
+          ),
+        );
+        return;
+      }
 
       // 1) If it's JSON, decode it so Retrofit can parse into models.
       if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
@@ -159,6 +177,21 @@ class _PlainTextJsonInterceptor extends Interceptor {
     }
 
     handler.next(response);
+  }
+
+  bool _isApiRequest(RequestOptions options) {
+    final path = options.uri.path.toLowerCase();
+    return path.startsWith('/api/');
+  }
+
+  bool _looksLikeHtml(String data, String contentType) {
+    final sample = data.length > 200 ? data.substring(0, 200) : data;
+    final lowerSample = sample.toLowerCase();
+    return contentType.contains('text/html') ||
+        lowerSample.startsWith('<!doctype html') ||
+        lowerSample.startsWith('<html') ||
+        lowerSample.contains('<head') ||
+        lowerSample.contains('<body');
   }
 
   dynamic dioDecodeJson(String input) {

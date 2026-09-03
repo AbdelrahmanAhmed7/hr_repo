@@ -56,6 +56,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
         pageNumber: 1,
         pageSize: 1000,
         isActive: true,
+        status: 'active',
       );
       if (!mounted) return;
       setState(() {
@@ -166,6 +167,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 const SizedBox(height: 16),
                 _buildPayslipMeta(_result!),
                 const SizedBox(height: 16),
+                _buildWorkingHours(_result!.salaryDetails),
+                const SizedBox(height: 16),
                 _buildSummary(_result!.salaryDetails),
                 const SizedBox(height: 16),
                 _buildAllowances(_result!.salaryDetails),
@@ -173,8 +176,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 _buildDeductions(_result!.salaryDetails),
                 const SizedBox(height: 16),
                 _buildInsurance(_result!.salaryDetails),
-                const SizedBox(height: 16),
-                _buildWorkingHours(_result!.salaryDetails),
                 if (_result!.salaryDetails.bonusAmount != 0 ||
                     _result!.salaryDetails.settlementAmount != 0 ||
                     _result!.salaryDetails.settlementAdditions != 0 ||
@@ -358,8 +359,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
       title: 'بيانات القسيمة',
       child: Column(
         children: [
-          _Row('الاسم بالعربي', p.displayName),
-          _Row('الاسم بالإنجليزي', p.fullNameEn),
+          _Row('الاسم بالعربي', p.displayName, valueFlex: 3, maxLines: 3),
+          _Row('الاسم بالإنجليزي', p.fullNameEn, valueFlex: 3, maxLines: 3),
           _Row('القسم', p.departmentName),
           _Row('نظام العمل', p.employmentMode),
           _Row('أيام العمل الفعلية', '${p.actualWorkingDays} يوم'),
@@ -503,16 +504,18 @@ class _PayrollScreenState extends State<PayrollScreen> {
       title: 'الحضور وساعات العمل',
       child: Column(
         children: [
-          _Row('أيام العمل المدفوعة', '${d.paidShiftDays} يوم'),
-          _Row('أيام العمل الفعلية', '${d.totalWorkingDays} يوم'),
-          const Divider(height: 20, color: AppColors.border),
-          _Row('ساعات العمل', '${d.hoursWorked.toStringAsFixed(2)} ساعة'),
-          _Row(
-            'الساعات الإضافية',
-            '${d.overtimeHours.toStringAsFixed(2)} ساعة',
-          ),
+          _Row('ساعات العمل', '${_fmtNumber(d.hoursWorked)} ساعة'),
+          _Row('الساعات الإضافية', '${_fmtNumber(d.overtimeHours)} ساعة'),
           _Row('أجر الساعات الإضافية', _fmt(d.overtimePay)),
-          if (d.overtimeDates.isNotEmpty) ...[
+          if (d.overtimeDetails.isNotEmpty) ...[
+            const Divider(height: 24, color: AppColors.border),
+            _OvertimeDetailsBlock(
+              details: d.overtimeDetails,
+              formatDate: _fmtFullDate,
+              formatHours: _fmtNumber,
+              formatPay: _fmt,
+            ),
+          ] else if (d.overtimeDates.isNotEmpty) ...[
             const SizedBox(height: 6),
             _DateChips(
               dates: d.overtimeDates,
@@ -567,16 +570,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 '${d.shiftMonthlyHourDeficitDays} يوم',
                 color: AppColors.error,
               ),
-          ],
-          if (d.incompleteDates.isNotEmpty) ...[
-            const Divider(height: 20, color: AppColors.border),
-            const _SubHeader('أيام الحضور الناقص'),
-            const SizedBox(height: 6),
-            _DateChips(
-              dates: d.incompleteDates,
-              color: AppColors.warning,
-              label: 'ناقص',
-            ),
           ],
           if (d.employeeStatusNote?.isNotEmpty == true) ...[
             const Divider(height: 20, color: AppColors.border),
@@ -745,8 +738,17 @@ class _Row extends StatelessWidget {
   final String value;
   final bool strong;
   final Color? color;
+  final int valueFlex;
+  final int maxLines;
 
-  const _Row(this.label, this.value, {this.strong = false, this.color});
+  const _Row(
+    this.label,
+    this.value, {
+    this.strong = false,
+    this.color,
+    this.valueFlex = 2,
+    this.maxLines = 2,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -760,6 +762,7 @@ class _Row extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
+            flex: 2,
             child: Text(
               label,
               style: TextStyle(
@@ -770,12 +773,19 @@ class _Row extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
-              color: valueColor,
+          Expanded(
+            flex: valueFlex,
+            child: Text(
+              value,
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+              textAlign: TextAlign.start,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
+                color: valueColor,
+              ),
             ),
           ),
         ],
@@ -844,6 +854,179 @@ class _DateChips extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _OvertimeDetailsBlock extends StatefulWidget {
+  final List<SalaryOvertimeDetail> details;
+  final String Function(String) formatDate;
+  final String Function(double) formatHours;
+  final String Function(double) formatPay;
+
+  const _OvertimeDetailsBlock({
+    required this.details,
+    required this.formatDate,
+    required this.formatHours,
+    required this.formatPay,
+  });
+
+  @override
+  State<_OvertimeDetailsBlock> createState() => _OvertimeDetailsBlockState();
+}
+
+class _OvertimeDetailsBlockState extends State<_OvertimeDetailsBlock> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final details = widget.details.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    return Material(
+      color: AppColors.success.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.16)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: _expanded,
+            onExpansionChanged: (value) => setState(() => _expanded = value),
+            tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+            childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+            iconColor: AppColors.success,
+            collapsedIconColor: AppColors.success,
+            title: Text(
+              'تفاصيل أيام العمل الإضافي',
+              style: AppTextStyles.labelSmall.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${details.length} يوم',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                ),
+              ],
+            ),
+            children: [
+              for (final detail in details)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _OvertimeDetailTile(
+                    date: widget.formatDate(detail.date),
+                    hours: widget.formatHours(detail.hours),
+                    pay: widget.formatPay(detail.pay),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OvertimeDetailTile extends StatelessWidget {
+  final String date;
+  final String hours;
+  final String pay;
+
+  const _OvertimeDetailTile({
+    required this.date,
+    required this.hours,
+    required this.pay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: _InlineMetric(label: 'التاريخ', value: date),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 4,
+            child: _InlineMetric(label: 'الساعات', value: '$hours ساعة'),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 4,
+            child: _InlineMetric(
+              label: 'الأجر',
+              value: pay,
+              valueColor: AppColors.success,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _InlineMetric({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        text: '$label\n',
+        style: const TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textSecondary,
+          height: 1.2,
+        ),
+        children: [
+          TextSpan(
+            text: value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: valueColor ?? AppColors.textPrimary,
+              height: 1.25,
+            ),
+          ),
+        ],
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

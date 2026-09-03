@@ -4,6 +4,9 @@ import 'package:dio/dio.dart';
 /// Unified error handling for the entire app.
 /// Converts raw exceptions into user-friendly Arabic messages.
 class AppException implements Exception {
+  static const serverUnavailableMessage =
+      'الخدمة غير متاحة حاليا. حاول مرة أخرى بعد قليل.';
+
   final String message;
   final String? debugMessage;
   final int? statusCode;
@@ -16,6 +19,14 @@ class AppException implements Exception {
 
   @override
   String toString() => message;
+
+  static bool isServerUnavailableMessage(String? message) {
+    if (message == null) return false;
+    return message.contains(serverUnavailableMessage) ||
+        message.contains('تعذر الوصول للسيرفر') ||
+        message.contains('تعذر الاتصال بالسيرفر') ||
+        message.contains('انتهت مهلة الاتصال');
+  }
 
   /// Creates an [AppException] from any exception type.
   /// Provides user-friendly Arabic messages for common error scenarios.
@@ -49,8 +60,20 @@ class AppException implements Exception {
   static AppException _fromDio(DioException error, {String? fallbackMessage}) {
     // Try to extract server error message
     final data = error.response?.data;
+    final contentType = error.response?.headers
+        .value(Headers.contentTypeHeader)
+        ?.toLowerCase();
+    if (data is String && _looksLikeHtml(data, contentType)) {
+      return AppException(
+        message: fallbackMessage ?? serverUnavailableMessage,
+        statusCode: error.response?.statusCode,
+        debugMessage: 'Unexpected HTML response',
+      );
+    }
+
     if (data is Map<String, dynamic>) {
-      final serverMessage = data['title'] as String? ??
+      final serverMessage =
+          data['title'] as String? ??
           data['message'] as String? ??
           data['error'] as String?;
       if (serverMessage != null && serverMessage.trim().isNotEmpty) {
@@ -97,19 +120,22 @@ class AppException implements Exception {
             );
           case 404:
             return AppException(
-              message: fallbackMessage ?? 'لم يتم العثور على البيانات المطلوبة.',
+              message:
+                  fallbackMessage ?? 'لم يتم العثور على البيانات المطلوبة.',
               statusCode: 404,
             );
           case 500:
           case 502:
           case 503:
+          case 504:
             return const AppException(
-              message: 'خطأ في السيرفر. حاول مرة أخرى لاحقاً.',
-              statusCode: 500,
+              message: serverUnavailableMessage,
+              statusCode: 503,
             );
           default:
             return AppException(
-              message: fallbackMessage ?? 'حدث خطأ غير متوقع (رمز: $statusCode).',
+              message:
+                  fallbackMessage ?? 'حدث خطأ غير متوقع (رمز: $statusCode).',
               statusCode: statusCode,
             );
         }
@@ -121,10 +147,27 @@ class AppException implements Exception {
         );
 
       default:
+        if (error.error is SocketException) {
+          return const AppException(
+            message: 'تعذر الوصول للسيرفر. تأكد من الإنترنت وحاول مرة أخرى.',
+            debugMessage: 'SocketException in DioException',
+          );
+        }
         return AppException(
           message: fallbackMessage ?? 'حدث خطأ غير متوقع. حاول مرة أخرى.',
           debugMessage: 'DioException: ${error.type}',
         );
     }
+  }
+
+  static bool _looksLikeHtml(String data, String? contentType) {
+    final trimmed = data.trimLeft();
+    final sample = trimmed.length > 200 ? trimmed.substring(0, 200) : trimmed;
+    final lowerSample = sample.toLowerCase();
+    return contentType?.contains('text/html') == true ||
+        lowerSample.startsWith('<!doctype html') ||
+        lowerSample.startsWith('<html') ||
+        lowerSample.contains('<head') ||
+        lowerSample.contains('<body');
   }
 }

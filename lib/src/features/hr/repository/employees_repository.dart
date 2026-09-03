@@ -31,6 +31,7 @@ class EmployeesRepository {
     int? branchId,
     int? jobId,
     bool? isActive,
+    String? status,
   }) {
     return _service.getEmployees(
       pageNumber: pageNumber,
@@ -40,6 +41,7 @@ class EmployeesRepository {
       branchId: branchId,
       jobId: jobId,
       isActive: isActive,
+      status: status,
     );
   }
 

@@ -186,7 +186,7 @@ class _BonusesScreenState extends State<BonusesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'مكافآت ${state.selectedEmployeeName ?? ''}',
+                    'المكافآت',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

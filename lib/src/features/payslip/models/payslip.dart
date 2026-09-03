@@ -71,6 +71,7 @@ class SalaryDetails {
   final List<String> lateDates;
   final List<String> incompleteDates;
   final List<String> overtimeDates;
+  final List<PayslipOvertimeDetail> overtimeDetails;
   final int shiftMonthlyRequiredWorkingDays;
   final double shiftMonthlyRequiredHours;
   final double shiftMonthlyActualHours;
@@ -103,6 +104,7 @@ class SalaryDetails {
     required this.lateDates,
     required this.incompleteDates,
     required this.overtimeDates,
+    required this.overtimeDetails,
     required this.shiftMonthlyRequiredWorkingDays,
     required this.shiftMonthlyRequiredHours,
     required this.shiftMonthlyActualHours,
@@ -142,7 +144,8 @@ class SalaryDetails {
       absenceDates: _asStringList(json['absenceDates']),
       lateDates: _asStringList(json['lateDates']),
       incompleteDates: _asStringList(json['incompleteDates']),
-      overtimeDates: _asStringList(json['overtimeDates']),
+      overtimeDates: _asOvertimeDates(json['overtimeDates']),
+      overtimeDetails: _asOvertimeDetails(json['overtimeDates']),
       shiftMonthlyRequiredWorkingDays: _asInt(
         json['shiftMonthlyRequiredWorkingDays'],
       ),
@@ -152,6 +155,26 @@ class SalaryDetails {
       shiftMonthlyDeductionDays: _asInt(json['shiftMonthlyDeductionDays']),
       shiftMonthlyAbsentDays: _asInt(json['shiftMonthlyAbsentDays']),
       shiftMonthlyHourDeficitDays: _asInt(json['shiftMonthlyHourDeficitDays']),
+    );
+  }
+}
+
+class PayslipOvertimeDetail {
+  final String date;
+  final double hours;
+  final double pay;
+
+  const PayslipOvertimeDetail({
+    required this.date,
+    required this.hours,
+    required this.pay,
+  });
+
+  factory PayslipOvertimeDetail.fromJson(Map<String, dynamic> json) {
+    return PayslipOvertimeDetail(
+      date: json['date']?.toString() ?? '',
+      hours: _asDouble(json['hours']),
+      pay: _asDouble(json['pay']),
     );
   }
 }
@@ -333,6 +356,38 @@ DateTime? _asDateTime(dynamic value) {
 List<String> _asStringList(dynamic value) {
   return (value as List<dynamic>? ?? const [])
       .map((item) => item.toString())
+      .toList();
+}
+
+List<String> _asOvertimeDates(dynamic value) {
+  return (value as List<dynamic>? ?? const [])
+      .map((item) {
+        if (item is Map<String, dynamic>) {
+          return item['date']?.toString() ?? '';
+        }
+        if (item is Map) {
+          return item['date']?.toString() ?? '';
+        }
+        return item.toString();
+      })
+      .where((date) => date.trim().isNotEmpty)
+      .toList();
+}
+
+List<PayslipOvertimeDetail> _asOvertimeDetails(dynamic value) {
+  return (value as List<dynamic>? ?? const [])
+      .map((item) {
+        if (item is Map<String, dynamic>) {
+          return PayslipOvertimeDetail.fromJson(item);
+        }
+        if (item is Map) {
+          return PayslipOvertimeDetail.fromJson(
+            Map<String, dynamic>.from(item),
+          );
+        }
+        return PayslipOvertimeDetail(date: item.toString(), hours: 0, pay: 0);
+      })
+      .where((detail) => detail.date.trim().isNotEmpty)
       .toList();
 }
 
