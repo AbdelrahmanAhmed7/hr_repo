@@ -34,24 +34,27 @@ class _NetworkConnectivityBannerState extends State<NetworkConnectivityBanner> {
     });
   }
 
+  void _hideBanner() {
+    if (mounted) {
+      setState(() {
+        _showBanner = false;
+      });
+    }
+  }
+
   void _updateConnectionStatus(List<ConnectivityResult> result) {
     bool isConnected = result.isNotEmpty && !result.contains(ConnectivityResult.none);
-    
+
     if (_isConnected != isConnected) {
       setState(() {
         _isConnected = isConnected;
         _showBanner = true;
       });
 
-      if (isConnected) {
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            setState(() {
-              _showBanner = false;
-            });
-          }
-        });
-      }
+      final delay = isConnected
+          ? const Duration(seconds: 3)
+          : const Duration(seconds: 5);
+      Future.delayed(delay, _hideBanner);
     }
   }
 
@@ -111,6 +114,26 @@ class _NetworkConnectivityBannerState extends State<NetworkConnectivityBanner> {
               ),
             ),
           ),
+          if (!_isConnected && !_showBanner)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 4,
+              left: 8,
+              child: SafeArea(
+                bottom: false,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.wifi_off_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

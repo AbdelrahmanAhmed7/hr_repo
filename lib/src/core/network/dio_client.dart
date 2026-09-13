@@ -161,12 +161,9 @@ class _PlainTextJsonInterceptor extends Interceptor {
           response.data = dioDecodeJson(trimmed);
           handler.next(response);
           return;
-        } catch (_) {
-          // fall through to message wrapping below
-        }
+        } catch (_) {}
       }
 
-      // 2) Some endpoints may return a plain message string. Wrap it to match MessageResponse.
       final path = response.requestOptions.path.toLowerCase();
       if (path.contains('/api/auth/forgot-password') ||
           path.contains('/api/auth/verify-reset-otp') ||
@@ -195,8 +192,6 @@ class _PlainTextJsonInterceptor extends Interceptor {
   }
 
   dynamic dioDecodeJson(String input) {
-    // Delayed import avoidance not needed; keep small helper here.
-    // ignore: avoid_dynamic_calls
     return jsonDecode(input);
   }
 }
