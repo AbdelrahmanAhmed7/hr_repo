@@ -4,6 +4,8 @@ enum SAAttendanceStatus { initial, loading, success, error }
 
 enum AttendanceFilter { all, present, absent }
 
+enum FilterType { dateRange, department, deviceType, status, search }
+
 class DepartmentOption {
   final int id;
   final String name;
@@ -124,5 +126,7 @@ class SAAttendanceState {
       startDate != null ||
       endDate != null ||
       deviceTypeFilter != null ||
-      selectedDepartmentId != null;
+      selectedDepartmentId != null ||
+      activeFilter != AttendanceFilter.all ||
+      searchQuery.isNotEmpty;
 }

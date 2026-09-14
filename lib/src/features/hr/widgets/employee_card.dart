@@ -112,7 +112,7 @@ class EmployeeCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    if (employee.position != null) ...[
+                    if ((employee.jobTitleName ?? employee.position) != null) ...[
                       Row(
                         children: [
                           Icon(
@@ -123,7 +123,7 @@ class EmployeeCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              employee.position!,
+                              employee.jobTitleName ?? employee.position ?? '',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: AppColors.textPrimary,
                                     fontSize: 14,

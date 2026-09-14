@@ -123,8 +123,6 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
           employeesWithDeparture: response.employeesWithDeparture,
           attendancePercentage: response.attendancePercentage,
           selectedDate: targetDate,
-          clearStartDate: true,
-          clearEndDate: true,
         ),
       );
 
@@ -236,6 +234,31 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
         clearDepartmentId: true,
       ),
     );
+    _applyFilterAndSearch();
+  }
+
+  void removeFilter(FilterType type) {
+    switch (type) {
+      case FilterType.dateRange:
+        emit(state.copyWith(
+          clearStartDate: true,
+          clearEndDate: true,
+        ));
+        loadAttendance();
+        break;
+      case FilterType.department:
+        emit(state.copyWith(clearDepartmentId: true));
+        break;
+      case FilterType.deviceType:
+        emit(state.copyWith(clearDeviceTypeFilter: true));
+        break;
+      case FilterType.status:
+        emit(state.copyWith(activeFilter: AttendanceFilter.all));
+        break;
+      case FilterType.search:
+        emit(state.copyWith(searchQuery: ''));
+        break;
+    }
     _applyFilterAndSearch();
   }
 

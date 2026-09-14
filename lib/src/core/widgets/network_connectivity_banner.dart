@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 
 class NetworkConnectivityBanner extends StatefulWidget {
@@ -43,7 +44,8 @@ class _NetworkConnectivityBannerState extends State<NetworkConnectivityBanner> {
   }
 
   void _updateConnectionStatus(List<ConnectivityResult> result) {
-    bool isConnected = result.isNotEmpty && !result.contains(ConnectivityResult.none);
+    bool isConnected =
+        result.isNotEmpty && !result.contains(ConnectivityResult.none);
 
     if (_isConnected != isConnected) {
       setState(() {
@@ -76,7 +78,10 @@ class _NetworkConnectivityBannerState extends State<NetworkConnectivityBanner> {
               child: SafeArea(
                 bottom: false,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: _isConnected ? AppColors.success : AppColors.error,
                     boxShadow: [

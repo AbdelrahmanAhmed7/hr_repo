@@ -525,20 +525,23 @@ class _PayslipHeroCard extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'راجع صافي المرتب والاستحقاقات والخصومات وافتح نسخة PDF من نفس الشاشة.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.86),
+                    const SizedBox(height: 4),
+                    if (payslip != null)
+                      Text(
+                        _employeeMetaLine(payslip),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
               Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
@@ -550,7 +553,24 @@ class _PayslipHeroCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          if (payslip != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _formatMoney(payslip.salaryDetails.netSalary),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'صافي المرتب',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -560,11 +580,6 @@ class _PayslipHeroCard extends StatelessWidget {
                     '${_monthName(state.selectedMonth)} ${state.selectedYear}',
               ),
               if (isFuturePeriod) const _HeroChip(label: 'شهر مستقبلي'),
-              if (payslip != null)
-                _HeroChip(
-                  label:
-                      'صافي ${_formatMoney(payslip.salaryDetails.netSalary)}',
-                ),
               if (payslip?.issuedAt != null)
                 _HeroChip(
                   label:
@@ -572,7 +587,7 @@ class _PayslipHeroCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           FilledButton.icon(
             onPressed:
                 state.pdfStatus == PayslipPdfStatus.downloading ||

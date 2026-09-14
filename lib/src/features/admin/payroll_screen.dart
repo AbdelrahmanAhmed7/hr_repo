@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/app_exception.dart';
@@ -8,7 +9,7 @@ import '../hr/models/employee.dart';
 import '../hr/models/employee_payslip.dart';
 import '../hr/models/salary_calculation.dart';
 import '../hr/repository/employees_repository.dart';
-import '../../core/services/service_locator.dart';
+import '../payslip/widgets/payslip_detail_widgets.dart';
 
 class PayrollScreen extends StatefulWidget {
   const PayrollScreen({super.key});
@@ -94,15 +95,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
         _error = AppException.from(e).message;
       });
     }
-  }
-
-  String _fmt(double v) {
-    final text = v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
-    return '$text ج.م';
-  }
-
-  String _fmtNumber(double v) {
-    return v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
   }
 
   String _fmtFullDate(String iso) {
@@ -354,82 +346,60 @@ class _PayrollScreenState extends State<PayrollScreen> {
     final issued = p.issuedAt != null
         ? '${p.issuedAt!.day.toString().padLeft(2, '0')}/${p.issuedAt!.month.toString().padLeft(2, '0')}/${p.issuedAt!.year}'
         : '--';
-    return _SectionCard(
+    return PayslipSectionCard(
       icon: Icons.receipt_long_rounded,
       title: 'بيانات القسيمة',
       child: Column(
         children: [
-          _Row('الاسم بالعربي', p.displayName, valueFlex: 3, maxLines: 3),
-          _Row('الاسم بالإنجليزي', p.fullNameEn, valueFlex: 3, maxLines: 3),
-          _Row('القسم', p.departmentName),
-          _Row('نظام العمل', p.employmentMode),
-          _Row('أيام العمل الفعلية', '${p.actualWorkingDays} يوم'),
+          PayslipRow('الاسم بالعربي', p.displayName),
+          PayslipRow('الاسم بالإنجليزي', p.fullNameEn),
+          PayslipRow('القسم', p.departmentName),
+          PayslipRow('نظام العمل', p.employmentMode),
+          PayslipRow('أيام العمل الفعلية', '${p.actualWorkingDays} يوم'),
           const Divider(height: 20, color: AppColors.border),
-          if (p.bankName.isNotEmpty) _Row('البنك', p.bankName),
+          if (p.bankName.isNotEmpty) PayslipRow('البنك', p.bankName),
           if (p.bankAccountNumber.isNotEmpty)
-            _Row('رقم الحساب', p.bankAccountNumber),
-          _Row('تاريخ الإصدار', issued),
+            PayslipRow('رقم الحساب', p.bankAccountNumber),
+          PayslipRow('تاريخ الإصدار', issued),
         ],
       ),
     );
   }
 
   Widget _buildSummary(SalaryCalculation d) {
-    return _SectionCard(
-      icon: Icons.payments_rounded,
-      title: 'ملخص الراتب',
-      child: Column(
-        children: [
-          _SummaryBig(amount: d.netSalary, label: 'صافي الراتب'),
-          const SizedBox(height: 16),
-          _Row('الراتب الأساسي', _fmt(d.grossSalary)),
-          _Row('البدلات', _fmt(d.allowances.total)),
-          if (d.bonusAmount != 0) _Row('المكافآت', _fmt(d.bonusAmount)),
-          const Divider(height: 20, color: AppColors.border),
-          _Row(
-            'إجمالي الخصومات',
-            _fmt(d.deductions.total),
-            color: AppColors.error,
-          ),
-          if (d.taxAmount != 0) _Row('الضرائب', _fmt(d.taxAmount)),
-          const Divider(height: 20, color: AppColors.border),
-          _Row('صافي الراتب', _fmt(d.netSalary), strong: true),
-        ],
-      ),
+    return PayslipSummarySection(
+      grossSalary: d.grossSalary,
+      totalEarnings: d.allowances.total,
+      deductionsTotal: d.deductions.total,
+      netSalary: d.netSalary,
+      taxAmount: d.taxAmount,
+      bonusAmount: d.bonusAmount != 0 ? d.bonusAmount : null,
     );
   }
 
   Widget _buildAllowances(SalaryCalculation d) {
-    final a = d.allowances;
-    return _SectionCard(
-      icon: Icons.add_circle_outline_rounded,
-      title: 'الإضافات (البدلات)',
-      child: Column(
-        children: [
-          _Row('بدل سكن', _fmt(a.housing)),
-          _Row('بدل وجبات', _fmt(a.meal)),
-          _Row('بدل مواصلات', _fmt(a.transportation)),
-          _Row('بدل تأمين', _fmt(a.insurance)),
-          _Row('إضافي', _fmt(a.additional)),
-          _Row('أخرى', _fmt(a.other)),
-          const Divider(height: 20, color: AppColors.border),
-          _Row('إجمالي الإضافات', _fmt(a.total), strong: true),
-        ],
-      ),
+    return PayslipAllowancesSection(
+      allowances: d.allowances,
+      bonusAmount: d.bonusAmount,
+      overtimePay: d.overtimePay,
+      settlementAdditions: d.settlementAdditions,
+      settlementAmount: d.settlementAmount,
+      showOvertime: true,
+      showBonuses: true,
     );
   }
 
   Widget _buildDeductions(SalaryCalculation d) {
     final dd = d.deductions;
-    return _SectionCard(
+    return PayslipSectionCard(
       icon: Icons.remove_circle_outline_rounded,
       title: 'الخصومات',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Row(
+          PayslipRow(
             'تأخير (${dd.lateHours.toStringAsFixed(0)} ساعة)',
-            _fmt(dd.lateAmount),
+            payslipFmtMoney(dd.lateAmount),
           ),
           if (d.lateDates.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -440,9 +410,9 @@ class _PayrollScreenState extends State<PayrollScreen> {
             ),
           ],
           const SizedBox(height: 8),
-          _Row(
+          PayslipRow(
             'غياب (${dd.absenceDays.toStringAsFixed(0)} يوم)',
-            _fmt(dd.absenceAmount),
+            payslipFmtMoney(dd.absenceAmount),
           ),
           if (d.absenceDates.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -453,7 +423,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
             ),
           ],
           const SizedBox(height: 8),
-          _Row('جزاءات', _fmt(dd.penaltiesAmount)),
+          PayslipRow('جزاءات', payslipFmtMoney(dd.penaltiesAmount)),
           if (dd.penaltyDetails.isNotEmpty) ...[
             const SizedBox(height: 6),
             for (final p in dd.penaltyDetails)
@@ -462,58 +432,47 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 child: _DetailChip(
                   label: _penaltyLabel(p),
                   value: p.isDayPenalty
-                      ? '${_fmtNumber(p.days)} يوم'
-                      : _fmt(p.amount),
+                      ? '${payslipFmtNumber(p.days)} يوم'
+                      : payslipFmtMoney(p.amount),
                   color: AppColors.error,
                 ),
               ),
           ],
           const SizedBox(height: 4),
-          _Row('سلف', _fmt(dd.advancesAmount)),
-          _Row('تأمين صحي', _fmt(dd.healthInsuranceAmount)),
+          PayslipRow('سلف', payslipFmtMoney(dd.advancesAmount)),
+          PayslipRow('تأمين صحي', payslipFmtMoney(dd.healthInsuranceAmount)),
           if (dd.settlementDeductions != 0)
-            _Row('تسويات خصم', _fmt(dd.settlementDeductions)),
+            PayslipRow('تسويات خصم', payslipFmtMoney(dd.settlementDeductions)),
           const Divider(height: 20, color: AppColors.border),
-          _Row('إجمالي الخصومات', _fmt(dd.total), strong: true),
+          PayslipRow('إجمالي الخصومات', payslipFmtMoney(dd.total), strong: true),
         ],
       ),
     );
   }
 
   Widget _buildInsurance(SalaryCalculation d) {
-    final ins = d.insurance;
-    return _SectionCard(
-      icon: Icons.shield_outlined,
-      title: 'التأمينات',
-      child: Column(
-        children: [
-          _Row('راتب التأمين', _fmt(d.insuranceSalary)),
-          _Row('تأمين اجتماعي', _fmt(ins.social)),
-          _Row('تأمين صحي', _fmt(ins.health)),
-          _Row('حصة الشركة', _fmt(ins.companyShare)),
-          const Divider(height: 20, color: AppColors.border),
-          _Row('إجمالي المخصوم', _fmt(ins.totalDeducted), strong: true),
-        ],
-      ),
+    return PayslipInsuranceSection(
+      insurance: d.insurance,
+      insuranceSalary: d.insuranceSalary,
     );
   }
 
   Widget _buildWorkingHours(SalaryCalculation d) {
-    return _SectionCard(
+    return PayslipSectionCard(
       icon: Icons.schedule_rounded,
       title: 'الحضور وساعات العمل',
       child: Column(
         children: [
-          _Row('ساعات العمل', '${_fmtNumber(d.hoursWorked)} ساعة'),
-          _Row('الساعات الإضافية', '${_fmtNumber(d.overtimeHours)} ساعة'),
-          _Row('أجر الساعات الإضافية', _fmt(d.overtimePay)),
+          PayslipRow('ساعات العمل', '${payslipFmtNumber(d.hoursWorked)} ساعة'),
+          PayslipRow('الساعات الإضافية', '${payslipFmtNumber(d.overtimeHours)} ساعة'),
+          PayslipRow('أجر الساعات الإضافية', payslipFmtMoney(d.overtimePay)),
           if (d.overtimeDetails.isNotEmpty) ...[
             const Divider(height: 24, color: AppColors.border),
             _OvertimeDetailsBlock(
               details: d.overtimeDetails,
               formatDate: _fmtFullDate,
-              formatHours: _fmtNumber,
-              formatPay: _fmt,
+              formatHours: payslipFmtNumber,
+              formatPay: payslipFmtMoney,
             ),
           ] else if (d.overtimeDates.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -525,47 +484,47 @@ class _PayrollScreenState extends State<PayrollScreen> {
           ],
           if (d.shiftRate != 0) ...[
             const Divider(height: 20, color: AppColors.border),
-            _Row('أجر يوم الشيفت', _fmt(d.shiftRate)),
+            PayslipRow('أجر يوم الشيفت', payslipFmtMoney(d.shiftRate)),
           ],
           if (d.shiftMonthlyRequiredWorkingDays != 0 ||
               d.shiftMonthlyRequiredHours != 0) ...[
             const Divider(height: 20, color: AppColors.border),
             const _SubHeader('بيانات الشيفت الشهرية'),
             if (d.shiftMonthlyRequiredWorkingDays != 0)
-              _Row(
+              PayslipRow(
                 'أيام العمل المطلوبة',
                 '${d.shiftMonthlyRequiredWorkingDays} يوم',
               ),
             if (d.shiftMonthlyRequiredHours != 0)
-              _Row(
+              PayslipRow(
                 'الساعات المطلوبة',
                 '${d.shiftMonthlyRequiredHours.toStringAsFixed(1)} ساعة',
               ),
             if (d.shiftMonthlyActualHours != 0)
-              _Row(
+              PayslipRow(
                 'الساعات الفعلية',
                 '${d.shiftMonthlyActualHours.toStringAsFixed(1)} ساعة',
               ),
             if (d.shiftMonthlyMissingHours != 0)
-              _Row(
+              PayslipRow(
                 'الساعات الناقصة',
                 '${d.shiftMonthlyMissingHours.toStringAsFixed(1)} ساعة',
                 color: AppColors.error,
               ),
             if (d.shiftMonthlyDeductionDays != 0)
-              _Row(
+              PayslipRow(
                 ' أيام خصم',
                 '${d.shiftMonthlyDeductionDays} يوم',
                 color: AppColors.error,
               ),
             if (d.shiftMonthlyAbsentDays != 0)
-              _Row(
+              PayslipRow(
                 'أيام غياب',
                 '${d.shiftMonthlyAbsentDays} يوم',
                 color: AppColors.error,
               ),
             if (d.shiftMonthlyHourDeficitDays != 0)
-              _Row(
+              PayslipRow(
                 'أيام عجز الساعات',
                 '${d.shiftMonthlyHourDeficitDays} يوم',
                 color: AppColors.error,
@@ -595,25 +554,25 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 
   Widget _buildBonusesSettlements(SalaryCalculation d) {
-    return _SectionCard(
+    return PayslipSectionCard(
       icon: Icons.redeem_rounded,
       title: 'المكافآت والتسويات',
       child: Column(
         children: [
           if (d.bonusAmount != 0)
-            _Row('مكافأة', _fmt(d.bonusAmount), color: AppColors.success),
+            PayslipRow('مكافأة', payslipFmtMoney(d.bonusAmount), color: AppColors.success),
           if (d.settlementAmount != 0)
-            _Row('التسوية', _fmt(d.settlementAmount)),
+            PayslipRow('التسوية', payslipFmtMoney(d.settlementAmount)),
           if (d.settlementAdditions != 0)
-            _Row(
+            PayslipRow(
               'تسويات إضافية',
-              _fmt(d.settlementAdditions),
+              payslipFmtMoney(d.settlementAdditions),
               color: AppColors.success,
             ),
           if (d.settlementDeductions != 0)
-            _Row(
+            PayslipRow(
               'تسويات خصم',
-              _fmt(d.settlementDeductions),
+              payslipFmtMoney(d.settlementDeductions),
               color: AppColors.error,
             ),
           if (d.settlementDetails.isNotEmpty) ...[
@@ -623,7 +582,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: _DetailChip(
                   label: s.description ?? 'تسوية',
-                  value: _fmt(s.amount),
+                  value: payslipFmtMoney(s.amount),
                   color: s.amount >= 0 ? AppColors.success : AppColors.error,
                 ),
               ),
@@ -634,165 +593,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 }
 
-// ── Section card ───────────────────────────────────────────────────────────
-
-class _SectionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Widget child;
-
-  const _SectionCard({
-    required this.icon,
-    required this.title,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            color: AppColors.primary.withValues(alpha: 0.06),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, size: 20, color: AppColors.primary),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: AppTextStyles.titleSmall.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(padding: const EdgeInsets.all(16), child: child),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryBig extends StatelessWidget {
-  final double amount;
-  final String label;
-
-  const _SummaryBig({required this.amount, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = amount.toStringAsFixed(
-      amount.truncateToDouble() == amount ? 0 : 2,
-    );
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, color: Colors.white70),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '$text ج.م',
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Row extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool strong;
-  final Color? color;
-  final int valueFlex;
-  final int maxLines;
-
-  const _Row(
-    this.label,
-    this.value, {
-    this.strong = false,
-    this.color,
-    this.valueFlex = 2,
-    this.maxLines = 2,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final labelColor =
-        color ?? (strong ? AppColors.primary : AppColors.textSecondary);
-    final valueColor =
-        color ?? (strong ? AppColors.primary : AppColors.textPrimary);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
-                color: labelColor,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: valueFlex,
-            child: Text(
-              value,
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
-              softWrap: true,
-              textAlign: TextAlign.start,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
-                color: valueColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ── Local helpers ──────────────────────────────────────────────────────
 
 class _SubHeader extends StatelessWidget {
   final String text;

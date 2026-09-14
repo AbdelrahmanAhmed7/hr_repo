@@ -23,18 +23,11 @@ class EmployeeProfileHeader extends StatelessWidget {
             AppColors.primaryDark,
           ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
           child: Column(
             children: [
               Row(
@@ -43,22 +36,23 @@ class EmployeeProfileHeader extends StatelessWidget {
                     icon: const Icon(
                       Icons.arrow_back_ios_rounded,
                       color: Colors.white,
+                      size: 20,
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
+                  const Spacer(),
                 ],
               ),
-              const SizedBox(height: 16),
-              // Avatar
+              const SizedBox(height: 4),
               Container(
-                width: 120,
-                height: 120,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.3),
-                    width: 4,
+                    width: 3,
                   ),
                 ),
                 child: employee.profileImageUrl != null
@@ -72,63 +66,51 @@ class EmployeeProfileHeader extends StatelessWidget {
                       )
                     : _buildInitialsAvatar(),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               Text(
                 employee.fullName,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 20,
                     ),
                 textAlign: TextAlign.center,
               ),
-              if (employee.position != null) ...[
-                const SizedBox(height: 8),
+              const SizedBox(height: 4),
+              if ((employee.jobTitleName ?? employee.position) != null)
                 Text(
-                  employee.position!,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 16,
+                  employee.jobTitleName ?? employee.position ?? '',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.85),
                       ),
                   textAlign: TextAlign.center,
                 ),
-              ],
               if (employee.department != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   employee.department!,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 14,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                   textAlign: TextAlign.center,
                 ),
               ],
-              const SizedBox(height: 16),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (employee.employeeCode != null &&
-                      employee.employeeCode!.isNotEmpty)
-                    _HeaderChip(
-                      label: employee.employeeCode!,
-                      backgroundColor: Colors.white.withValues(alpha: 0.18),
-                    ),
-                  if (employee.role != null && employee.role!.isNotEmpty)
-                    _HeaderChip(
-                      label: employee.role!,
-                      backgroundColor: Colors.white.withValues(alpha: 0.14),
-                    ),
-                  if (employee.isActive != null)
-                    _HeaderChip(
-                      label: employee.isActive! ? 'نشط' : 'غير نشط',
-                      backgroundColor: employee.isActive!
-                          ? const Color(0x3322C55E)
-                          : const Color(0x33EF4444),
-                    ),
-                ],
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: employee.isActive == true
+                      ? const Color(0x3322C55E)
+                      : const Color(0x33EF4444),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  employee.isActive == true ? 'نشط' : 'غير نشط',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
               ),
             ],
           ),
@@ -143,38 +125,9 @@ class EmployeeProfileHeader extends StatelessWidget {
         employee.initials,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 40,
+          fontSize: 28,
           fontWeight: FontWeight.bold,
         ),
-      ),
-    );
-  }
-}
-
-class _HeaderChip extends StatelessWidget {
-  final String label;
-  final Color backgroundColor;
-
-  const _HeaderChip({
-    required this.label,
-    required this.backgroundColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
       ),
     );
   }

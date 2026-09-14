@@ -15,8 +15,6 @@ import '../../shared/widgets/searchable_dropdown_field.dart';
 import '../../shared/widgets/server_unavailable_dialog.dart';
 import '../attendance/cubit/sa_attendance_cubit.dart';
 import '../attendance/cubit/sa_attendance_state.dart';
-import '../attendance/widgets/sa_attendance_date_navigator.dart';
-import '../attendance/widgets/sa_attendance_stats_strip.dart';
 import '../attendance/widgets/sa_attendance_filter_bar.dart';
 import '../attendance/widgets/sa_attendance_search_bar.dart';
 import '../attendance/widgets/sa_attendance_employee_row.dart';
@@ -119,15 +117,11 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
                       SliverToBoxAdapter(
-                        child: SAAttendanceDateNavigator(
+                        child: _SimpleDatePicker(
                           selectedDate: state.selectedDate,
-                          onPrevious: () => context
+                          onDateChanged: (date) => context
                               .read<SAAttendanceCubit>()
-                              .goToPreviousDay(),
-                          onNext: () =>
-                              context.read<SAAttendanceCubit>().goToNextDay(),
-                          onToday: () =>
-                              context.read<SAAttendanceCubit>().goToToday(),
+                              .loadAttendance(date: date),
                         ),
                       ),
                       SliverToBoxAdapter(
@@ -137,14 +131,6 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
                           onDepartmentChanged: (id) => context
                               .read<SAAttendanceCubit>()
                               .applyDepartmentFilter(id),
-                        ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: SAAttendanceStatsStrip(
-                          totalCount: state.totalEmployees,
-                          presentCount: state.employeesWithAttendance,
-                          absentCount: state.absentCount,
-                          percentage: state.attendancePercentage,
                         ),
                       ),
                       SliverToBoxAdapter(
@@ -324,6 +310,118 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ─── Simple Date Picker ──────────────────────────────────────────────────────
+
+class _SimpleDatePicker extends StatelessWidget {
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onDateChanged;
+
+  const _SimpleDatePicker({
+    required this.selectedDate,
+    required this.onDateChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isToday = DateUtils.isSameDay(selectedDate, now);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        0,
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              onDateChanged(selectedDate.subtract(const Duration(days: 1)));
+            },
+            icon: const Icon(Icons.chevron_left_rounded, size: 28),
+            color: AppColors.primary,
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate,
+                  firstDate: DateTime(2020),
+                  lastDate: now,
+                  locale: const Locale('ar'),
+                );
+                if (picked != null) onDateChanged(picked);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryTint,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (!isToday) ...[
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => onDateChanged(now),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'اليوم',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: isToday
+                ? null
+                : () {
+                    onDateChanged(selectedDate.add(const Duration(days: 1)));
+                  },
+            icon: const Icon(Icons.chevron_right_rounded, size: 28),
+            color:
+                isToday ? AppColors.textTertiary.withValues(alpha: 0.4) : AppColors.primary,
+          ),
+        ],
       ),
     );
   }

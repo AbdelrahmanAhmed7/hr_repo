@@ -116,8 +116,6 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                     _ErrorBanner(message: _error!, onRetry: _loadEmployee),
                     const SizedBox(height: 16),
                   ],
-                  _buildSummaryBlock(),
-                  const SizedBox(height: 20),
                   _SectionCard(
                     icon: Icons.person_rounded,
                     color: AppColors.primary,
@@ -156,7 +154,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                         _InfoItem(Icons.business_rounded, 'القسم',
                             _employee.department ?? '--'),
                         _InfoItem(Icons.work_history_rounded, 'الوظيفة',
-                            _employee.position ?? '--'),
+                            _employee.jobTitleName ?? _employee.position ?? '--'),
                         _InfoItem(Icons.account_tree_rounded, 'المدير المباشر',
                             _employee.managerName ?? '--'),
                         _InfoItem(Icons.store_rounded, 'الفرع',
@@ -242,54 +240,6 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     );
   }
 
-  Widget _buildSummaryBlock() {
-    final e = _employee;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _SummaryMetric(
-              icon: Icons.business_rounded,
-              label: 'القسم',
-              value: e.department ?? '--',
-            ),
-          ),
-          Container(width: 1, height: 44, color: AppColors.border),
-          Expanded(
-            child: _SummaryMetric(
-              icon: Icons.work_outline_rounded,
-              label: 'الوظيفة',
-              value: e.position ?? '--',
-            ),
-          ),
-          Container(width: 1, height: 44, color: AppColors.border),
-          Expanded(
-            child: _SummaryMetric(
-              icon: Icons.circle_rounded,
-              label: 'الحالة',
-              value: e.isActive == true ? 'نشط' : 'غير نشط',
-              color: e.isActive == true
-                  ? AppColors.success
-                  : AppColors.error,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _SectionCard extends StatelessWidget {
@@ -409,52 +359,6 @@ class _InfoItem extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _SummaryMetric extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color? color;
-
-  const _SummaryMetric({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = color ?? AppColors.primary;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 22, color: accent),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textTertiary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
