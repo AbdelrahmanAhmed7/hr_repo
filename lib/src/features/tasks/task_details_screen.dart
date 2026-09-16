@@ -47,7 +47,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   bool get _isManager {
     final role = context.read<AuthCubit>().state.role;
-    return role != null && role != UserRole.user;
+    return role == UserRole.admin || role == UserRole.superAdmin;
   }
 
   bool _isAssignee(TaskModel task) {
@@ -772,43 +772,57 @@ class _CommentsCard extends StatelessWidget {
           else if (state.comments.isEmpty)
             const Text('لا توجد تعليقات بعد.'),
           ...state.comments.map(
-            (c) => Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundSecondary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          c.createdByName ?? 'مستخدم',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
+            (c) {
+              final myId = context.read<AuthCubit>().state.userId;
+              final isMine = c.userId != null &&
+                  myId != null &&
+                  c.userId == myId;
+              final author = isMine
+                  ? 'أنت'
+                  : (c.createdByName?.isNotEmpty == true
+                      ? c.createdByName!
+                      : 'مستخدم');
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isMine
+                      ? AppColors.primaryTint
+                      : AppColors.backgroundSecondary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            author,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              color: isMine ? AppColors.primary : null,
+                            ),
                           ),
                         ),
-                      ),
-                      if (c.createdAt case final commentedAt?)
-                        Text(
-                          TaskLabels.formatDate(commentedAt),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textTertiary,
+                        if (c.createdAt case final commentedAt?)
+                          Text(
+                            TaskLabels.formatDate(commentedAt),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textTertiary,
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(c.comment),
-                ],
-              ),
-            ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(c.comment),
+                  ],
+                ),
+              );
+            },
           ),
           Row(
             children: [

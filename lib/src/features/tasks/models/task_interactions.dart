@@ -2,12 +2,14 @@
 /// Parsed defensively since exact response field names may vary.
 class TaskComment {
   final int? id;
+  final String? userId;
   final String comment;
   final String? createdByName;
   final DateTime? createdAt;
 
   const TaskComment({
     this.id,
+    this.userId,
     required this.comment,
     this.createdByName,
     this.createdAt,
@@ -34,6 +36,7 @@ class TaskComment {
 
     return TaskComment(
       id: asInt(json['id']),
+      userId: asString(json['userId'] ?? json['createdByUserId']),
       comment:
           '${json['comment'] ?? json['text'] ?? json['message'] ?? ''}',
       createdByName: asString(
