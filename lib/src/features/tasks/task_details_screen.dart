@@ -70,17 +70,24 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.textPrimary,
           ),
-          onPressed: () => context.canPop()
-              ? context.pop()
-              : context.go('/tasks'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/tasks'),
         ),
-        title: const Text(
-          'تفاصيل المهمة',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-            fontSize: 17,
-          ),
+        title: BlocBuilder<TaskDetailsCubit, TaskDetailsState>(
+          buildWhen: (p, c) => p.task?.title != c.task?.title,
+          builder: (context, state) {
+            final t = state.task?.title.trim();
+            return Text(
+              (t == null || t.isEmpty) ? 'تفاصيل المهمة' : t,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+              ),
+            );
+          },
         ),
       ),
       body: BlocConsumer<TaskDetailsCubit, TaskDetailsState>(
@@ -94,19 +101,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           context.read<TaskDetailsCubit>().resetActionStatus();
         },
         builder: (context, state) {
-          if (state.status == TaskDetailsStatus.loading &&
-              state.task == null) {
+          if (state.status == TaskDetailsStatus.loading && state.task == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (state.status == TaskDetailsStatus.failure &&
-              state.task == null) {
+          if (state.status == TaskDetailsStatus.failure && state.task == null) {
             return ErrorStateWidget(
               title: 'تعذر تحميل المهمة',
               error: state.errorMessage ?? 'حدث خطأ غير متوقع.',
               buttonLabel: 'إعادة المحاولة',
-              onRetry: () => context
-                  .read<TaskDetailsCubit>()
-                  .loadTask(widget.taskId),
+              onRetry: () =>
+                  context.read<TaskDetailsCubit>().loadTask(widget.taskId),
               icon: Icons.task_outlined,
             );
           }
@@ -124,8 +128,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             _progressInit = true;
           }
           return RefreshIndicator(
-            onRefresh: () =>
-                context.read<TaskDetailsCubit>().refresh(),
+            onRefresh: () => context.read<TaskDetailsCubit>().refresh(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(
@@ -151,6 +154,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     const SizedBox(height: 12),
                     _SectionCard(
                       title: 'الوصف',
+                      icon: Icons.notes_rounded,
                       child: Text(
                         task.description!,
                         style: AppTextStyles.bodyMedium.copyWith(
@@ -160,14 +164,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  _CommentsCard(
-                    state: state,
-                    controller: _commentController,
-                  ),
+                  _CommentsCard(state: state, controller: _commentController),
                   const SizedBox(height: 12),
                   _AttachmentsCard(state: state),
-                  const SizedBox(height: 12),
-                  _HistoryCard(state: state),
                 ],
               ),
             ),
@@ -203,7 +202,11 @@ class _TaskHeaderCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [statusColor.withValues(alpha: 0.08), Colors.white],
+        ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: statusColor.withValues(alpha: 0.2)),
       ),
@@ -270,15 +273,7 @@ class _TaskHeaderCard extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            task.title,
-            style: AppTextStyles.titleMedium.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -304,23 +299,56 @@ class _TaskHeaderCard extends StatelessWidget {
             ],
           ),
           const Divider(height: 24),
-          _InfoRow(
-            'المسند إليه',
-            task.assignedEmployeeName?.isNotEmpty == true
+          _MetaLine(
+            icon: Icons.person_outline,
+            label: 'المسند إليه',
+            value: task.assignedEmployeeName?.isNotEmpty == true
                 ? task.assignedEmployeeName!
                 : '--',
           ),
-          _InfoRow('أنشأها', task.createdByName ?? '--'),
-          _InfoRow('تاريخ البدء', TaskLabels.formatDate(task.startDate)),
-          _InfoRow('تاريخ الاستحقاق', TaskLabels.formatDate(task.dueDate)),
-          if (task.estimatedHours case final hours?)
-            _InfoRow('الساعات المقدرة', _formatHours(hours)),
-          if (task.completedAt case final doneAt?)
-            _InfoRow(
-              'تاريخ الإنجاز',
-              TaskLabels.formatDate(doneAt),
+          _MetaLine(
+            icon: Icons.account_circle_outlined,
+            label: 'أنشأها',
+            value: task.createdByName ?? '--',
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _DateBox(
+                  label: 'تاريخ البدء',
+                  icon: Icons.play_circle_outline,
+                  date: task.startDate,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _DateBox(
+                  label: 'تاريخ الاستحقاق',
+                  icon: Icons.event_outlined,
+                  date: task.dueDate,
+                ),
+              ),
+            ],
+          ),
+          if (task.estimatedHours case final hours?) ...[
+            const SizedBox(height: 10),
+            _MetaLine(
+              icon: Icons.schedule_outlined,
+              label: 'الساعات المقدرة',
+              value: _formatHours(hours),
             ),
-          const SizedBox(height: 8),
+          ],
+          if (task.completedAt case final doneAt?) ...[
+            const SizedBox(height: 6),
+            _MetaLine(
+              icon: Icons.check_circle_outline,
+              label: 'تاريخ الإنجاز',
+              value: TaskLabels.formatDate(doneAt),
+              valueColor: AppColors.success,
+            ),
+          ],
+          const SizedBox(height: 12),
           TaskProgressBar(progress: task.progressPercentage),
         ],
       ),
@@ -328,17 +356,27 @@ class _TaskHeaderCard extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
+class _MetaLine extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  const _InfoRow(this.label, this.value);
+  final Color? valueColor;
+
+  const _MetaLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
+          Icon(icon, size: 15, color: AppColors.textTertiary),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               label,
@@ -347,8 +385,60 @@ class _InfoRow extends StatelessWidget {
               ),
             ),
           ),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: valueColor ?? AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DateBox extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final DateTime? date;
+
+  const _DateBox({required this.label, required this.icon, this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: AppColors.textTertiary),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(
-            value,
+            TaskLabels.formatDate(date),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -467,12 +557,10 @@ class _ActionCard extends StatelessWidget {
           ],
         );
       case 2: // Submitted
-        body = const Row(
-          children: [
-            Icon(Icons.hourglass_top_rounded, color: Color(0xFF8B5CF6)),
-            SizedBox(width: 8),
-            Expanded(child: Text('تم التسليم — بانتظار اعتماد المدير.')),
-          ],
+        body = const _StatusBanner(
+          icon: Icons.hourglass_top_rounded,
+          color: Color(0xFF8B5CF6),
+          text: 'تم التسليم — بانتظار اعتماد المدير.',
         );
       case 4: // Rejected
         body = Column(
@@ -502,15 +590,17 @@ class _ActionCard extends StatelessWidget {
           ],
         );
       case 3: // Completed
-        body = const Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.success),
-            SizedBox(width: 8),
-            Expanded(child: Text('مهمة مكتملة ومعتمدة.')),
-          ],
+        body = const _StatusBanner(
+          icon: Icons.check_circle_rounded,
+          color: AppColors.success,
+          text: 'مهمة مكتملة ومعتمدة.',
         );
       case 5: // Cancelled
-        body = const Text('تم إلغاء هذه المهمة.');
+        body = const _StatusBanner(
+          icon: Icons.block_rounded,
+          color: AppColors.textTertiary,
+          text: 'تم إلغاء هذه المهمة.',
+        );
       default:
         body = null;
     }
@@ -562,22 +652,19 @@ class _ActionCard extends StatelessWidget {
               label: 'إيقاف مؤقت',
               icon: Icons.pause_rounded,
               loading: submitting,
-              onPressed: () =>
-                  _run(context, cubit.pauseRecurrence()),
+              onPressed: () => _run(context, cubit.pauseRecurrence()),
             ),
             _SmallAction(
               label: 'استئناف',
               icon: Icons.play_arrow_rounded,
               loading: submitting,
-              onPressed: () =>
-                  _run(context, cubit.resumeRecurrence()),
+              onPressed: () => _run(context, cubit.resumeRecurrence()),
             ),
             _SmallAction(
               label: 'إيقاف السلسلة',
               icon: Icons.stop_rounded,
               loading: submitting,
-              onPressed: () =>
-                  _run(context, cubit.stopRecurrence()),
+              onPressed: () => _run(context, cubit.stopRecurrence()),
             ),
           ],
         ),
@@ -586,6 +673,7 @@ class _ActionCard extends StatelessWidget {
 
     return _SectionCard(
       title: 'الإجراءات',
+      icon: Icons.rule_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
@@ -678,9 +766,7 @@ class _ActionButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: bg,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       icon: loading
           ? const SizedBox(
@@ -720,10 +806,50 @@ class _SmallAction extends StatelessWidget {
   }
 }
 
+/// Tinted read-only status banner for terminal task states.
+class _StatusBanner extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  const _StatusBanner({
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionCard extends StatelessWidget {
   final String title;
+  final IconData? icon;
   final Widget child;
-  const _SectionCard({required this.title, required this.child});
+  const _SectionCard({required this.title, this.icon, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -738,14 +864,32 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTextStyles.titleSmall.copyWith(
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              if (icon != null) ...[
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryTint,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 16, color: AppColors.primary),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.titleSmall.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           child,
         ],
       ),
@@ -762,93 +906,119 @@ class _CommentsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionCard(
       title: 'التعليقات (${state.comments.length})',
+      icon: Icons.chat_bubble_outline_rounded,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (state.commentsLoading && state.comments.isEmpty)
             const Padding(
               padding: EdgeInsets.all(8),
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             )
           else if (state.comments.isEmpty)
             const Text('لا توجد تعليقات بعد.'),
-          ...state.comments.map(
-            (c) {
-              final myId = context.read<AuthCubit>().state.userId;
-              final isMine = c.userId != null &&
-                  myId != null &&
-                  c.userId == myId;
-              final author = isMine
-                  ? 'أنت'
-                  : (c.createdByName?.isNotEmpty == true
+          ...state.comments.map((c) {
+            final myId = context.read<AuthCubit>().state.userId;
+            final isMine = c.userId != null && myId != null && c.userId == myId;
+            final author = isMine
+                ? 'أنت'
+                : (c.createdByName?.isNotEmpty == true
                       ? c.createdByName!
                       : 'مستخدم');
-              return Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isMine
-                      ? AppColors.primaryTint
-                      : AppColors.backgroundSecondary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            author,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
-                              color: isMine ? AppColors.primary : null,
-                            ),
-                          ),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                mainAxisAlignment: isMine
+                    ? MainAxisAlignment.end
+                    : MainAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width - 76,
+                      ),
+                      padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
+                      decoration: BoxDecoration(
+                        color: isMine ? AppColors.primaryTint : Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(16),
+                          topRight: const Radius.circular(16),
+                          bottomLeft: Radius.circular(isMine ? 16 : 4),
+                          bottomRight: Radius.circular(isMine ? 4 : 16),
                         ),
-                        if (c.createdAt case final commentedAt?)
+                        border: isMine
+                            ? null
+                            : Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  author,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                    color: isMine
+                                        ? AppColors.primary
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (c.createdAt case final commentedAt?) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  TaskLabels.formatDate(commentedAt),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
                           Text(
-                            TaskLabels.formatDate(commentedAt),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textTertiary,
+                            c.comment,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textPrimary,
+                              height: 1.5,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(c.comment),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                ],
+              ),
+            );
+          }),
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: controller,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _send(context),
                   decoration: const InputDecoration(
                     hintText: 'اكتب تعليقًا...',
                     border: OutlineInputBorder(),
                     isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton.filled(
-                onPressed: () async {
-                  final text = controller.text.trim();
-                  if (text.isEmpty) return;
-                  final ok = await context
-                      .read<TaskDetailsCubit>()
-                      .addComment(text);
-                  if (ok) controller.clear();
-                  if (context.mounted) {
-                    context.read<TaskDetailsCubit>().resetActionStatus();
-                  }
-                },
+                onPressed: () => _send(context),
                 icon: const Icon(Icons.send_rounded, size: 18),
               ),
             ],
@@ -856,6 +1026,16 @@ class _CommentsCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _send(BuildContext context) async {
+    final text = controller.text.trim();
+    if (text.isEmpty) return;
+    final ok = await context.read<TaskDetailsCubit>().addComment(text);
+    if (ok) controller.clear();
+    if (context.mounted) {
+      context.read<TaskDetailsCubit>().resetActionStatus();
+    }
   }
 }
 
@@ -867,6 +1047,7 @@ class _AttachmentsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionCard(
       title: 'المرفقات (${state.attachments.length})',
+      icon: Icons.attach_file_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -982,84 +1163,6 @@ class _AttachmentsCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _HistoryCard extends StatelessWidget {
-  final TaskDetailsState state;
-  const _HistoryCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      title: 'السجل (${state.history.length})',
-      child: state.historyLoading && state.history.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(8),
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : state.history.isEmpty
-          ? const Text('لا يوجد سجل بعد.')
-          : Column(
-              children: state.history
-                  .map(
-                    (h) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.only(top: 5),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  h.action.isNotEmpty ? h.action : '--',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                if (h.details?.isNotEmpty == true)
-                                  Text(
-                                    h.details!,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                if (h.actorName?.isNotEmpty == true ||
-                                    h.createdAt != null)
-                                  Text(
-                                    [
-                                      if (h.actorName?.isNotEmpty == true)
-                                        h.actorName!,
-                                      if (h.createdAt != null)
-                                        TaskLabels.formatDate(h.createdAt),
-                                    ].join(' • '),
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textTertiary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
     );
   }
 }

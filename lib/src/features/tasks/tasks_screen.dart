@@ -27,9 +27,14 @@ class TasksScreen extends StatefulWidget {
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
-class _TasksScreenState extends State<TasksScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _TasksScreenState extends State<TasksScreen> {
+  bool _showAllTasks = false;
+
+  static const TextStyle _kTitleStyle = TextStyle(
+    color: AppColors.textPrimary,
+    fontWeight: FontWeight.w800,
+    fontSize: 17,
+  );
 
   bool get _isSuperAdmin {
     final role = context.read<AuthCubit>().state.role;
@@ -43,16 +48,12 @@ class _TasksScreenState extends State<TasksScreen>
 
   bool get _isManager => _isSuperAdmin || _isAdmin;
 
-  int get _tabCount {
-    if (_isSuperAdmin) return 1;
-    if (_isAdmin) return 2;
-    return 1;
-  }
+  /// Whether the currently visible list is the "all tasks" one.
+  bool get _isAllTasksTab => _isSuperAdmin || (_isAdmin && _showAllTasks);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabCount, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final cubit = context.read<TasksCubit>();
@@ -65,25 +66,40 @@ class _TasksScreenState extends State<TasksScreen>
     });
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
   Future<void> _refresh() async {
     final cubit = context.read<TasksCubit>();
-    if (_isSuperAdmin || _tabController.index == 1) {
+    if (_isAllTasksTab) {
       await cubit.loadTasks(silent: true);
     } else {
       await cubit.loadMyTasks(silent: true);
     }
   }
 
+  Future<void> _openFilters() async {
+    final cubit = context.read<TasksCubit>();
+    final forAll = _isAllTasksTab;
+    final result = await showModalBottomSheet<TaskFilters>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TaskFiltersSheet(
+        current: forAll ? cubit.state.filters : cubit.state.myTasksFilters,
+        lookups: cubit.state.lookups,
+        employees: cubit.state.assignableEmployees,
+        showEmployee: forAll,
+      ),
+    );
+    if (result == null || !mounted) return;
+    if (forAll) {
+      cubit.applyFilters(result);
+    } else {
+      cubit.applyMyFilters(result);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isManager = _isManager;
-    final isSuperAdmin = _isSuperAdmin;
     return Scaffold(
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
@@ -95,40 +111,62 @@ class _TasksScreenState extends State<TasksScreen>
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.textPrimary,
           ),
-          onPressed: () => context.canPop()
-              ? context.pop()
-              : context.go('/main'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/main'),
         ),
-        title: const Text(
-          'المهام',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-            fontSize: 17,
+        title: _isSuperAdmin
+            ? const Text('كل المهام', style: _kTitleStyle)
+            : _isAdmin
+            ? SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('مهامي')),
+                  ButtonSegment(value: true, label: Text('كل المهام')),
+                ],
+                selected: {_showAllTasks},
+                onSelectionChanged: (s) =>
+                    setState(() => _showAllTasks = s.first),
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: AppColors.primary,
+                  selectedForegroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  visualDensity: VisualDensity.compact,
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              )
+            : const Text('مهامي', style: _kTitleStyle),
+        actions: [
+          BlocBuilder<TasksCubit, TasksState>(
+            builder: (context, state) {
+              final forAll = _isAllTasksTab;
+              return _AppBarFilterButton(
+                active: forAll
+                    ? !state.filters.isEmpty
+                    : !state.myTasksFilters.isEmpty,
+                enabled:
+                    state.lookupsStatus == TasksStatus.success ||
+                    (forAll && state.assignableEmployees.isNotEmpty),
+                onPressed: () => _openFilters(),
+              );
+            },
           ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textTertiary,
-          indicatorColor: AppColors.primary,
-          indicatorWeight: 3,
-          tabs: [
-            if (isSuperAdmin) const Tab(text: 'كل المهام') else ...[
-              const Tab(text: 'مهامي'),
-              if (isManager) const Tab(text: 'كل المهام'),
-            ],
-          ],
-          onTap: (_) => setState(() {}),
-        ),
+          const SizedBox(width: 12),
+        ],
       ),
       floatingActionButton: isManager
           ? FloatingActionButton.extended(
               heroTag: 'tasks_fab',
               backgroundColor: AppColors.primary,
               onPressed: () async {
-                final created =
-                    await context.push<bool>('/tasks/create');
+                final created = await context.push<bool>('/tasks/create');
                 if (created == true && context.mounted) {
                   context.read<TasksCubit>().refreshAll();
                 }
@@ -143,17 +181,9 @@ class _TasksScreenState extends State<TasksScreen>
               ),
             )
           : null,
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          if (isSuperAdmin)
-            _AllTasksTab(onRefresh: _refresh)
-          else ...[
-            _MyTasksTab(onRefresh: _refresh),
-            if (isManager) _AllTasksTab(onRefresh: _refresh),
-          ],
-        ],
-      ),
+      body: _isAllTasksTab
+          ? _AllTasksTab(onRefresh: _refresh)
+          : _MyTasksTab(onRefresh: _refresh),
     );
   }
 }
@@ -189,23 +219,6 @@ class _MyTasksTabState extends State<_MyTasksTab> {
     }
   }
 
-  Future<void> _openFilters() async {
-    final cubit = context.read<TasksCubit>();
-    final result = await showModalBottomSheet<TaskFilters>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _TaskFiltersSheet(
-        current: cubit.state.myTasksFilters,
-        lookups: cubit.state.lookups,
-        employees: cubit.state.assignableEmployees,
-        showEmployee: false,
-      ),
-    );
-    if (result == null || !mounted) return;
-    cubit.applyMyFilters(result);
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TasksCubit, TasksState>(
@@ -226,13 +239,13 @@ class _MyTasksTabState extends State<_MyTasksTab> {
         }
         return Column(
           children: [
-            _AllTasksToolbar(
-              selectedStatus: state.myTasksFilters.status,
-              filtersActive: !state.myTasksFilters.isEmpty,
-              hasFilterData: state.lookupsStatus == TasksStatus.success,
-              onStatusChanged: (s) =>
-                  context.read<TasksCubit>().setMyStatusFilter(s),
-              onOpenFilters: _openFilters,
+            Container(
+              color: AppColors.backgroundSecondary,
+              child: _StatusFilterRow(
+                selected: state.myTasksFilters.status,
+                onChanged: (s) =>
+                    context.read<TasksCubit>().setMyStatusFilter(s),
+              ),
             ),
             Expanded(
               child: state.myTasks.isEmpty
@@ -254,8 +267,7 @@ class _MyTasksTabState extends State<_MyTasksTab> {
                           16 + MediaQuery.of(context).padding.bottom + 80,
                         ),
                         itemCount: state.myTasks.length + 1,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (_, i) {
                           if (i >= state.myTasks.length) {
                             return _BottomLoader(
@@ -306,22 +318,6 @@ class _AllTasksTabState extends State<_AllTasksTab> {
     }
   }
 
-  Future<void> _openFilters() async {
-    final cubit = context.read<TasksCubit>();
-    final result = await showModalBottomSheet<TaskFilters>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _TaskFiltersSheet(
-        current: cubit.state.filters,
-        lookups: cubit.state.lookups,
-        employees: cubit.state.assignableEmployees,
-      ),
-    );
-    if (result == null || !mounted) return;
-    cubit.applyFilters(result);
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TasksCubit, TasksState>(
@@ -340,15 +336,12 @@ class _AllTasksTabState extends State<_AllTasksTab> {
         }
         return Column(
           children: [
-            _AllTasksToolbar(
-              selectedStatus: state.filters.status,
-              filtersActive: !state.filters.isEmpty,
-              hasFilterData:
-                  state.lookupsStatus == TasksStatus.success ||
-                  state.assignableEmployees.isNotEmpty,
-              onStatusChanged: (s) =>
-                  context.read<TasksCubit>().setStatusFilter(s),
-              onOpenFilters: _openFilters,
+            Container(
+              color: AppColors.backgroundSecondary,
+              child: _StatusFilterRow(
+                selected: state.filters.status,
+                onChanged: (s) => context.read<TasksCubit>().setStatusFilter(s),
+              ),
             ),
             Expanded(
               child: state.tasks.isEmpty
@@ -370,8 +363,7 @@ class _AllTasksTabState extends State<_AllTasksTab> {
                           16 + MediaQuery.of(context).padding.bottom + 80,
                         ),
                         itemCount: state.tasks.length + 1,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (_, i) {
                           if (i >= state.tasks.length) {
                             return _BottomLoader(
@@ -425,43 +417,56 @@ class _BottomLoader extends StatelessWidget {
   }
 }
 
-class _AllTasksToolbar extends StatelessWidget {
-  final int? selectedStatus;
-  final bool filtersActive;
-  final bool hasFilterData;
-  final ValueChanged<int?> onStatusChanged;
-  final VoidCallback onOpenFilters;
+class _AppBarFilterButton extends StatelessWidget {
+  final bool active;
+  final bool enabled;
+  final VoidCallback onPressed;
 
-  const _AllTasksToolbar({
-    required this.selectedStatus,
-    required this.filtersActive,
-    required this.hasFilterData,
-    required this.onStatusChanged,
-    required this.onOpenFilters,
+  const _AppBarFilterButton({
+    required this.active,
+    required this.enabled,
+    required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.backgroundSecondary,
-      child: Row(
-        children: [
-          Expanded(
-            child: _StatusFilterRow(
-              selected: selectedStatus,
-              onChanged: onStatusChanged,
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 12),
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: active ? AppColors.primary : AppColors.border,
             ),
           ),
-          IconButton(
-            tooltip: 'مزيد من الفلاتر',
-            onPressed: hasFilterData ? onOpenFilters : null,
-            icon: Badge(
-              isLabelVisible: filtersActive,
-              smallSize: 8,
-              child: const Icon(Icons.filter_list_rounded),
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Badge(
+                isLabelVisible: active,
+                smallSize: 7,
+                child: const Icon(
+                  Icons.filter_list_rounded,
+                  size: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'فلاتر',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -516,7 +521,8 @@ class _FilterChip extends StatelessWidget {
       padding: const EdgeInsets.only(left: 8),
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: selected ? AppColors.primary : Colors.white,
@@ -524,6 +530,15 @@ class _FilterChip extends StatelessWidget {
             border: Border.all(
               color: selected ? AppColors.primary : AppColors.border,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             label,
@@ -580,8 +595,7 @@ class _TaskFiltersSheetState extends State<_TaskFiltersSheet> {
           ),
           child: Material(
             color: Colors.white,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             clipBehavior: Clip.antiAlias,
             child: SafeArea(
               top: false,
@@ -617,9 +631,8 @@ class _TaskFiltersSheetState extends State<_TaskFiltersSheet> {
                             title: 'الأولوية',
                             items: widget.lookups.priorities,
                             selected: _filters.priority,
-                            fallbackLabel: (item) => TaskLabels.priorityText(
-                              item.value,
-                            ),
+                            fallbackLabel: (item) =>
+                                TaskLabels.priorityText(item.value),
                             onChanged: (v) => setState(() {
                               _filters = _filters.copyWith(priority: v);
                             }),
@@ -668,8 +681,7 @@ class _TaskFiltersSheetState extends State<_TaskFiltersSheet> {
                             from: _filters.startDateFrom,
                             to: _filters.startDateTo,
                             onFrom: (d) => setState(() {
-                              _filters =
-                                  _filters.copyWith(startDateFrom: d);
+                              _filters = _filters.copyWith(startDateFrom: d);
                             }),
                             onTo: (d) => setState(() {
                               _filters = _filters.copyWith(startDateTo: d);
@@ -693,8 +705,7 @@ class _TaskFiltersSheetState extends State<_TaskFiltersSheet> {
                             from: _filters.createdDateFrom,
                             to: _filters.createdDateTo,
                             onFrom: (d) => setState(() {
-                              _filters =
-                                  _filters.copyWith(createdDateFrom: d);
+                              _filters = _filters.copyWith(createdDateFrom: d);
                             }),
                             onTo: (d) => setState(() {
                               _filters = _filters.copyWith(createdDateTo: d);
@@ -779,10 +790,7 @@ class _LookupChips extends StatelessWidget {
             ),
             for (final item in source)
               _FilterChip(
-                label: TaskLabels.lookupLabel(
-                  item.name,
-                  fallbackLabel(item),
-                ),
+                label: TaskLabels.lookupLabel(item.name, fallbackLabel(item)),
                 selected: selected == item.value,
                 onTap: () => onChanged(item.value),
               ),

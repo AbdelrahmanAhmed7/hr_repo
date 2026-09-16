@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../utils/task_labels.dart';
 
 /// Status pill + small meta chips used across task screens.
@@ -101,10 +102,10 @@ class TaskProgressBar extends StatelessWidget {
               height: height,
               child: Stack(
                 children: [
-                  Container(color: Colors.blue.withValues(alpha: 0.12)),
+                  Container(color: AppColors.primaryTint),
                   FractionallySizedBox(
                     widthFactor: share,
-                    child: Container(color: Colors.blue),
+                    child: Container(color: AppColors.primary),
                   ),
                 ],
               ),
@@ -117,7 +118,7 @@ class TaskProgressBar extends StatelessWidget {
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: Colors.blue,
+            color: AppColors.primary,
           ),
         ),
       ],

@@ -23,7 +23,6 @@ class TaskDetailsCubit extends Cubit<TaskDetailsState> {
       await Future.wait([
         loadComments(silent: true),
         loadAttachments(silent: true),
-        loadHistory(silent: true),
       ]);
       // Re-fetch task so action-driven changes (progress/status) reflect.
       if (isClosed) return;
