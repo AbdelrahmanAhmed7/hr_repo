@@ -68,6 +68,10 @@ import '../../features/profile/api/profile_api.dart';
 import '../../features/profile/services/profile_service.dart';
 import '../../features/profile/repository/profile_repository.dart';
 import '../../features/profile/cubit/profile_cubit.dart';
+import '../../features/tasks/services/tasks_api_service.dart';
+import '../../features/tasks/repository/tasks_repository.dart';
+import '../../features/tasks/cubit/tasks_cubit.dart';
+import '../../features/tasks/cubit/task_details_cubit.dart';
 import '../../features/payslip/services/payslip_service.dart';
 import '../../features/payslip/repository/payslip_repository.dart';
 import '../../features/payslip/cubit/payslip_cubit.dart';
@@ -322,6 +326,18 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<AdminAssignmentsCubit>(
     () => AdminAssignmentsCubit(getIt<AdminAssignmentsRepository>()),
+  );
+  getIt.registerFactory<TasksApiService>(
+    () => TasksApiService(getIt<DioClient>()),
+  );
+  getIt.registerFactory<TasksRepository>(
+    () => TasksRepository(service: getIt<TasksApiService>()),
+  );
+  getIt.registerFactory<TasksCubit>(
+    () => TasksCubit(getIt<TasksRepository>()),
+  );
+  getIt.registerFactory<TaskDetailsCubit>(
+    () => TaskDetailsCubit(getIt<TasksRepository>()),
   );
   getIt.registerFactory<OrganizationChartCubit>(() => OrganizationChartCubit());
   getIt.registerFactory<HomeCubit>(() => HomeCubit(getIt<HomeRepository>()));

@@ -131,6 +131,7 @@ class _HRHomeScreenContentState extends State<_HRHomeScreenContent> {
   void _handleViewDepartments() => context.push('/hr/departments');
   void _handleViewOrganizationChart() => context.push('/organization');
   void _handleViewMissions() => context.push('/missions');
+  void _handleViewTasks() => context.push('/tasks');
   void _handleViewHolidays() => context.push('/holidays');
 
   @override
@@ -211,15 +212,16 @@ class _HRHomeScreenContentState extends State<_HRHomeScreenContent> {
                                 _HrAttendanceTimesCard(data: hrState.data),
                                 _HrEmployeeOverview(data: hrState.data),
                                 HrAttentionQueue(data: hrState.data),
-                                HrPrimaryActions(
-                                  onViewEmployees: _handleViewEmployees,
-                                  onViewDepartments: _handleViewDepartments,
-                                  onViewOrganization:
-                                      _handleViewOrganizationChart,
-                                  onViewMissions: _handleViewMissions,
-                                  onViewAllRequests: _handleViewAllRequests,
-                                  onViewHolidays: _handleViewHolidays,
-                                ),
+                                 HrPrimaryActions(
+                                   onViewEmployees: _handleViewEmployees,
+                                   onViewDepartments: _handleViewDepartments,
+                                   onViewOrganization:
+                                       _handleViewOrganizationChart,
+                                   onViewMissions: _handleViewMissions,
+                                   onViewAllRequests: _handleViewAllRequests,
+                                   onViewHolidays: _handleViewHolidays,
+                                   onViewTasks: _handleViewTasks,
+                                 ),
                                 // Send Notification
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),

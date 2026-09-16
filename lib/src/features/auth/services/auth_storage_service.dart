@@ -146,6 +146,36 @@ class AuthStorageService {
     }
   }
 
+  /// Wipes secure storage + local cache when the app runs for the first time
+  /// on this install (fresh install or reinstall after delete).
+  ///
+  /// Background: on iOS, `flutter_secure_storage` uses the Keychain, which
+  /// SURVIVES app deletion. Without this check, reinstalling the app would
+  /// restore the previous session (old token) and the user would stay
+  /// logged in. `SharedPreferences` (NSUserDefaults) IS wiped on uninstall,
+  /// so a missing install flag reliably means "fresh install".
+  /// MUST be called at startup before any auth state is loaded.
+  static Future<void> clearSecureStorageIfFreshInstall() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasRunBefore = prefs.getBool(StorageKeys.appInstallFlag) ?? false;
+      if (hasRunBefore) return;
+
+      // Fresh install: drop any leftover secrets from a previous install
+      // and clear any stale local cache.
+      await _secureStorage.deleteAll();
+      await prefs.clear();
+      await prefs.setBool(StorageKeys.appInstallFlag, true);
+      if (kDebugMode) {
+        debugPrint('[AUTH] Fresh install detected — secure storage wiped.');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AUTH] Warning: fresh-install wipe failed: $e');
+      }
+    }
+  }
+
   /// Clear auth state from secure storage
   static Future<void> clearAuthState() async {
     // Capture userId BEFORE deleting auth data so we can clean user-scoped fingerprint

@@ -12,6 +12,7 @@ class QuickActionsSection extends StatelessWidget {
   final VoidCallback? onViewReports;
   final VoidCallback? onViewOrganization;
   final VoidCallback? onViewHolidays;
+  final VoidCallback? onViewTasks;
   final bool isLoading;
   final bool isAdmin;
 
@@ -26,6 +27,7 @@ class QuickActionsSection extends StatelessWidget {
     this.onViewReports,
     this.onViewOrganization,
     this.onViewHolidays,
+    this.onViewTasks,
     this.isLoading = false,
     this.isAdmin = false,
   });
@@ -151,6 +153,24 @@ class QuickActionsSection extends StatelessWidget {
               ],
             ],
           ),
+          if (onViewTasks != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickActionCard(
+                    icon: Icons.task_outlined,
+                    title: 'المهام',
+                    subtitle: 'إسناد ومتابعة',
+                    color: const Color(0xFF0EA5E9),
+                    onTap: onViewTasks,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: SizedBox.shrink()),
+              ],
+            ),
+          ],
           if (isAdmin && onViewOrganization != null) ...[],
         ],
       ),

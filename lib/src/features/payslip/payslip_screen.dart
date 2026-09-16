@@ -187,140 +187,13 @@ class _PayslipScreenState extends State<PayslipScreen> {
                       ),
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
-                          _SummaryStrip(payslip: state.payslip!),
-                          const SizedBox(height: 14),
-                          _NetSalaryCard(payslip: state.payslip!),
-                          const SizedBox(height: 14),
-                          _WorkingHoursDetailsSection(
+                          _FinancialSummaryCard(
                             details: state.payslip!.salaryDetails,
-                          ),
-                          const SizedBox(height: 14),
-                          _DatesSection(payslip: state.payslip!),
-                          const SizedBox(height: 14),
-                          _SectionCard(
-                            title: 'الملخص المالي',
-                            subtitle:
-                                'أهم أرقام المرتب لهذا الشهر في مكان واحد.',
-                            children: [
-                              _MoneyRow(
-                                label: 'إجمالي المرتب',
-                                value: state.payslip!.salaryDetails.grossSalary,
-                              ),
-                              _MoneyRow(
-                                label: 'إجمالي الاستحقاقات',
-                                value:
-                                    state.payslip!.salaryDetails.totalEarnings,
-                                positive: true,
-                              ),
-                              _MoneyRow(
-                                label: 'إجمالي الخصومات',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .deductions
-                                    .total,
-                                negative: true,
-                              ),
-                              _MoneyRow(
-                                label: 'صافي المرتب',
-                                value: state.payslip!.salaryDetails.netSalary,
-                                emphasize: true,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          _SectionCard(
-                            title: 'الاستحقاقات والإضافات',
-                            subtitle: 'بدلات ومبالغ إضافية دخلت ضمن البيان.',
-                            children: [
-                              _MoneyRow(
-                                label: 'بدل سكن',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .allowances
-                                    .housing,
-                              ),
-                              _MoneyRow(
-                                label: 'بدل وجبات',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .allowances
-                                    .meal,
-                              ),
-                              _MoneyRow(
-                                label: 'بدل انتقالات',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .allowances
-                                    .transportation,
-                              ),
-                              _MoneyRow(
-                                label: 'التأمين (بدلات)',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .allowances
-                                    .insurance,
-                              ),
-                              _MoneyRow(
-                                label: 'إضافي',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .allowances
-                                    .additional,
-                                positive: true,
-                              ),
-                              _MoneyRow(
-                                label: 'بدلات أخرى',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .allowances
-                                    .other,
-                              ),
-                              _MoneyRow(
-                                label: 'مكافآت',
-                                value: state.payslip!.salaryDetails.bonusAmount,
-                              ),
-                              _MoneyRow(
-                                label: 'أجر إضافي',
-                                value: state.payslip!.salaryDetails.overtimePay,
-                              ),
-                              _MoneyRow(
-                                label: 'تسويات إضافة',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .settlementAdditions,
-                                positive: true,
-                              ),
-                              _MoneyRow(
-                                label: 'قيمة التسوية',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .settlementAmount,
-                              ),
-                              _MoneyRow(
-                                label: 'إجمالي البدلات',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .allowances
-                                    .total,
-                                positive: true,
-                              ),
-                            ],
                           ),
                           const SizedBox(height: 14),
                           _SectionCard(
                             title: 'الخصومات',
-                            subtitle:
-                                'تفاصيل التأخير والغياب والجزاءات والضرائب.',
+                            subtitle: 'ليه المرتب ناقص؟ تفاصيل كل الخصومات.',
                             footer:
                                 state
                                     .payslip!
@@ -337,104 +210,305 @@ class _PayslipScreenState extends State<PayslipScreen> {
                                         .penaltyDetails,
                                   ),
                             children: [
-                              _MoneyRow(
-                                label: 'خصم التأخير',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .deductions
-                                    .lateAmount,
-                                negative: true,
-                                trailing:
-                                    '${_formatNumber(state.payslip!.salaryDetails.deductions.lateHours)} ساعة',
-                              ),
-                              _MoneyRow(
-                                label: 'خصم الغياب',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .deductions
-                                    .absenceAmount,
-                                negative: true,
-                                trailing:
-                                    '${_formatNumber(state.payslip!.salaryDetails.deductions.absenceDays)} يوم',
-                              ),
-                              _MoneyRow(
-                                label: 'جزاءات',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .deductions
-                                    .penaltiesAmount,
-                                negative: true,
-                              ),
-                              _MoneyRow(
-                                label: 'سلف',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .deductions
-                                    .advancesAmount,
-                                negative: true,
-                              ),
-                              _MoneyRow(
-                                label: 'تأمين صحي',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .deductions
-                                    .healthInsuranceAmount,
-                                negative: true,
-                              ),
-                              _MoneyRow(
-                                label: 'تسويات خصم',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .deductions
-                                    .settlementDeductions,
-                                negative: true,
-                              ),
-                              _MoneyRow(
-                                label: 'الضرائب',
-                                value: state.payslip!.salaryDetails.taxAmount,
-                                negative: true,
-                              ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .lateAmount !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'خصم التأخير',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .lateAmount,
+                                  negative: true,
+                                  trailing:
+                                      '${_formatNumber(state.payslip!.salaryDetails.deductions.lateHours)} ساعة',
+                                ),
+                              if (state
+                                  .payslip!
+                                  .salaryDetails
+                                  .deductions
+                                  .absenceAmount !=
+                              0)
+                            _AbsenceDeductionBlock(
+                              details: state.payslip!.salaryDetails,
+                            ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .penaltiesAmount !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'جزاءات',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .penaltiesAmount,
+                                  negative: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .advancesAmount !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'سلف',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .advancesAmount,
+                                  negative: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .healthInsuranceAmount !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'تأمين صحي',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .healthInsuranceAmount,
+                                  negative: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .settlementDeductions !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'تسويات خصم',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .settlementDeductions,
+                                  negative: true,
+                                ),
+                              if (state.payslip!.salaryDetails.taxAmount != 0)
+                                _MoneyRow(
+                                  label: 'الضرائب',
+                                  value: state.payslip!.salaryDetails.taxAmount,
+                                  negative: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .deductions
+                                      .total ==
+                                  0)
+                                const _EmptyRowsNote(
+                                  label: 'لا توجد خصومات هذا الشهر',
+                                ),
                             ],
                           ),
                           const SizedBox(height: 14),
                           _SectionCard(
-                            title: 'التأمينات',
-                            subtitle:
-                                'القيم المرتبطة بالتأمين الاجتماعي والصحي إن وجدت.',
+                            title: 'الاستحقاقات والإضافات',
+                            subtitle: 'إيه اللي اتضاف على المرتب؟',
                             children: [
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .housing !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'بدل سكن',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .housing,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .meal !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'بدل وجبات',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .meal,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .transportation !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'بدل انتقالات',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .transportation,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .insurance !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'التأمين (بدلات)',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .insurance,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .additional !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'إضافي',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .additional,
+                                  positive: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .other !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'بدلات أخرى',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .allowances
+                                      .other,
+                                ),
+                              if (state.payslip!.salaryDetails.bonusAmount != 0)
+                                _MoneyRow(
+                                  label: 'مكافآت',
+                                  value:
+                                      state.payslip!.salaryDetails.bonusAmount,
+                                ),
+                              if (state.payslip!.salaryDetails.overtimePay != 0)
+                                _MoneyRow(
+                                  label: 'أجر إضافي',
+                                  value:
+                                      state.payslip!.salaryDetails.overtimePay,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .settlementAdditions !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'تسويات إضافة',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .settlementAdditions,
+                                  positive: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .settlementAmount !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'قيمة التسوية',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .settlementAmount,
+                                ),
                               _MoneyRow(
-                                label: 'تأمين اجتماعي',
+                                label: 'إجمالي البدلات',
                                 value: state
                                     .payslip!
                                     .salaryDetails
-                                    .insurance
-                                    .social,
-                                negative: true,
+                                    .allowances
+                                    .total,
+                                positive: true,
                               ),
-                              _MoneyRow(
-                                label: 'تأمين صحي',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .insurance
-                                    .health,
-                                negative: true,
-                              ),
-                              _MoneyRow(
-                                label: 'إجمالي المخصوم',
-                                value: state
-                                    .payslip!
-                                    .salaryDetails
-                                    .insurance
-                                    .totalDeducted,
-                                negative: true,
-                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          _WorkingHoursDetailsSection(
+                            details: state.payslip!.salaryDetails,
+                            actualWorkingDays:
+                                state.payslip!.actualWorkingDays,
+                          ),
+                          const SizedBox(height: 14),
+                          _DatesSection(payslip: state.payslip!),
+                          const SizedBox(height: 14),
+                          _SectionCard(
+                            title: 'التأمينات',
+                            subtitle: 'القيم المرتبطة بالتأمين الاجتماعي والصحي.',
+                            children: [
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .insurance
+                                      .social !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'تأمين اجتماعي',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .insurance
+                                      .social,
+                                  negative: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .insurance
+                                      .health !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'تأمين صحي',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .insurance
+                                      .health,
+                                  negative: true,
+                                ),
+                              if (state
+                                      .payslip!
+                                      .salaryDetails
+                                      .insurance
+                                      .totalDeducted !=
+                                  0)
+                                _MoneyRow(
+                                  label: 'إجمالي المخصوم',
+                                  value: state
+                                      .payslip!
+                                      .salaryDetails
+                                      .insurance
+                                      .totalDeducted,
+                                  negative: true,
+                                ),
                               _MoneyRow(
                                 label: 'مرتب التأمين',
                                 value:
@@ -451,16 +525,10 @@ class _PayslipScreenState extends State<PayslipScreen> {
                             ],
                           ),
                           if (state
-                                  .payslip!
-                                  .salaryDetails
-                                  .settlementDetails
-                                  .isNotEmpty ||
-                              state
-                                  .payslip!
-                                  .salaryDetails
-                                  .deductions
-                                  .penaltyDetails
-                                  .isNotEmpty) ...[
+                              .payslip!
+                              .salaryDetails
+                              .settlementDetails
+                              .isNotEmpty) ...[
                             const SizedBox(height: 14),
                             _DetailsListsSection(
                               details: state.payslip!.salaryDetails,
@@ -638,54 +706,34 @@ class _PayslipFilterCard extends StatelessWidget {
     final years = List<int>.generate(5, (index) => currentYear - index);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            'اختيار الفترة',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: _DropdownField<int>(
+              value: selectedMonth,
+              label: 'الشهر',
+              searchHintText: 'ابحث عن شهر',
+              items: List<int>.generate(12, (index) => index + 1),
+              itemLabel: _monthName,
+              onChanged: onMonthChanged,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'اختر الشهر والسنة لعرض بيان مرتب محدد أو فتح ملف الـ PDF الخاص به.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _DropdownField<int>(
-                  value: selectedMonth,
-                  label: 'الشهر',
-                  searchHintText: 'ابحث عن شهر',
-                  items: List<int>.generate(12, (index) => index + 1),
-                  itemLabel: _monthName,
-                  onChanged: onMonthChanged,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _DropdownField<int>(
-                  value: selectedYear,
-                  label: 'السنة',
-                  searchHintText: 'ابحث عن سنة',
-                  items: years,
-                  itemLabel: (year) => year.toString(),
-                  onChanged: onYearChanged,
-                ),
-              ),
-            ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: _DropdownField<int>(
+              value: selectedYear,
+              label: 'السنة',
+              searchHintText: 'ابحث عن سنة',
+              items: years,
+              itemLabel: (year) => year.toString(),
+              onChanged: onYearChanged,
+            ),
           ),
         ],
       ),
@@ -732,84 +780,125 @@ class _DropdownField<T> extends StatelessWidget {
   }
 }
 
-class _SummaryStrip extends StatelessWidget {
-  final Payslip payslip;
+class _FinancialSummaryCard extends StatelessWidget {
+  final SalaryDetails details;
 
-  const _SummaryStrip({required this.payslip});
+  const _FinancialSummaryCard({required this.details});
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      _SummaryItem(
-        label: 'أيام العمل',
-        value: payslip.actualWorkingDays.toString(),
-        icon: Icons.calendar_month_outlined,
-        color: const Color(0xFF246BFD),
-      ),
-      _SummaryItem(
-        label: 'ساعات العمل',
-        value: _formatNumber(payslip.salaryDetails.hoursWorked),
-        icon: Icons.timer_outlined,
-        color: const Color(0xFF0F9D58),
-      ),
-      _SummaryItem(
-        label: 'ساعات إضافية',
-        value: _formatNumber(payslip.salaryDetails.overtimeHours),
-        icon: Icons.more_time_rounded,
-        color: const Color(0xFFF2994A),
-      ),
-    ];
+    final earnings = details.totalEarnings;
+    final deductions = details.deductions.total;
+    final total = earnings + deductions;
+    final earningsShare = total <= 0 ? 1.0 : earnings / total;
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: items.map((item) => _SummaryCard(item: item)).toList(),
+    return _SectionCard(
+      title: 'الملخص المالي',
+      subtitle: 'الصورة الكاملة: الدخل مقابل الخصومات.',
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            height: 10,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: (earningsShare * 100).round().clamp(1, 100),
+                  child: Container(color: AppColors.success),
+                ),
+                Expanded(
+                  flex: ((1 - earningsShare) * 100).round().clamp(0, 100),
+                  child: Container(
+                    color: AppColors.error.withValues(alpha: 0.85),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _MoneyRow(label: 'إجمالي المرتب', value: details.grossSalary),
+        _MoneyRow(
+          label: 'إجمالي الاستحقاقات',
+          value: details.totalEarnings,
+          positive: true,
+        ),
+        _MoneyRow(
+          label: 'إجمالي الخصومات',
+          value: details.deductions.total,
+          negative: true,
+        ),
+        _MoneyRow(
+          label: 'صافي المرتب',
+          value: details.netSalary,
+          emphasize: true,
+        ),
+      ],
     );
   }
 }
 
-class _NetSalaryCard extends StatelessWidget {
-  final Payslip payslip;
+class _EmptyRowsNote extends StatelessWidget {
+  final String label;
 
-  const _NetSalaryCard({required this.payslip});
+  const _EmptyRowsNote({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.border),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'صافي المرتب',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+    );
+  }
+}
+
+class _AbsenceDeductionBlock extends StatelessWidget {
+  final SalaryDetails details;
+
+  const _AbsenceDeductionBlock({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final futureCount =
+        _splitPastFutureAbsences(details.absenceDates).future.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _MoneyRow(
+          label: 'خصم الغياب',
+          value: details.deductions.absenceAmount,
+          negative: true,
+          trailing: futureCount > 0
+              ? '${_formatNumber(details.deductions.absenceDays)} يوم (منها $futureCount مستقبلية)'
+              : '${_formatNumber(details.deductions.absenceDays)} يوم',
+        ),
+        if (futureCount > 0) ...[
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.info.withValues(alpha: 0.2),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _formatMoney(payslip.salaryDetails.netSalary),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w900,
+            child: Text(
+              'ملحوظة: الخصم شامل $futureCount يوم غياب مستقبلي محسوب مقدماً قبل موعده.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _employeeMetaLine(payslip),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -822,28 +911,12 @@ class _DatesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lateDates = payslip.salaryDetails.lateDates;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final pastAbsences = <String>[];
-    final futureAbsences = <String>[];
-
-    for (final dateStr in payslip.salaryDetails.absenceDates) {
-      try {
-        final date = DateTime.parse(dateStr);
-        if (date.isAfter(today)) {
-          futureAbsences.add(dateStr);
-        } else {
-          pastAbsences.add(dateStr);
-        }
-      } catch (_) {
-        pastAbsences.add(dateStr);
-      }
-    }
+    final split =
+        _splitPastFutureAbsences(payslip.salaryDetails.absenceDates);
 
     return _SectionCard(
       title: 'أيام التأخير والغياب',
-      subtitle: 'تفاصيل الأيام التي تم تسجيلها كتأخير أو غياب خلال الشهر.',
+      subtitle: 'الأيام المسجلة خلال الشهر وأثرها على المرتب.',
       children: [
         _DateListBlock(
           title: 'أيام التأخير',
@@ -854,15 +927,22 @@ class _DatesSection extends StatelessWidget {
         const SizedBox(height: 12),
         _DateListBlock(
           title: 'أيام الغياب',
-          dates: pastAbsences,
+          dates: split.past,
           emptyLabel: 'لا يوجد أيام غياب مسجلة',
           chipColor: AppColors.error,
         ),
-        if (futureAbsences.isNotEmpty) ...[
+        if (split.future.isNotEmpty) ...[
           const SizedBox(height: 12),
+          Text(
+            'الأيام دي لسه مجتش لكن محسوبة مقدماً ضمن خصم الغياب فوق.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
           _DateListBlock(
-            title: 'أيام لسة هتيجي',
-            dates: futureAbsences,
+            title: 'غياب مستقبلي محسوب مقدماً',
+            dates: split.future,
             emptyLabel: '',
             chipColor: AppColors.info,
           ),
@@ -874,21 +954,25 @@ class _DatesSection extends StatelessWidget {
 
 class _WorkingHoursDetailsSection extends StatelessWidget {
   final SalaryDetails details;
+  final int actualWorkingDays;
 
-  const _WorkingHoursDetailsSection({required this.details});
+  const _WorkingHoursDetailsSection({
+    required this.details,
+    required this.actualWorkingDays,
+  });
 
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
       title: 'تفاصيل الحضور والعمل',
-      subtitle: 'ساعات العمل والشيفتات والأيام المؤثرة على حساب المرتب.',
+      subtitle: 'ساعات العمل والشيفتات المؤثرة على المرتب.',
       children: [
+        _InfoRow('أيام العمل', '$actualWorkingDays يوم'),
         _InfoRow('ساعات العمل', '${_formatNumber(details.hoursWorked)} ساعة'),
         _InfoRow(
           'الساعات الإضافية',
           '${_formatNumber(details.overtimeHours)} ساعة',
         ),
-        _MoneyRow(label: 'أجر الساعات الإضافية', value: details.overtimePay),
         if (details.overtimeDetails.isNotEmpty) ...[
           const SizedBox(height: 12),
           _OvertimeDetailsBlock(
@@ -962,19 +1046,13 @@ class _DetailsListsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
-      title: 'تفاصيل إضافية',
-      subtitle: 'بنود التسويات والجزاءات كما وردت من نظام الرواتب.',
+      title: 'تفاصيل التسويات',
+      subtitle: 'بنود التسويات كما وردت من نظام الرواتب.',
       children: [
-        if (details.settlementDetails.isNotEmpty)
-          _TextDetailsBlock(
-            title: 'تفاصيل التسويات',
-            details: details.settlementDetails,
-          ),
-        if (details.settlementDetails.isNotEmpty &&
-            details.deductions.penaltyDetails.isNotEmpty)
-          const SizedBox(height: 14),
-        if (details.deductions.penaltyDetails.isNotEmpty)
-          _PenaltyDetails(details: details.deductions.penaltyDetails),
+        _TextDetailsBlock(
+          title: 'تفاصيل التسويات',
+          details: details.settlementDetails,
+        ),
       ],
     );
   }
@@ -1306,6 +1384,32 @@ String _tryFormatDate(String value) {
   return DateFormat('dd/MM/yyyy').format(parsed);
 }
 
+/// Splits absence dates into past (already occurred) vs future
+/// (upcoming days already counted in advance inside the deduction).
+({List<String> past, List<String> future}) _splitPastFutureAbsences(
+  List<String> dates,
+) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final past = <String>[];
+  final future = <String>[];
+  for (final raw in dates) {
+    final dateStr = raw.trim();
+    if (dateStr.isEmpty) continue;
+    try {
+      final date = DateTime.parse(dateStr);
+      if (date.isAfter(today)) {
+        future.add(dateStr);
+      } else {
+        past.add(dateStr);
+      }
+    } catch (_) {
+      past.add(dateStr);
+    }
+  }
+  return (past: past, future: future);
+}
+
 class _SectionCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1572,73 +1676,6 @@ class _HeroChip extends StatelessWidget {
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
           color: Colors.white,
           fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryItem {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _SummaryItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-}
-
-class _SummaryCard extends StatelessWidget {
-  final _SummaryItem item;
-
-  const _SummaryCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final cardWidth = width > 420 ? (width - 60) / 3 : (width - 50) / 2;
-
-    return SizedBox(
-      width: cardWidth,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: item.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(item.icon, color: item.color),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              item.value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
         ),
       ),
     );

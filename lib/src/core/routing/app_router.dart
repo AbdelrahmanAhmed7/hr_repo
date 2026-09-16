@@ -14,6 +14,7 @@ import '../../features/admin/super_admin_screen.dart';
 import '../../features/attendance/attendance_screen.dart';
 import '../../features/attendance/cubit/attendance_cubit.dart';
 import '../../features/auth/cubit/auth_cubit.dart';
+import '../../features/auth/cubit/auth_state.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/otp_screen.dart';
@@ -22,6 +23,7 @@ import '../../features/employee_history/cubit/employee_history_cubit.dart';
 import '../../features/employee_history/employee_history_screen.dart';
 import '../../features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
 import '../../features/employee_of_month/presentation/screens/employee_of_month_screen.dart';
+import '../../features/employee_of_month/presentation/screens/super_admin_employee_of_month_screen.dart';
 import '../../features/home/cubit/home_cubit.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/hr/cubit/employees_cubit.dart';
@@ -58,6 +60,11 @@ import '../../features/profile/help_support_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/reports/cubit/reports_cubit.dart';
 import '../../features/reports/screens/reports_hub_screen.dart';
+import '../../features/tasks/cubit/task_details_cubit.dart';
+import '../../features/tasks/cubit/tasks_cubit.dart';
+import '../../features/tasks/task_form_screen.dart';
+import '../../features/tasks/task_details_screen.dart';
+import '../../features/tasks/tasks_screen.dart';
 import '../../features/requests/all_requests_screen.dart';
 import '../../features/requests/requests_screen.dart';
 import '../../features/splash/splash_screen.dart';
@@ -253,6 +260,62 @@ class AppRouter {
         ),
       ),
 
+      // Tasks Routes
+      GoRoute(
+        path: '/tasks',
+        name: 'tasks',
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<TasksCubit>()),
+            BlocProvider.value(value: getIt<AuthCubit>()),
+          ],
+          child: const TasksScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/tasks/create',
+        name: 'create-task',
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<TasksCubit>()),
+            BlocProvider(create: (_) => getIt<TaskDetailsCubit>()),
+            BlocProvider.value(value: getIt<AuthCubit>()),
+          ],
+          child: const TaskFormScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/tasks/edit',
+        name: 'edit-task',
+        builder: (context, state) {
+          final id =
+              int.tryParse(state.uri.queryParameters['id'] ?? '') ?? 0;
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<TasksCubit>()),
+              BlocProvider(create: (_) => getIt<TaskDetailsCubit>()),
+              BlocProvider.value(value: getIt<AuthCubit>()),
+            ],
+            child: TaskFormScreen(taskId: id),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tasks/details',
+        name: 'task-details',
+        builder: (context, state) {
+          final id =
+              int.tryParse(state.uri.queryParameters['id'] ?? '') ?? 0;
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<TaskDetailsCubit>()),
+              BlocProvider.value(value: getIt<AuthCubit>()),
+            ],
+            child: TaskDetailsScreen(taskId: id),
+          );
+        },
+      ),
+
       // Organization Route
       GoRoute(
         path: '/organization',
@@ -406,6 +469,16 @@ class AppRouter {
         ),
       ),
 
+      // Super Admin Employee of the Month (Calculate & Manage Winners)
+      GoRoute(
+        path: '/super-admin/employee-of-month',
+        name: 'super-admin-employee-of-month',
+        builder: (context, state) => BlocProvider(
+          create: (_) => getIt<SuperAdminEmployeeOfMonthCubit>()..loadWinners(),
+          child: const SuperAdminEmployeeOfMonthScreen(),
+        ),
+      ),
+
       // Reports Routes (Super Admin)
       GoRoute(
         path: '/reports',
@@ -462,9 +535,9 @@ class AppRouter {
     }
 
     // Check authentication from AuthCubit (should be loaded by now)
+    final authCubit = getIt<AuthCubit>();
     bool isAuthenticated = false;
     try {
-      final authCubit = getIt<AuthCubit>();
       isAuthenticated = authCubit.state.isAuthenticated;
     } catch (e) {
       isAuthenticated = false;
@@ -481,6 +554,15 @@ class AppRouter {
     // For other pages, check authentication
     if (!isAuthenticated) {
       return '/login';
+    }
+
+    // Task create/edit is restricted to admins and super admins.
+    if (state.uri.path == '/tasks/create' ||
+        state.uri.path == '/tasks/edit') {
+      final role = authCubit.state.role;
+      if (role != UserRole.admin && role != UserRole.superAdmin) {
+        return '/tasks';
+      }
     }
 
     return null;

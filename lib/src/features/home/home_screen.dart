@@ -125,6 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleViewOrganization() => context.push('/organization');
   void _handleViewNotifications() => context.push('/notifications');
   void _handleViewMissions() => context.push('/missions');
+  void _handleViewTasks() => context.push('/tasks');
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             onRequestLeave: _handleRequestLeave,
                             onSubmitPermission: _handleSubmitRequest,
                             onViewMissions: _handleViewMissions,
+                            onViewTasks: _handleViewTasks,
                           ),
                         ),
                         SliverToBoxAdapter(
@@ -303,11 +305,13 @@ class _HomePrimaryActions extends StatelessWidget {
   final VoidCallback onRequestLeave;
   final VoidCallback onSubmitPermission;
   final VoidCallback onViewMissions;
+  final VoidCallback onViewTasks;
 
   const _HomePrimaryActions({
     required this.onRequestLeave,
     required this.onSubmitPermission,
     required this.onViewMissions,
+    required this.onViewTasks,
   });
 
   @override
@@ -357,7 +361,14 @@ class _HomePrimaryActions extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(child: SizedBox.shrink()),
+              Expanded(
+                child: _ActionCard(
+                  title: 'مهامي',
+                  icon: Icons.task_outlined,
+                  color: const Color(0xFF0EA5E9),
+                  onTap: onViewTasks,
+                ),
+              ),
             ],
           ),
         ],

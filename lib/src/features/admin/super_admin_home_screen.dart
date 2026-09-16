@@ -7,6 +7,7 @@ import '../attendance/data/models/punch_summary_model.dart';
 import '../attendance/models/attendance_response_model.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../shared/utils/logout_helper.dart';
 import '../notifications/cubit/notifications_cubit.dart';
 import '../notifications/cubit/notifications_state.dart';
 import 'cubit/super_admin_dashboard_cubit.dart';
@@ -150,11 +151,12 @@ class SuperAdminHomeScreen extends StatelessWidget {
                       onSendNotification: () =>
                           context.push('/send-notification'),
                       onEmployeeOfMonth: () =>
-                          context.push('/employee-of-month'),
+                          context.push('/super-admin/employee-of-month'),
                       onPayroll: () => context.push('/payroll'),
                       onPenalties: () => context.push('/penalties'),
                       onBonuses: () => context.push('/bonuses'),
                       onMeetings: () => context.pushNamed('superAdminMeetings'),
+                      onTasks: () => context.push('/tasks'),
                     ),
                   ),
 
@@ -294,6 +296,7 @@ class _SuperAdminQuickActions extends StatelessWidget {
   final VoidCallback onPenalties;
   final VoidCallback onBonuses;
   final VoidCallback onMeetings;
+  final VoidCallback onTasks;
 
   const _SuperAdminQuickActions({
     required this.onSendNotification,
@@ -302,6 +305,7 @@ class _SuperAdminQuickActions extends StatelessWidget {
     required this.onPenalties,
     required this.onBonuses,
     required this.onMeetings,
+    required this.onTasks,
   });
 
   @override
@@ -348,6 +352,13 @@ class _SuperAdminQuickActions extends StatelessWidget {
         subtitle: 'إنشاء وإدارة اجتماعات الموظفين',
         color: const Color(0xFF7C3AED),
         onTap: onMeetings,
+      ),
+      _QuickActionData(
+        icon: Icons.task_outlined,
+        title: 'المهام',
+        subtitle: 'إسناد ومتابعة مهام الموظفين',
+        color: const Color(0xFF0EA5E9),
+        onTap: onTasks,
       ),
     ];
 
@@ -1276,6 +1287,30 @@ class _SuperAdminHeader extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => LogoutHelper.confirmAndLogout(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.logout_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),

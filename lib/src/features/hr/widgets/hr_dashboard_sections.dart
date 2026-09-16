@@ -222,6 +222,7 @@ class HrPrimaryActions extends StatelessWidget {
   final VoidCallback? onViewMissions;
   final VoidCallback? onViewAllRequests;
   final VoidCallback? onViewHolidays;
+  final VoidCallback? onViewTasks;
 
   const HrPrimaryActions({
     super.key,
@@ -231,6 +232,7 @@ class HrPrimaryActions extends StatelessWidget {
     this.onViewMissions,
     this.onViewAllRequests,
     this.onViewHolidays,
+    this.onViewTasks,
   });
 
   @override
@@ -291,6 +293,13 @@ class HrPrimaryActions extends StatelessWidget {
                 subtitle: 'عرض الإجازات الرسمية',
                 color: const Color(0xFF8B5CF6),
                 onTap: onViewHolidays,
+              ),
+              _HrActionCard(
+                icon: Icons.task_outlined,
+                title: 'المهام',
+                subtitle: 'إسناد ومتابعة المهام',
+                color: const Color(0xFF0EA5E9),
+                onTap: onViewTasks,
               ),
             ],
           ),

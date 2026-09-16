@@ -31,4 +31,10 @@ class StorageKeys {
 
   // Fingerprint keys (prefix — append userId)
   static const String fingerprintPrefix = 'device_fp_';
+
+  // App lifecycle keys
+  // Marks that the app ran at least once on this install. Used to detect
+  // a fresh install (e.g. after delete on iOS) since SharedPreferences is
+  // wiped on uninstall while the iOS Keychain (secure storage) survives.
+  static const String appInstallFlag = 'app_install_flag';
 }

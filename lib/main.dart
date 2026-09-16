@@ -8,6 +8,7 @@ import 'package:mediconsult_internal/src/core/services/push_notification_service
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'src/core/services/service_locator.dart';
 import 'src/core/routing/app_router.dart';
+import 'src/features/auth/services/auth_storage_service.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/app_colors.dart';
 import 'src/core/network/dio_client.dart';
@@ -22,6 +23,10 @@ Future<void> main() async {
     },
     appRunner: () async {
       WidgetsFlutterBinding.ensureInitialized();
+
+      // Must run BEFORE setupServiceLocator(): on iOS the Keychain survives
+      // app deletion, so a reinstall would otherwise restore the old session.
+      await AuthStorageService.clearSecureStorageIfFreshInstall();
 
       await setupServiceLocator();
 

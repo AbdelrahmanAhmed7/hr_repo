@@ -269,6 +269,7 @@ class _AdminHomeScreenContentState extends State<_AdminHomeScreenContent> {
                               onRequestOvertime: () =>
                                   context.push('/overtime'),
                               onViewMissions: () => context.push('/missions'),
+                              onViewTasks: () => context.push('/tasks'),
                               onViewReports: () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => const ReportsScreen(),
