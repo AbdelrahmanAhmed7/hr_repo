@@ -368,32 +368,45 @@ class PushNotificationService {
   /// Setup message handlers for different app states
   Future<void> _setupMessageHandlers() async {
     try {
-      // Foreground messages
+      // Foreground messages - displayed via local notifications; tapping
+      // them is delivered by `_handleNotificationTap` (source=local).
       FirebaseMessaging.onMessage.listen((message) {
-        if (kDebugMode) debugPrint('Foreground message: ${message.messageId}');
+        if (kDebugMode) {
+          debugPrint(
+            '[NotificationNav:source=foreground] Foreground message: '
+            '${message.messageId} data=${message.data}',
+          );
+        }
         showNotification(message);
       });
 
-      // Background messages (app in background, user taps notification)
+      // Background messages (app in background, user taps notification).
+      // Note: notifications displayed via flutter_local_notifications are
+      // delivered through `onDidReceiveNotificationResponse` instead; this
+      // callback covers notifications the FCM SDK presented natively.
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         if (kDebugMode) {
-          debugPrint('Notification opened (background): ${message.messageId}');
+          debugPrint(
+            '[NotificationNav:source=fcm_background] Notification opened '
+            '${message.messageId} data=${message.data}',
+          );
         }
         _handleMessageOpen(message);
       });
 
-      // Terminated state (app was closed, user taps notification)
+      // Terminated state (app was closed, user taps notification).
+      // Emission is immediate; NotificationNavigationService (already
+      // subscribed in main()) queues it until the router + auth are ready.
       final initialMessage = await _messaging.getInitialMessage();
       if (initialMessage != null) {
         if (kDebugMode) {
           debugPrint(
-            'App opened from notification: ${initialMessage.messageId}',
+            '[NotificationNav:source=fcm_terminated] App launched from '
+            'notification ${initialMessage.messageId} '
+            'data=${initialMessage.data}',
           );
         }
-        // Delay to ensure app is fully initialized
-        Future.delayed(const Duration(seconds: 1), () {
-          _handleMessageOpen(initialMessage);
-        });
+        _handleMessageOpen(initialMessage);
       }
 
       if (kDebugMode) debugPrint('Message handlers setup complete');
@@ -470,10 +483,17 @@ class PushNotificationService {
     await _sendTokenToBackend(_currentToken!);
   }
 
-  /// Handle notification tap
+  /// Handle notification tap (foreground + local-notification taps, and
+  /// taps on notifications the app itself displayed).
   @pragma('vm:entry-point')
   static void _handleNotificationTap(NotificationResponse response) {
-    if (kDebugMode) debugPrint('Notification tapped: ${response.id}');
+    if (kDebugMode) {
+      debugPrint(
+        '[NotificationNav:source=local] Notification tapped '
+        'id=${response.id} actionId=${response.actionId} '
+        'payload=${response.payload}',
+      );
+    }
 
     if (response.payload != null) {
       try {

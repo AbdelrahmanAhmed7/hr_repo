@@ -12,6 +12,7 @@ import 'src/features/auth/services/auth_storage_service.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/app_colors.dart';
 import 'src/core/network/dio_client.dart';
+import 'src/core/services/notification_navigation_service.dart';
 import 'src/shared/components/custom_toast.dart';
 import 'src/core/widgets/network_connectivity_banner.dart';
 
@@ -29,6 +30,12 @@ Future<void> main() async {
       await AuthStorageService.clearSecureStorageIfFreshInstall();
 
       await setupServiceLocator();
+
+      // Subscribe to notification taps BEFORE runApp() and before push init
+      // starts, so a cold-start `getInitialMessage()` tap can never be dropped
+      // by the (broadcast) notification stream. The coordinator queues taps
+      // until the router is mounted and the auth session is confirmed.
+      NotificationNavigationService.instance.initialize();
 
       // Note: DeviceFingerprintService no longer requires startup init.
       // Fingerprint is generated lazily from authenticated User ID + Phone on first use.
