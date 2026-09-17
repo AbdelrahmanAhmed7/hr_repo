@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_exception.dart';
+import '../../core/utils/app_formatters.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/error_state_widget.dart';
@@ -624,7 +625,7 @@ class _PayslipHeroCard extends StatelessWidget {
           if (payslip != null) ...[
             const SizedBox(height: 12),
             Text(
-              _formatMoney(payslip.salaryDetails.netSalary),
+              AppFormatters.currency(payslip.salaryDetails.netSalary),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
@@ -1258,7 +1259,7 @@ class _OvertimeDetailsBlockState extends State<_OvertimeDetailsBlock> {
                         flex: 4,
                         child: _OvertimeInlineMetric(
                           label: 'الأجر',
-                          value: _formatMoney(detail.pay),
+                          value: AppFormatters.currency(detail.pay),
                           valueColor: AppColors.success,
                         ),
                       ),
@@ -1552,7 +1553,7 @@ class _MoneyRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            _formatMoney(value),
+            AppFormatters.currency(value),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w800,
               color: amountColor,
@@ -1586,7 +1587,7 @@ class _PenaltyDetails extends StatelessWidget {
         ...details.map((detail) {
           final mainValue = detail.isDayPenalty
               ? '${_formatNumber(detail.days)} يوم'
-              : _formatMoney(detail.amount);
+              : AppFormatters.currency(detail.amount);
           final date = detail.penaltyDate == null
               ? null
               : _tryFormatDate(detail.penaltyDate!);
@@ -1642,7 +1643,7 @@ class _PenaltyDetails extends StatelessWidget {
                 else if (detail.isDayPenalty && detail.amount > 0) ...[
                   const SizedBox(width: 8),
                   Text(
-                    _formatMoney(detail.amount),
+                    AppFormatters.currency(detail.amount),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.error,
                       fontWeight: FontWeight.w800,
@@ -1680,15 +1681,6 @@ class _HeroChip extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatMoney(double value) {
-  final formatter = NumberFormat.currency(
-    locale: 'en',
-    symbol: 'EGP ',
-    decimalDigits: value % 1 == 0 ? 0 : 2,
-  );
-  return formatter.format(value);
 }
 
 String _formatNumber(double value) {

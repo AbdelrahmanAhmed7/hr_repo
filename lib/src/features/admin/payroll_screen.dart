@@ -4,6 +4,7 @@ import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/app_exception.dart';
+import '../../core/utils/app_formatters.dart';
 import '../../shared/widgets/searchable_dropdown_field.dart';
 import '../hr/models/employee.dart';
 import '../hr/models/employee_payslip.dart';
@@ -399,7 +400,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
         children: [
           PayslipRow(
             'تأخير (${dd.lateHours.toStringAsFixed(0)} ساعة)',
-            payslipFmtMoney(dd.lateAmount),
+            AppFormatters.currency(dd.lateAmount),
           ),
           if (d.lateDates.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -412,7 +413,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           const SizedBox(height: 8),
           PayslipRow(
             'غياب (${dd.absenceDays.toStringAsFixed(0)} يوم)',
-            payslipFmtMoney(dd.absenceAmount),
+            AppFormatters.currency(dd.absenceAmount),
           ),
           if (d.absenceDates.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -423,7 +424,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
             ),
           ],
           const SizedBox(height: 8),
-          PayslipRow('جزاءات', payslipFmtMoney(dd.penaltiesAmount)),
+          PayslipRow('جزاءات', AppFormatters.currency(dd.penaltiesAmount)),
           if (dd.penaltyDetails.isNotEmpty) ...[
             const SizedBox(height: 6),
             for (final p in dd.penaltyDetails)
@@ -433,18 +434,18 @@ class _PayrollScreenState extends State<PayrollScreen> {
                   label: _penaltyLabel(p),
                   value: p.isDayPenalty
                       ? '${payslipFmtNumber(p.days)} يوم'
-                      : payslipFmtMoney(p.amount),
+                      : AppFormatters.currency(p.amount),
                   color: AppColors.error,
                 ),
               ),
           ],
           const SizedBox(height: 4),
-          PayslipRow('سلف', payslipFmtMoney(dd.advancesAmount)),
-          PayslipRow('تأمين صحي', payslipFmtMoney(dd.healthInsuranceAmount)),
+          PayslipRow('سلف', AppFormatters.currency(dd.advancesAmount)),
+          PayslipRow('تأمين صحي', AppFormatters.currency(dd.healthInsuranceAmount)),
           if (dd.settlementDeductions != 0)
-            PayslipRow('تسويات خصم', payslipFmtMoney(dd.settlementDeductions)),
+            PayslipRow('تسويات خصم', AppFormatters.currency(dd.settlementDeductions)),
           const Divider(height: 20, color: AppColors.border),
-          PayslipRow('إجمالي الخصومات', payslipFmtMoney(dd.total), strong: true),
+          PayslipRow('إجمالي الخصومات', AppFormatters.currency(dd.total), strong: true),
         ],
       ),
     );
@@ -465,14 +466,14 @@ class _PayrollScreenState extends State<PayrollScreen> {
         children: [
           PayslipRow('ساعات العمل', '${payslipFmtNumber(d.hoursWorked)} ساعة'),
           PayslipRow('الساعات الإضافية', '${payslipFmtNumber(d.overtimeHours)} ساعة'),
-          PayslipRow('أجر الساعات الإضافية', payslipFmtMoney(d.overtimePay)),
+          PayslipRow('أجر الساعات الإضافية', AppFormatters.currency(d.overtimePay)),
           if (d.overtimeDetails.isNotEmpty) ...[
             const Divider(height: 24, color: AppColors.border),
             _OvertimeDetailsBlock(
               details: d.overtimeDetails,
               formatDate: _fmtFullDate,
               formatHours: payslipFmtNumber,
-              formatPay: payslipFmtMoney,
+              formatPay: AppFormatters.currency,
             ),
           ] else if (d.overtimeDates.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -484,7 +485,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           ],
           if (d.shiftRate != 0) ...[
             const Divider(height: 20, color: AppColors.border),
-            PayslipRow('أجر يوم الشيفت', payslipFmtMoney(d.shiftRate)),
+            PayslipRow('أجر يوم الشيفت', AppFormatters.currency(d.shiftRate)),
           ],
           if (d.shiftMonthlyRequiredWorkingDays != 0 ||
               d.shiftMonthlyRequiredHours != 0) ...[
@@ -560,19 +561,19 @@ class _PayrollScreenState extends State<PayrollScreen> {
       child: Column(
         children: [
           if (d.bonusAmount != 0)
-            PayslipRow('مكافأة', payslipFmtMoney(d.bonusAmount), color: AppColors.success),
+            PayslipRow('مكافأة', AppFormatters.currency(d.bonusAmount), color: AppColors.success),
           if (d.settlementAmount != 0)
-            PayslipRow('التسوية', payslipFmtMoney(d.settlementAmount)),
+            PayslipRow('التسوية', AppFormatters.currency(d.settlementAmount)),
           if (d.settlementAdditions != 0)
             PayslipRow(
               'تسويات إضافية',
-              payslipFmtMoney(d.settlementAdditions),
+              AppFormatters.currency(d.settlementAdditions),
               color: AppColors.success,
             ),
           if (d.settlementDeductions != 0)
             PayslipRow(
               'تسويات خصم',
-              payslipFmtMoney(d.settlementDeductions),
+              AppFormatters.currency(d.settlementDeductions),
               color: AppColors.error,
             ),
           if (d.settlementDetails.isNotEmpty) ...[
@@ -582,7 +583,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: _DetailChip(
                   label: s.description ?? 'تسوية',
-                  value: payslipFmtMoney(s.amount),
+                  value: AppFormatters.currency(s.amount),
                   color: s.amount >= 0 ? AppColors.success : AppColors.error,
                 ),
               ),

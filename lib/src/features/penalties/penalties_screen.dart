@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/core/theme/app_colors.dart';
 import 'package:mediconsult_internal/src/core/theme/app_text_styles.dart';
+import 'package:mediconsult_internal/src/core/utils/app_formatters.dart';
 import 'package:mediconsult_internal/src/features/home/models/employee_penalty.dart';
 import 'package:mediconsult_internal/src/features/hr/models/employee.dart';
 import 'package:mediconsult_internal/src/features/hr/repository/employees_repository.dart';
@@ -349,7 +350,7 @@ class _PenaltyCard extends StatelessWidget {
     final isDays = penalty.penaltyType == 1;
     final valueText = isDays
         ? '${penalty.days} يوم'
-        : '${penalty.amount.toStringAsFixed(0)} ج.م';
+        : AppFormatters.currency(penalty.amount);
     final dateText = _dateText(penalty.penaltyDate);
 
     return Container(

@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/app_formatters.dart';
 import '../../auth/services/auth_storage_service.dart';
 import '../models/attendance_status.dart';
 import '../models/employee_bonus.dart';
@@ -559,7 +560,7 @@ class EmployeeRewardsPenaltiesSection extends StatelessWidget {
               Expanded(
                 child: _FinanceSummaryCard(
                   title: 'إجمالي المكافآت',
-                  value: _formatCurrency(totalBonus),
+                  value: AppFormatters.currency(totalBonus),
                   countLabel: '${bonuses.length} عنصر',
                   color: const Color(0xFF10B981),
                   icon: Icons.workspace_premium_rounded,
@@ -569,7 +570,7 @@ class EmployeeRewardsPenaltiesSection extends StatelessWidget {
               Expanded(
                 child: _FinanceSummaryCard(
                   title: 'إجمالي الجزاءات',
-                  value: _formatCurrency(totalPenalty),
+                  value: AppFormatters.currency(totalPenalty),
                   countLabel: '${penalties.length} عنصر',
                   color: const Color(0xFFEF4444),
                   icon: Icons.gavel_rounded,
@@ -588,7 +589,7 @@ class EmployeeRewardsPenaltiesSection extends StatelessWidget {
             itemBuilder: (bonus) => _FinanceListTile(
               title: bonus.reason.trim().isEmpty ? 'مكافأة' : bonus.reason,
               subtitle: _formatDate(bonus.bonusDate ?? bonus.createdAt),
-              trailing: _formatCurrency(bonus.amount),
+              trailing: AppFormatters.currency(bonus.amount),
               accentColor: const Color(0xFF10B981),
             ),
           ),
@@ -606,7 +607,7 @@ class EmployeeRewardsPenaltiesSection extends StatelessWidget {
                   : penalty.reason,
               subtitle: _buildPenaltySubtitle(penalty),
               trailing: penalty.amount > 0
-                  ? _formatCurrency(penalty.amount)
+                  ? AppFormatters.currency(penalty.amount)
                   : '${penalty.days} يوم',
               accentColor: const Color(0xFFEF4444),
             ),
@@ -1382,15 +1383,6 @@ class _InsightItem {
     required this.value,
     required this.color,
   });
-}
-
-String _formatCurrency(double value) {
-  final formatter = NumberFormat.currency(
-    locale: 'ar_EG',
-    symbol: 'ج.م',
-    decimalDigits: 0,
-  );
-  return formatter.format(value);
 }
 
 String _formatDate(DateTime? value) {

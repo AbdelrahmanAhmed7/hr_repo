@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/app_exception.dart';
+import '../../core/utils/app_formatters.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../core/services/service_locator.dart';
 import '../auth/cubit/auth_cubit.dart';
@@ -69,13 +70,6 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
-  }
-
-  String _formatAmount(double? value) {
-    if (value == null) return '--';
-    final text =
-        value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2);
-    return '$text ج.م';
   }
 
   String _workTypeLabel(int? value) {
@@ -198,7 +192,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                     child: _InfoGrid(
                       items: [
                         _InfoItem(Icons.payments_rounded, 'الراتب الأساسي',
-                            _formatAmount(_employee.grossSalary)),
+                            AppFormatters.currency(_employee.grossSalary)),
                         _InfoItem(Icons.account_balance_rounded, 'اسم البنك',
                             _employee.bankInfo?.bankName ?? '--'),
                         _InfoItem(Icons.numbers_rounded, 'رقم الحساب',

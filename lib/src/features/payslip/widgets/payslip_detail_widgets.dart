@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/app_formatters.dart';
 import '../../hr/models/salary_calculation.dart';
 
 // ───────────────────────── Formatting helpers ─────────────────────────
-
-String payslipFmtMoney(double v) {
-  final text = v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
-  return '$text ج.م';
-}
 
 String payslipFmtNumber(double v) {
   return v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
@@ -146,9 +142,7 @@ class PayslipSummaryBig extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = amount.toStringAsFixed(
-      amount.truncateToDouble() == amount ? 0 : 2,
-    );
+    final text = AppFormatters.currency(amount);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -166,7 +160,7 @@ class PayslipSummaryBig extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '$text ج.م',
+            text,
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w800,
@@ -208,31 +202,31 @@ class PayslipAllowancesSection extends StatelessWidget {
       title: 'الإضافات (البدلات)',
       child: Column(
         children: [
-          PayslipRow('بدل سكن', payslipFmtMoney(allowances.housing)),
-          PayslipRow('بدل وجبات', payslipFmtMoney(allowances.meal)),
-          PayslipRow('بدل مواصلات', payslipFmtMoney(allowances.transportation)),
-          PayslipRow('بدل تأمين', payslipFmtMoney(allowances.insurance)),
-          PayslipRow('إضافي', payslipFmtMoney(allowances.additional)),
-          PayslipRow('أخرى', payslipFmtMoney(allowances.other)),
+          PayslipRow('بدل سكن', AppFormatters.currency(allowances.housing)),
+          PayslipRow('بدل وجبات', AppFormatters.currency(allowances.meal)),
+          PayslipRow('بدل مواصلات', AppFormatters.currency(allowances.transportation)),
+          PayslipRow('بدل تأمين', AppFormatters.currency(allowances.insurance)),
+          PayslipRow('إضافي', AppFormatters.currency(allowances.additional)),
+          PayslipRow('أخرى', AppFormatters.currency(allowances.other)),
           if (showBonuses && bonusAmount != 0) ...[
-            PayslipRow('مكافآت', payslipFmtMoney(bonusAmount)),
+            PayslipRow('مكافآت', AppFormatters.currency(bonusAmount)),
           ],
           if (showOvertime && overtimePay != 0) ...[
-            PayslipRow('أجر إضافي', payslipFmtMoney(overtimePay)),
+            PayslipRow('أجر إضافي', AppFormatters.currency(overtimePay)),
           ],
           if (settlementAdditions != 0) ...[
             PayslipRow(
               'تسويات إضافة',
-              payslipFmtMoney(settlementAdditions),
+              AppFormatters.currency(settlementAdditions),
             ),
           ],
           if (settlementAmount != 0) ...[
-            PayslipRow('قيمة التسوية', payslipFmtMoney(settlementAmount)),
+            PayslipRow('قيمة التسوية', AppFormatters.currency(settlementAmount)),
           ],
           const Divider(height: 20, color: AppColors.border),
           PayslipRow(
             'إجمالي المستحقات',
-            payslipFmtMoney(allowances.total),
+            AppFormatters.currency(allowances.total),
             strong: true,
           ),
         ],
@@ -270,23 +264,23 @@ class PayslipDeductionsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PayslipRow(lateLabel, payslipFmtMoney(deductions.lateAmount)),
-          PayslipRow(absenceLabel, payslipFmtMoney(deductions.absenceAmount)),
-          PayslipRow('جزاءات', payslipFmtMoney(deductions.penaltiesAmount)),
-          PayslipRow('سلف', payslipFmtMoney(deductions.advancesAmount)),
+          PayslipRow(lateLabel, AppFormatters.currency(deductions.lateAmount)),
+          PayslipRow(absenceLabel, AppFormatters.currency(deductions.absenceAmount)),
+          PayslipRow('جزاءات', AppFormatters.currency(deductions.penaltiesAmount)),
+          PayslipRow('سلف', AppFormatters.currency(deductions.advancesAmount)),
           PayslipRow(
             'تأمين صحي',
-            payslipFmtMoney(deductions.healthInsuranceAmount),
+            AppFormatters.currency(deductions.healthInsuranceAmount),
           ),
           if (deductions.settlementDeductions != 0)
             PayslipRow(
               'تسويات خصم',
-              payslipFmtMoney(deductions.settlementDeductions),
+              AppFormatters.currency(deductions.settlementDeductions),
             ),
           const Divider(height: 20, color: AppColors.border),
           PayslipRow(
             'إجمالي الخصومات',
-            payslipFmtMoney(deductions.total),
+            AppFormatters.currency(deductions.total),
             strong: true,
           ),
           if (deductions.penaltyDetails.isNotEmpty) ...[
@@ -299,7 +293,7 @@ class PayslipDeductionsSection extends StatelessWidget {
                   : 'جزاء';
               final value = p.isDayPenalty
                   ? '${payslipFmtNumber(p.days)} يوم'
-                  : payslipFmtMoney(p.amount);
+                  : AppFormatters.currency(p.amount);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
@@ -346,14 +340,14 @@ class PayslipInsuranceSection extends StatelessWidget {
       child: Column(
         children: [
           if (insuranceSalary != null)
-            PayslipRow('راتب التأمين', payslipFmtMoney(insuranceSalary!)),
-          PayslipRow('تأمين اجتماعي', payslipFmtMoney(insurance.social)),
-          PayslipRow('تأمين صحي', payslipFmtMoney(insurance.health)),
-          PayslipRow('حصة الشركة', payslipFmtMoney(insurance.companyShare)),
+            PayslipRow('راتب التأمين', AppFormatters.currency(insuranceSalary!)),
+          PayslipRow('تأمين اجتماعي', AppFormatters.currency(insurance.social)),
+          PayslipRow('تأمين صحي', AppFormatters.currency(insurance.health)),
+          PayslipRow('حصة الشركة', AppFormatters.currency(insurance.companyShare)),
           const Divider(height: 20, color: AppColors.border),
           PayslipRow(
             'إجمالي المخصوم',
-            payslipFmtMoney(insurance.totalDeducted),
+            AppFormatters.currency(insurance.totalDeducted),
             strong: true,
           ),
         ],
@@ -391,16 +385,16 @@ class PayslipSummarySection extends StatelessWidget {
         children: [
           PayslipSummaryBig(amount: netSalary, label: 'صافي الراتب'),
           const SizedBox(height: 16),
-          PayslipRow('الراتب الأساسي', payslipFmtMoney(grossSalary)),
-          PayslipRow('إجمالي المستحقات', payslipFmtMoney(totalEarnings)),
+          PayslipRow('الراتب الأساسي', AppFormatters.currency(grossSalary)),
+          PayslipRow('إجمالي المستحقات', AppFormatters.currency(totalEarnings)),
           if (bonusAmount != null && bonusAmount != 0)
-            PayslipRow('المكافآت', payslipFmtMoney(bonusAmount!)),
+            PayslipRow('المكافآت', AppFormatters.currency(bonusAmount!)),
           const Divider(height: 20, color: AppColors.border),
-          PayslipRow('إجمالي الخصومات', payslipFmtMoney(deductionsTotal)),
+          PayslipRow('إجمالي الخصومات', AppFormatters.currency(deductionsTotal)),
           if (taxAmount != 0)
-            PayslipRow('الضرائب', payslipFmtMoney(taxAmount)),
+            PayslipRow('الضرائب', AppFormatters.currency(taxAmount)),
           const Divider(height: 20, color: AppColors.border),
-          PayslipRow('صافي الراتب', payslipFmtMoney(netSalary), strong: true),
+          PayslipRow('صافي الراتب', AppFormatters.currency(netSalary), strong: true),
         ],
       ),
     );

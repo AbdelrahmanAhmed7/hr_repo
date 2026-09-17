@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/utils/app_exception.dart';
+import '../../core/utils/app_formatters.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/approve_reject_sheet.dart';
 import '../admin/repository/admin_leaves_repository.dart';
@@ -628,7 +629,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
       items.add(('عدد الساعات', '${request.totalHours}'));
     }
     if (request.amount != null) {
-      items.add(('القيمة', '${request.amount} EGP'));
+      items.add(('القيمة', AppFormatters.currency(request.amount)));
     }
     if (request.rejectionReason?.trim().isNotEmpty == true) {
       items.add(('سبب الرفض', request.rejectionReason!));

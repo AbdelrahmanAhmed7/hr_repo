@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_exception.dart';
+import '../../core/utils/app_formatters.dart';
 import '../payslip/widgets/payslip_detail_widgets.dart';
 import 'cubit/employees_cubit.dart';
 import 'models/employee.dart';
@@ -312,20 +313,20 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
       title: 'الخصومات',
       child: Column(
         children: [
-          PayslipRow('تأخير', payslipFmtMoney(dd.lateAmount)),
-          PayslipRow('غياب', payslipFmtMoney(dd.absenceAmount)),
-          PayslipRow('جزاءات', payslipFmtMoney(dd.penaltiesAmount)),
-          PayslipRow('سلف', payslipFmtMoney(dd.advancesAmount)),
-          PayslipRow('تأمين صحي', payslipFmtMoney(dd.healthInsuranceAmount)),
-          PayslipRow('تسويات', payslipFmtMoney(dd.settlementDeductions)),
+          PayslipRow('تأخير', AppFormatters.currency(dd.lateAmount)),
+          PayslipRow('غياب', AppFormatters.currency(dd.absenceAmount)),
+          PayslipRow('جزاءات', AppFormatters.currency(dd.penaltiesAmount)),
+          PayslipRow('سلف', AppFormatters.currency(dd.advancesAmount)),
+          PayslipRow('تأمين صحي', AppFormatters.currency(dd.healthInsuranceAmount)),
+          PayslipRow('تسويات', AppFormatters.currency(dd.settlementDeductions)),
           const Divider(height: 20, color: AppColors.border),
-          PayslipRow('إجمالي الخصومات', payslipFmtMoney(dd.total), strong: true),
+          PayslipRow('إجمالي الخصومات', AppFormatters.currency(dd.total), strong: true),
           if (dd.penaltyDetails.isNotEmpty) ...[
             const SizedBox(height: 8),
             for (final p in dd.penaltyDetails)
               PayslipRow(
                 _penaltyLabel(p),
-                p.isDayPenalty ? '${payslipFmtNumber(p.days)} يوم' : payslipFmtMoney(p.amount),
+                p.isDayPenalty ? '${payslipFmtNumber(p.days)} يوم' : AppFormatters.currency(p.amount),
               ),
           ],
         ],
@@ -350,12 +351,12 @@ class _SalaryCalculationScreenState extends State<SalaryCalculationScreen> {
             'الساعات الإضافية',
             '${d.overtimeHours.toStringAsFixed(2)} ساعة',
           ),
-          PayslipRow('أجر الساعات الإضافية', payslipFmtMoney(d.overtimePay)),
+          PayslipRow('أجر الساعات الإضافية', AppFormatters.currency(d.overtimePay)),
           if (d.bonusAmount != 0) ...[
             const Divider(height: 20, color: AppColors.border),
-            PayslipRow('مكافأة', payslipFmtMoney(d.bonusAmount)),
-            PayslipRow('تسويات إضافية', payslipFmtMoney(d.settlementAdditions)),
-            PayslipRow('تسويات', payslipFmtMoney(d.settlementAmount)),
+            PayslipRow('مكافأة', AppFormatters.currency(d.bonusAmount)),
+            PayslipRow('تسويات إضافية', AppFormatters.currency(d.settlementAdditions)),
+            PayslipRow('تسويات', AppFormatters.currency(d.settlementAmount)),
           ],
           if (d.employeeStatusNote?.isNotEmpty == true) ...[
             const Divider(height: 20, color: AppColors.border),

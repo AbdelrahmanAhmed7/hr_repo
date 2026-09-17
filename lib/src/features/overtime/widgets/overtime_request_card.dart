@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_formatters.dart';
 import '../models/overtime_request.dart';
 
 class OvertimeRequestCard extends StatelessWidget {
@@ -14,8 +14,6 @@ class OvertimeRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFmt = NumberFormat('#,##0.##');
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -105,7 +103,7 @@ class OvertimeRequestCard extends StatelessWidget {
               if (request.amount > 0)
                 _InfoChip(
                   icon: Icons.payments_outlined,
-                  label: '${currencyFmt.format(request.amount)} ج.م',
+                  label: AppFormatters.currency(request.amount),
                 ),
             ],
           ),

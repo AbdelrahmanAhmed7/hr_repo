@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/app_formatters.dart';
 import '../../home/models/recent_activity.dart';
 import '../request_details_screen.dart';
 
@@ -53,7 +54,8 @@ class RequestCard extends StatelessWidget {
       if (request.deductionType?.trim().isNotEmpty == true)
         'الخصم: ${request.deductionType}',
       if (request.totalHours != null) 'عدد الساعات: ${request.totalHours}',
-      if (request.amount != null) 'القيمة: ${request.amount} EGP',
+      if (request.amount != null)
+        'القيمة: ${AppFormatters.currency(request.amount)}',
       if (request.rejectionReason?.trim().isNotEmpty == true)
         'سبب الرفض: ${request.rejectionReason}',
     ];

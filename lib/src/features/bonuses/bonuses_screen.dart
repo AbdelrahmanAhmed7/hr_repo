@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/core/theme/app_colors.dart';
 import 'package:mediconsult_internal/src/core/theme/app_text_styles.dart';
+import 'package:mediconsult_internal/src/core/utils/app_formatters.dart';
 import 'package:mediconsult_internal/src/features/bonuses/cubit/bonuses_cubit.dart';
 import 'package:mediconsult_internal/src/features/bonuses/cubit/bonuses_state.dart';
 import 'package:mediconsult_internal/src/features/bonuses/models/employee_bonus.dart';
@@ -364,7 +365,7 @@ class _BonusCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${bonus.amount.toStringAsFixed(0)} ج.م • $dateText',
+                  '${AppFormatters.currency(bonus.amount)} • $dateText',
                   style: AppTextStyles.labelSmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
