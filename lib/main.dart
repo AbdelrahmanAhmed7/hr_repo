@@ -27,7 +27,12 @@ Future<void> main() async {
 
       // Must run BEFORE setupServiceLocator(): on iOS the Keychain survives
       // app deletion, so a reinstall would otherwise restore the old session.
-      await AuthStorageService.clearSecureStorageIfFreshInstall();
+      // Bounded: a hung first-ever secure-storage call (Android Keystore init
+      // on fresh installs) must never block the first frame.
+      await AuthStorageService.clearSecureStorageIfFreshInstall().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {},
+      );
 
       await setupServiceLocator();
 
