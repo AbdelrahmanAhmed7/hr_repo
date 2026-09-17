@@ -277,9 +277,9 @@ Future<void> setupServiceLocator() async {
   final authCubit = AuthCubit(getIt<AuthRepository>());
   getIt.registerSingleton<AuthCubit>(authCubit);
 
-  // Wait for auth state to load from storage
-  // This ensures the state is ready before the app starts
-  await Future.delayed(const Duration(milliseconds: 200));
+  // Restore the persisted session from secure storage before the app boots,
+  // so the splash screen never races or bounces a logged-in user.
+  await authCubit.restoreComplete;
 
   getIt.registerFactory<AssignmentCubit>(
     () => AssignmentCubit(getIt<AssignmentRepository>()),

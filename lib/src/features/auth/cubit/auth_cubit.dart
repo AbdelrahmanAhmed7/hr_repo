@@ -8,8 +8,15 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthRepository _authRepository;
 
   AuthCubit(this._authRepository) : super(const AuthState()) {
-    _loadAuthState();
+    _loadFuture = _loadAuthState();
   }
+
+  late final Future<void> _loadFuture;
+
+  /// Completes once the persisted auth state has been read from secure
+  /// storage (fast, no network). Await this during startup instead of
+  /// racing the restore against the first emitted state.
+  Future<void> get restoreComplete => _loadFuture;
 
   /// Load saved auth state from storage
   Future<void> _loadAuthState() async {
