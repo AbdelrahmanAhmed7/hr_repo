@@ -116,17 +116,17 @@ class TaskFilters {
 
   @override
   int get hashCode => Object.hash(
-        employeeId,
-        departmentId,
-        managerId,
-        status,
-        priority,
-        taskType,
-        startDateFrom,
-        startDateTo,
-        dueDateFrom,
-        dueDateTo,
-        createdDateFrom,
-        createdDateTo,
-      );
+    employeeId,
+    departmentId,
+    managerId,
+    status,
+    priority,
+    taskType,
+    startDateFrom,
+    startDateTo,
+    dueDateFrom,
+    dueDateTo,
+    createdDateFrom,
+    createdDateTo,
+  );
 }

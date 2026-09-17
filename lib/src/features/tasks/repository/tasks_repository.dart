@@ -68,9 +68,6 @@ class TasksRepository {
   Future<void> addAttachment(int taskId, TaskAttachment attachment) =>
       _service.addAttachment(attachment, taskId);
 
-  Future<List<TaskHistoryEntry>> getHistory(int id) =>
-      _service.getHistory(id);
-
   Future<TaskLookups> getLookups() => _service.getLookups();
 
   Future<List<AssignableEmployee>> getAssignableEmployees() =>

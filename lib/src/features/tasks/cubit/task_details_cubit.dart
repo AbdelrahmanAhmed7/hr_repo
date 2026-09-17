@@ -5,7 +5,7 @@ import '../models/task_interactions.dart';
 import '../repository/tasks_repository.dart';
 import 'task_details_state.dart';
 
-/// Task details cubit: task, comments, attachments, history and all
+/// Task details cubit: task, comments, attachments and all
 /// employee/manager status actions.
 class TaskDetailsCubit extends Cubit<TaskDetailsState> {
   final TasksRepository _repository;
@@ -68,26 +68,10 @@ class TaskDetailsCubit extends Cubit<TaskDetailsState> {
     try {
       final attachments = await _repository.getAttachments(id);
       if (isClosed) return;
-      emit(
-        state.copyWith(attachments: attachments, attachmentsLoading: false),
-      );
+      emit(state.copyWith(attachments: attachments, attachmentsLoading: false));
     } catch (_) {
       if (isClosed) return;
       emit(state.copyWith(attachmentsLoading: false));
-    }
-  }
-
-  Future<void> loadHistory({bool silent = false}) async {
-    final id = state.task?.id;
-    if (id == null || isClosed) return;
-    if (!silent) emit(state.copyWith(historyLoading: true));
-    try {
-      final history = await _repository.getHistory(id);
-      if (isClosed) return;
-      emit(state.copyWith(history: history, historyLoading: false));
-    } catch (_) {
-      if (isClosed) return;
-      emit(state.copyWith(historyLoading: false));
     }
   }
 
@@ -184,14 +168,12 @@ class TaskDetailsCubit extends Cubit<TaskDetailsState> {
   Future<bool> reject(String reason) =>
       _statusAction((id) => _repository.rejectTask(id, reason));
 
-  Future<bool> pauseRecurrence() =>
-      _statusAction(_repository.pauseRecurrence);
+  Future<bool> pauseRecurrence() => _statusAction(_repository.pauseRecurrence);
 
   Future<bool> resumeRecurrence() =>
       _statusAction(_repository.resumeRecurrence);
 
-  Future<bool> stopRecurrence() =>
-      _statusAction(_repository.stopRecurrence);
+  Future<bool> stopRecurrence() => _statusAction(_repository.stopRecurrence);
 
   void resetActionStatus() {
     if (isClosed) return;

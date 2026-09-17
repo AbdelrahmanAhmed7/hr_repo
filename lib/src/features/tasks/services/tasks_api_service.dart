@@ -204,11 +204,6 @@ class TasksApiService {
     );
   }
 
-  Future<List<TaskHistoryEntry>> getHistory(int id) async {
-    final response = await _dioClient.dio.get('/api/tasks/$id/history');
-    return _asMaps(response.data).map(TaskHistoryEntry.fromJson).toList();
-  }
-
   // ── Dropdowns ─────────────────────────────────────────────────────
 
   Future<TaskLookups> getLookups() async {
@@ -216,41 +211,10 @@ class TasksApiService {
     return TaskLookups.fromJson(_asMap(response.data));
   }
 
-  Future<List<LookupItem>> _getLookupList(String path) async {
-    final response = await _dioClient.dio.get(path);
-    final data = response.data is String
-        ? jsonDecode(response.data)
-        : response.data;
-    if (data is List) {
-      return data.whereType<Map<String, dynamic>>().map(LookupItem.fromJson).toList();
-    }
-    if (data is Map<String, dynamic>) {
-      return TaskLookups.fromJson(data).priorities;
-    }
-    return const [];
-  }
-
-  Future<List<LookupItem>> getPriorities() =>
-      _getLookupList('/api/tasks/priorities');
-
-  Future<List<LookupItem>> getTaskTypes() =>
-      _getLookupList('/api/tasks/task-types');
-
-  Future<List<LookupItem>> getStatuses() =>
-      _getLookupList('/api/tasks/statuses');
-
-  Future<List<LookupItem>> getMonthlyModes() =>
-      _getLookupList('/api/tasks/monthly-modes');
-
-  Future<List<LookupItem>> getDaysOfWeek() =>
-      _getLookupList('/api/tasks/days-of-week');
-
   Future<List<AssignableEmployee>> getAssignableEmployees() async {
     final response = await _dioClient.dio.get(
       '/api/tasks/assignable-employees',
     );
-    return _asMaps(
-      response.data,
-    ).map(AssignableEmployee.fromJson).toList();
+    return _asMaps(response.data).map(AssignableEmployee.fromJson).toList();
   }
 }

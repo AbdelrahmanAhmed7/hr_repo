@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../attendance/models/today_attendance.dart';
 import '../models/home_api_response.dart';
 import '../models/home_notification.dart';
@@ -125,12 +126,8 @@ class HomeNotificationService {
 
     // تحقق من الطلبات المقبولة حديثاً
     final recentAccepted = data.acceptedRequests.where((req) {
-      try {
-        final createdAt = DateTime.parse(req.createdAt);
-        return createdAt.isAfter(yesterday);
-      } catch (e) {
-        return false;
-      }
+      final createdAt = AppDateUtils.parseFlexible(req.createdAt);
+      return createdAt != null && createdAt.isAfter(yesterday);
     }).toList();
 
     if (recentAccepted.isNotEmpty) {
@@ -149,12 +146,8 @@ class HomeNotificationService {
 
     // تحقق من الطلبات المرفوضة حديثاً
     final recentRejected = data.rejectedRequests.where((req) {
-      try {
-        final createdAt = DateTime.parse(req.createdAt);
-        return createdAt.isAfter(yesterday);
-      } catch (e) {
-        return false;
-      }
+      final createdAt = AppDateUtils.parseFlexible(req.createdAt);
+      return createdAt != null && createdAt.isAfter(yesterday);
     }).toList();
 
     if (recentRejected.isNotEmpty) {

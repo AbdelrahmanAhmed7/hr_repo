@@ -23,12 +23,6 @@ class TaskCard extends StatelessWidget {
     context.read<TasksCubit>().refreshAll();
   }
 
-  static String _formatHours(double hours) {
-    final whole = hours == hours.roundToDouble();
-    final s = whole ? hours.round().toString() : hours.toStringAsFixed(1);
-    return '$s ساعة';
-  }
-
   @override
   Widget build(BuildContext context) {
     final statusColor = TaskLabels.statusColor(task.status);
@@ -177,7 +171,7 @@ class TaskCard extends StatelessWidget {
                   if (task.estimatedHours != null && task.estimatedHours! > 0)
                     _CardMeta(
                       icon: Icons.schedule_outlined,
-                      text: _formatHours(task.estimatedHours!),
+                      text: TaskLabels.formatHours(task.estimatedHours!),
                     ),
                   if (task.isRecurringSeries)
                     _CardMeta(

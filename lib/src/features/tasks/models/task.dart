@@ -107,9 +107,7 @@ class TaskModel {
       createdAt: _asDateOrNull(json['createdAt']),
       updatedAt: _asDateOrNull(json['updatedAt']),
       recurrence: json['recurrence'] is Map<String, dynamic>
-          ? TaskRecurrence.fromJson(
-              json['recurrence'] as Map<String, dynamic>,
-            )
+          ? TaskRecurrence.fromJson(json['recurrence'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -205,8 +203,7 @@ class TaskRecurrence {
     return {
       'recurrenceType': recurrenceType,
       'interval': interval,
-      if (startDate != null)
-        'startDate': startDate!.toUtc().toIso8601String(),
+      if (startDate != null) 'startDate': startDate!.toUtc().toIso8601String(),
       if (endDate != null) 'endDate': endDate!.toUtc().toIso8601String(),
       if (dailyOccurrencesPerDay != null)
         'dailyOccurrencesPerDay': dailyOccurrencesPerDay,

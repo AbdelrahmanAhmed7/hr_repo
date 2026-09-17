@@ -13,10 +13,8 @@ class TaskDetailsState extends Equatable {
   final TaskModel? task;
   final List<TaskComment> comments;
   final List<TaskAttachment> attachments;
-  final List<TaskHistoryEntry> history;
   final bool commentsLoading;
   final bool attachmentsLoading;
-  final bool historyLoading;
   final String? errorMessage;
   final String? actionErrorMessage;
 
@@ -26,10 +24,8 @@ class TaskDetailsState extends Equatable {
     this.task,
     this.comments = const [],
     this.attachments = const [],
-    this.history = const [],
     this.commentsLoading = false,
     this.attachmentsLoading = false,
-    this.historyLoading = false,
     this.errorMessage,
     this.actionErrorMessage,
   });
@@ -40,10 +36,8 @@ class TaskDetailsState extends Equatable {
     TaskModel? task,
     List<TaskComment>? comments,
     List<TaskAttachment>? attachments,
-    List<TaskHistoryEntry>? history,
     bool? commentsLoading,
     bool? attachmentsLoading,
-    bool? historyLoading,
     String? errorMessage,
     String? actionErrorMessage,
   }) {
@@ -53,10 +47,8 @@ class TaskDetailsState extends Equatable {
       task: task ?? this.task,
       comments: comments ?? this.comments,
       attachments: attachments ?? this.attachments,
-      history: history ?? this.history,
       commentsLoading: commentsLoading ?? this.commentsLoading,
       attachmentsLoading: attachmentsLoading ?? this.attachmentsLoading,
-      historyLoading: historyLoading ?? this.historyLoading,
       errorMessage: errorMessage,
       actionErrorMessage: actionErrorMessage,
     );
@@ -64,16 +56,14 @@ class TaskDetailsState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        actionStatus,
-        task,
-        comments,
-        attachments,
-        history,
-        commentsLoading,
-        attachmentsLoading,
-        historyLoading,
-        errorMessage,
-        actionErrorMessage,
-      ];
+    status,
+    actionStatus,
+    task,
+    comments,
+    attachments,
+    commentsLoading,
+    attachmentsLoading,
+    errorMessage,
+    actionErrorMessage,
+  ];
 }

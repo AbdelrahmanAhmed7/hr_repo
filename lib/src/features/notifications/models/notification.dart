@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/date_utils.dart';
 
 enum NotificationType {
   leave,
@@ -96,6 +97,9 @@ class NotificationModel {
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
+    if (date.isAfter(now)) {
+      return AppDateUtils.formatDate(date);
+    }
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
@@ -111,7 +115,7 @@ class NotificationModel {
     } else if (difference.inDays < 7) {
       return 'منذ ${difference.inDays} أيام';
     } else {
-      return '${date.day}/${date.month}/${date.year}';
+      return AppDateUtils.formatDate(date);
     }
   }
 
@@ -144,17 +148,11 @@ class NotificationModel {
   }
 
   factory NotificationModel.fromApi(Map<String, dynamic> json) {
-    final createdAtRaw = json['createdAt'] as String?;
-    DateTime dateTime;
-    if (createdAtRaw != null) {
-      try {
-        dateTime = DateTime.parse(createdAtRaw);
-      } catch (_) {
-        dateTime = DateTime.now();
-      }
-    } else {
-      dateTime = DateTime.now();
-    }
+    // `createdAt` may arrive as ISO-8601, `yyyy-MM-dd[ HH:mm:ss]`,
+    // `dd/MM/yyyy`, `MM/dd/yyyy` or epoch millis/seconds. Parse explicitly so
+    // a valid-but-non-ISO date is never silently replaced with `DateTime.now()`.
+    final parsed = AppDateUtils.parseFlexible(json['createdAt']);
+    final dateTime = parsed ?? DateTime.now();
 
     final messageRaw = json['message'] as String?;
     final message = messageRaw?.trim() ?? '';

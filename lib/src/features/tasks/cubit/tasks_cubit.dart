@@ -27,7 +27,9 @@ class TasksCubit extends Cubit<TasksState> {
     if (loadMore) {
       emit(state.copyWith(loadingMoreTasks: true));
     } else if (!silent) {
-      emit(state.copyWith(status: TasksStatus.loading, loadingMoreTasks: false));
+      emit(
+        state.copyWith(status: TasksStatus.loading, loadingMoreTasks: false),
+      );
     }
 
     try {
@@ -62,10 +64,7 @@ class TasksCubit extends Cubit<TasksState> {
     }
   }
 
-  Future<void> loadMyTasks({
-    bool silent = false,
-    bool loadMore = false,
-  }) async {
+  Future<void> loadMyTasks({bool silent = false, bool loadMore = false}) async {
     if (isClosed) return;
     if (loadMore && (state.loadingMoreMyTasks || !state.hasMoreMyTasks)) return;
 
@@ -142,23 +141,6 @@ class TasksCubit extends Cubit<TasksState> {
   void applyMyFilters(TaskFilters filters) {
     if (state.myTasksFilters == filters) return;
     emit(state.copyWith(myTasksFilters: filters));
-    loadMyTasks();
-  }
-
-  void clearFilters() {
-    if (state.filters.isEmpty) return;
-    emit(state.copyWith(filters: const TaskFilters(), clearFilters: true));
-    loadTasks();
-  }
-
-  void clearMyFilters() {
-    if (state.myTasksFilters.isEmpty) return;
-    emit(
-      state.copyWith(
-        myTasksFilters: const TaskFilters(),
-        clearMyFilters: true,
-      ),
-    );
     loadMyTasks();
   }
 
@@ -259,17 +241,14 @@ class TasksCubit extends Cubit<TasksState> {
     }
   }
 
-  Future<bool> pauseRecurrence(int id) => _recurrenceAction(
-        () => _repository.pauseRecurrence(id),
-      );
+  Future<bool> pauseRecurrence(int id) =>
+      _recurrenceAction(() => _repository.pauseRecurrence(id));
 
-  Future<bool> resumeRecurrence(int id) => _recurrenceAction(
-        () => _repository.resumeRecurrence(id),
-      );
+  Future<bool> resumeRecurrence(int id) =>
+      _recurrenceAction(() => _repository.resumeRecurrence(id));
 
-  Future<bool> stopRecurrence(int id) => _recurrenceAction(
-        () => _repository.stopRecurrence(id),
-      );
+  Future<bool> stopRecurrence(int id) =>
+      _recurrenceAction(() => _repository.stopRecurrence(id));
 
   Future<bool> _recurrenceAction(Future<void> Function() call) async {
     if (isClosed) return false;

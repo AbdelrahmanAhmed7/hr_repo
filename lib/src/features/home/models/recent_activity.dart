@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../admin/models/super_admin_dashboard_response.dart';
 import '../../notifications/models/notification.dart';
 import '../../permissions/models/permission_request.dart' as domain;
+import '../../../core/utils/date_utils.dart';
 
 enum RequestType { leave, permission, overtime, assignment, other }
 
@@ -407,7 +408,7 @@ class RecentActivity {
     };
 
     if (primaryDate is String && primaryDate.trim().isNotEmpty) {
-      final parsedPrimary = DateTime.tryParse(primaryDate);
+      final parsedPrimary = AppDateUtils.parseFlexible(primaryDate);
       if (parsedPrimary != null) {
         return parsedPrimary;
       }
@@ -415,7 +416,7 @@ class RecentActivity {
 
     final createdAt = item.createdAt?.toString();
     if (createdAt != null && createdAt.trim().isNotEmpty) {
-      final parsedCreatedAt = DateTime.tryParse(createdAt);
+      final parsedCreatedAt = AppDateUtils.parseFlexible(createdAt);
       if (parsedCreatedAt != null) {
         return parsedCreatedAt;
       }
@@ -426,7 +427,7 @@ class RecentActivity {
 
   static DateTime? _tryParseDate(String? value) {
     if (value == null || value.trim().isEmpty) return null;
-    return DateTime.tryParse(value);
+    return AppDateUtils.parseFlexible(value);
   }
 
   static double? _toDouble(dynamic value) {

@@ -226,6 +226,12 @@ class TaskLabels {
     return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
   }
 
+  static String formatHours(double hours) {
+    final whole = hours == hours.roundToDouble();
+    final s = whole ? hours.round().toString() : hours.toStringAsFixed(1);
+    return '$s ساعة';
+  }
+
   static String formatTimeOfDay(String hhmmss) {
     final parts = hhmmss.split(':');
     if (parts.length < 2) return hhmmss;
