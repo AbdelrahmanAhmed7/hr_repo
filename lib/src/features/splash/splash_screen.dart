@@ -20,11 +20,22 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    await Future.delayed(const Duration(seconds: 2));
+    final authCubit = getIt<AuthCubit>();
+
+    // Keep the ~2s brand splash cadence, but never freeze startup while
+    // waiting on secure-storage IO. Cap the restore wait at 5s: if it still
+    // hasn't completed (e.g. hung Keychain/Keystore read) navigate with the
+    // current state rather than leaving the user stuck on the splash.
+    await Future.wait<void>([
+      Future<void>.delayed(const Duration(seconds: 2)),
+      authCubit.restoreComplete.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {},
+      ),
+    ]);
 
     if (!mounted) return;
 
-    final authCubit = getIt<AuthCubit>();
     final isAuthenticated = authCubit.state.isAuthenticated;
 
     if (!mounted) return;

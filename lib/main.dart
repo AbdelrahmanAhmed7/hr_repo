@@ -43,7 +43,13 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      await PushNotificationService.instance.initialize();
+
+      // Time-box FCM init: a hung getToken() (no connectivity / flaky GMS)
+      // must never block the first frame in release builds.
+      await PushNotificationService.instance.initialize().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => false,
+      );
 
       SystemChrome.setEnabledSystemUIMode(
         SystemUiMode.manual,

@@ -277,9 +277,11 @@ Future<void> setupServiceLocator() async {
   final authCubit = AuthCubit(getIt<AuthRepository>());
   getIt.registerSingleton<AuthCubit>(authCubit);
 
-  // Restore the persisted session from secure storage before the app boots,
-  // so the splash screen never races or bounces a logged-in user.
-  await authCubit.restoreComplete;
+  // AuthCubit's constructor already kicks off the secure-storage restore
+  // (_loadAuthState). We must NOT await it here: a hung storage read must
+  // never block the first frame (it froze boot on some release installs).
+  // The splash screen awaits authCubit.restoreComplete - bounded by a
+  // timeout - before navigating.
 
   getIt.registerFactory<AssignmentCubit>(
     () => AssignmentCubit(getIt<AssignmentRepository>()),
