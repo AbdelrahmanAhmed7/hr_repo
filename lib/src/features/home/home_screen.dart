@@ -21,6 +21,7 @@ import 'models/recent_activity.dart';
 import 'widgets/employee_dashboard_sections.dart';
 import 'widgets/recent_activity_card.dart';
 import '../notifications/cubit/notifications_cubit.dart';
+import '../employee_of_month/presentation/widgets/home_winner_banner.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -232,6 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             onViewMissions: _handleViewMissions,
                             onViewTasks: _handleViewTasks,
                           ),
+                        ),
+                        const SliverToBoxAdapter(
+                          child: HomeWinnerBanner(),
                         ),
                         SliverToBoxAdapter(
                           child: _EmployeeOfMonthBanner(
