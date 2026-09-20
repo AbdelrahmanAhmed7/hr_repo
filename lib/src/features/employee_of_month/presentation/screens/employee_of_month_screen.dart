@@ -4,31 +4,16 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/cached_image_widget.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 import '../cubit/employee_of_month_cubit.dart';
 import '../cubit/employee_of_month_state.dart';
+import '../employee_of_month_helpers.dart';
 import '../widgets/nominee_card.dart';
 import '../widgets/vote_confirmation_dialog.dart';
 import '../widgets/winner_card.dart';
-
-// Arabic month names
-const _kMonthNames = [
-  'يناير',
-  'فبراير',
-  'مارس',
-  'إبريل',
-  'مايو',
-  'يونيو',
-  'يوليو',
-  'أغسطس',
-  'سبتمبر',
-  'أكتوبر',
-  'نوفمبر',
-  'ديسمبر',
-];
-
-String _monthName(int month) => _kMonthNames[(month - 1).clamp(0, 11)];
+import '../../data/models/winner_model.dart';
 
 class EmployeeOfMonthScreen extends StatefulWidget {
   const EmployeeOfMonthScreen({super.key});
@@ -87,21 +72,24 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
           return CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // ── Header ─────────────────────────────────────────────────
-              SliverToBoxAdapter(child: _Header(state: state)),
+              SliverToBoxAdapter(
+                child: _HeroHeader(
+                  month: state.currentMonth,
+                  year: state.currentYear,
+                  showChip: state.status == EmployeeOfMonthStatus.success,
+                ),
+              ),
 
-              // ── Loading ─────────────────────────────────────────────────
               if (state.status == EmployeeOfMonthStatus.loading)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                   sliver: SliverList.separated(
                     itemCount: 5,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (_, _) => _NomineeSkeleton(),
+                    itemBuilder: (_, _) => const _NomineeSkeleton(),
                   ),
                 ),
 
-              // ── Error ───────────────────────────────────────────────────
               if (state.status == EmployeeOfMonthStatus.error)
                 SliverFillRemaining(
                   child: EmptyStateWidget(
@@ -115,23 +103,21 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                   ),
                 ),
 
-              // ── Success ─────────────────────────────────────────────────
               if (state.status == EmployeeOfMonthStatus.success) ...[
-                // Voted banner
                 if (state.hasVoted)
                   SliverToBoxAdapter(
-                    child: _VotedBanner(name: state.votedForName ?? ''),
+                    child: _VoteSuccessBanner(name: state.votedForName ?? ''),
                   ),
 
-                // Section 1 header — nominees
                 SliverToBoxAdapter(
-                  child: _SectionHeader(
+                  child: _SectionLabel(
                     icon: Icons.how_to_vote_rounded,
-                    title: 'موظف الشهر — ${_monthName(state.currentMonth)}',
+                    title: 'صوّت هذا الشهر',
+                    count: state.nominees.length,
+                    countLabel: 'مرشح',
                   ),
                 ),
 
-                // Nominees list
                 if (state.nominees.isEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -160,7 +146,8 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                           nominee: nominee,
                           hasVoted: state.hasVoted,
                           isVotedFor: isVotedFor,
-                          isVoteLoading: state.voteStatus == VoteStatus.loading,
+                          isVoteLoading:
+                              state.voteStatus == VoteStatus.loading,
                           onTap:
                               state.hasVoted ||
                                   state.voteStatus == VoteStatus.loading
@@ -175,15 +162,14 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                     ),
                   ),
 
-                // Section 2 header — previous winner
+                const SliverToBoxAdapter(child: SizedBox(height: 10)),
+
                 SliverToBoxAdapter(
-                  child: _SectionHeader(
+                  child: _SectionLabel(
                     icon: Icons.emoji_events_rounded,
-                    title: () {
-                      final now = DateTime.now();
-                      final prevMonth = now.month == 1 ? 12 : now.month - 1;
-                      return 'الفائز بشهر ${_monthName(prevMonth)}';
-                    }(),
+                    title: 'قاعة الفائزين',
+                    count: state.winners.length,
+                    countLabel: 'فائز',
                   ),
                 ),
 
@@ -199,14 +185,8 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                     ),
                   )
                 else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                    sliver: SliverList.separated(
-                      itemCount: state.winners.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) =>
-                          WinnerCard(winner: state.winners[i]),
-                    ),
+                  SliverToBoxAdapter(
+                    child: _WinnersHall(winners: state.winners),
                   ),
               ],
 
@@ -219,108 +199,194 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
   }
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// ─── Hero Header ──────────────────────────────────────────────────────────────
 
-class _Header extends StatelessWidget {
-  final EmployeeOfMonthState state;
-  const _Header({required this.state});
+class _HeroHeader extends StatelessWidget {
+  final int month;
+  final int year;
+  final bool showChip;
+
+  const _HeroHeader({
+    required this.month,
+    required this.year,
+    required this.showChip,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primaryDark, AppColors.primary],
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+              child: Column(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'موظف الشهر',
-                          style: TextStyle(
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).maybePop(),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
                             color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                            size: 18,
                           ),
                         ),
-                        Text(
-                          'صوّت لموظف الشهر',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontSize: 13,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF59E0B).withValues(
+                            alpha: 0.5,
                           ),
+                          blurRadius: 30,
+                          spreadRadius: 4,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
+                    child: const Icon(
+                      Icons.emoji_events_rounded,
+                      color: Colors.white,
+                      size: 46,
+                    ),
                   ),
-                  const Icon(
-                    Icons.emoji_events_rounded,
-                    color: Color(0xFFFCD34D),
-                    size: 32,
+                  const SizedBox(height: 16),
+                  Text(
+                    'موظف الشهر',
+                    style: AppTextStyles.headlineMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'صوّت لأفضل موظف هذا الشهر',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  if (showChip) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFCD34D).withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFFFCD34D).withValues(
+                            alpha: 0.55,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.calendar_month_rounded,
+                            color: Color(0xFFFDE68A),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${employeeOfMonthMonthName(month)} $year',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: const Color(0xFFFDE68A),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+        Positioned(
+          left: -40,
+          bottom: -50,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+          ),
+        ),
+        Positioned(
+          right: -30,
+          top: -40,
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.04),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-// ─── Voted Banner ─────────────────────────────────────────────────────────────
+// ─── Vote Success Banner ──────────────────────────────────────────────────────
 
-class _VotedBanner extends StatelessWidget {
+class _VoteSuccessBanner extends StatelessWidget {
   final String name;
-  const _VotedBanner({required this.name});
+  const _VoteSuccessBanner({required this.name});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
+        color: AppColors.success.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           const Icon(
-            Icons.check_circle_rounded,
+            Icons.celebration_rounded,
             color: AppColors.success,
-            size: 22,
+            size: 26,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: RichText(
               text: TextSpan(
@@ -328,12 +394,12 @@ class _VotedBanner extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
                 children: [
-                  const TextSpan(text: 'لقد صوّت بالفعل لـ '),
+                  const TextSpan(text: 'أحسنت! صوتك لـ '),
                   TextSpan(
                     text: name,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
-                  const TextSpan(text: ' هذا الشهر'),
+                  const TextSpan(text: ' تم تسجيله لهذا الشهر'),
                 ],
               ),
             ),
@@ -344,29 +410,36 @@ class _VotedBanner extends StatelessWidget {
   }
 }
 
-// ─── Section Header ───────────────────────────────────────────────────────────
+// ─── Section Label ────────────────────────────────────────────────────────────
 
-class _SectionHeader extends StatelessWidget {
+class _SectionLabel extends StatelessWidget {
   final IconData icon;
   final String title;
+  final int count;
+  final String countLabel;
 
-  const _SectionHeader({required this.icon, required this.title});
+  const _SectionLabel({
+    required this.icon,
+    required this.title,
+    required this.count,
+    required this.countLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 14),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: AppColors.primaryTint,
-              borderRadius: BorderRadius.circular(10),
+              color: const Color(0xFFFFF3D6),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 18),
+            child: Icon(icon, color: const Color(0xFFB45309), size: 20),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               title,
@@ -375,8 +448,218 @@ class _SectionHeader extends StatelessWidget {
               ),
             ),
           ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$count $countLabel',
+              style: AppTextStyles.labelMedium.copyWith(
+                color: const Color(0xFF92400E),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+// ─── Winners Hall (podium + extras) ───────────────────────────────────────────
+
+class _WinnersHall extends StatelessWidget {
+  final List<WinnerModel> winners;
+
+  const _WinnersHall({required this.winners});
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = [...winners]
+      ..sort((a, b) => b.voteCount.compareTo(a.voteCount));
+
+    final first = sorted[0];
+    final second = sorted.length > 1 ? sorted[1] : null;
+    final third = sorted.length > 2 ? sorted[2] : null;
+    final extras = sorted.length > 3 ? sorted.sublist(3) : const <WinnerModel>[];
+
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: second != null
+                  ? _PodiumColumn(winner: second, rank: 2)
+                  : const SizedBox(height: 1),
+            ),
+            const SizedBox(width: 6),
+            Expanded(child: _PodiumColumn(winner: first, rank: 1)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: third != null
+                  ? _PodiumColumn(winner: third, rank: 3)
+                  : const SizedBox(height: 1),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              for (final w in extras)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: WinnerCard(winner: w, rank: sorted.indexOf(w) + 1),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PodiumColumn extends StatelessWidget {
+  final WinnerModel winner;
+  final int rank;
+
+  const _PodiumColumn({required this.winner, required this.rank});
+
+  static const _medals = {1: '🥇', 2: '🥈', 3: '🥉'};
+
+  String get _initial {
+    final trimmed = winner.fullNameAr.trim();
+    return trimmed.isNotEmpty ? trimmed[0] : '?';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFirst = rank == 1;
+    final avatarSize = isFirst ? 80.0 : 60.0;
+    final pedestalHeight = isFirst ? 66.0 : 40.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isFirst) ...[
+          const Text('🏆',
+              style: TextStyle(fontSize: 22, height: 1)),
+          const SizedBox(height: 4),
+        ],
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isFirst
+                  ? const [Color(0xFFFBBF24), Color(0xFFD97706)]
+                  : const [Color(0xFFE2E8F0), Color(0xFF94A3B8)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isFirst ? const Color(0xFFF59E0B) : Colors.black)
+                    .withValues(alpha: isFirst ? 0.4 : 0.12),
+                blurRadius: isFirst ? 18 : 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CachedAvatarWidget(
+                imageUrl: winner.imageUrl,
+                initials: _initial,
+                size: avatarSize,
+                backgroundColor: AppColors.primaryTint,
+                textColor: AppColors.primary,
+              ),
+              Positioned(
+                right: -4,
+                bottom: -4,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFFCD34D), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    _medals[rank] ?? '$rank',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            winner.fullNameAr,
+            style: AppTextStyles.labelMedium.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: isFirst ? FontWeight.w800 : FontWeight.w600,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: pedestalHeight,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: isFirst
+                ? const Color(0xFFFBBF24)
+                : Colors.black.withValues(alpha: 0.05),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(16),
+            ),
+            border: isFirst
+                ? Border.all(color: const Color(0xFFD97706), width: 1)
+                : null,
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isFirst ? Icons.emoji_events_rounded : Icons.how_to_vote_rounded,
+                  color: isFirst ? Colors.white : AppColors.textTertiary,
+                  size: isFirst ? 20 : 16,
+                ),
+                if (isFirst) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${winner.voteCount}',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -384,21 +667,23 @@ class _SectionHeader extends StatelessWidget {
 // ─── Nominee Skeleton ─────────────────────────────────────────────────────────
 
 class _NomineeSkeleton extends StatelessWidget {
+  const _NomineeSkeleton();
+
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
       child: Container(
-        height: 76,
+        height: 84,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            ShimmerPlaceholder(width: 48, height: 48, borderRadius: 24),
+            ShimmerPlaceholder(width: 56, height: 56, borderRadius: 28),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -411,7 +696,7 @@ class _NomineeSkeleton extends StatelessWidget {
                     borderRadius: 4,
                   ),
                   const SizedBox(height: 8),
-                  ShimmerPlaceholder(width: 120, height: 12, borderRadius: 4),
+                  ShimmerPlaceholder(width: 130, height: 12, borderRadius: 4),
                 ],
               ),
             ),

@@ -75,7 +75,7 @@ class _HomeWinnerBannerState extends State<HomeWinnerBanner> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push('/employee-of-month'),
+          onTap: () => context.push('/employee-of-month/winner', extra: win),
           borderRadius: BorderRadius.circular(20),
           child: Ink(
             decoration: BoxDecoration(

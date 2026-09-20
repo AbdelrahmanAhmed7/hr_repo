@@ -24,40 +24,40 @@ class NomineeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final disabled = hasVoted || isVoteLoading;
 
-    return Opacity(
-      opacity: (hasVoted && !isVotedFor) ? 0.6 : 1.0,
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 250),
+      opacity: (hasVoted && !isVotedFor) ? 0.55 : 1.0,
       child: GestureDetector(
         onTap: disabled ? null : onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isVotedFor ? AppColors.success : AppColors.border,
+              color: isVotedFor ? const Color(0xFFF59E0B) : AppColors.border,
               width: isVotedFor ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: isVotedFor
-                    ? AppColors.success.withValues(alpha: 0.12)
-                    : AppColors.border.withValues(alpha: 0.3),
-                blurRadius: isVotedFor ? 12 : 6,
-                offset: const Offset(0, 2),
+                color: const Color(0xFFF59E0B).withValues(
+                  alpha: isVotedFor ? 0.18 : 0.06,
+                ),
+                blurRadius: isVotedFor ? 16 : 8,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: Row(
             children: [
-              // Avatar
               _Avatar(
                 imageUrl: nominee.imageUrl,
                 name: nominee.fullNameAr,
                 isVotedFor: isVotedFor,
               ),
               const SizedBox(width: 14),
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,40 +83,80 @@ class NomineeCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Trailing indicator
-              if (isVoteLoading && !hasVoted)
-                const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
-                    ),
-                  ),
-                )
-              else if (isVotedFor)
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                )
-              else if (!disabled)
-                const Icon(
-                  Icons.how_to_vote_outlined,
-                  color: AppColors.textTertiary,
-                  size: 22,
-                ),
+              _buildTrailing(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTrailing() {
+    if (isVoteLoading && !hasVoted) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.5,
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+        ),
+      );
+    }
+    if (isVotedFor) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+            SizedBox(width: 5),
+            Text(
+              'تم التصويت',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (hasVoted) {
+      return const Icon(
+        Icons.how_to_vote_outlined,
+        color: AppColors.textTertiary,
+        size: 22,
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3D6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.how_to_vote_rounded, color: Color(0xFFB45309), size: 16),
+          SizedBox(width: 5),
+          Text(
+            'صوّت',
+            style: TextStyle(
+              color: Color(0xFF92400E),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -141,24 +181,31 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 52,
-      height: 52,
+      width: 56,
+      height: 56,
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.primaryTint,
-        border: isVotedFor
-            ? Border.all(color: AppColors.success, width: 2)
-            : null,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isVotedFor
+              ? const [Color(0xFFFBBF24), Color(0xFFD97706)]
+              : const [Color(0xFFDBEAFE), Color(0xFF93C5FD)],
+        ),
       ),
-      child: imageUrl != null && imageUrl!.isNotEmpty
-          ? ClipOval(
-              child: Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _Initials(initial: _initial),
-              ),
-            )
-          : _Initials(initial: _initial),
+      child: Container(
+        decoration: const BoxDecoration(shape: BoxShape.circle),
+        child: ClipOval(
+          child: imageUrl != null && imageUrl!.isNotEmpty
+              ? Image.network(
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _Initials(initial: _initial),
+                )
+              : _Initials(initial: _initial),
+        ),
+      ),
     );
   }
 }

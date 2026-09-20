@@ -24,6 +24,8 @@ import '../../features/employee_history/employee_history_screen.dart';
 import '../../features/employee_of_month/presentation/cubit/employee_of_month_cubit.dart';
 import '../../features/employee_of_month/presentation/screens/employee_of_month_screen.dart';
 import '../../features/employee_of_month/presentation/screens/super_admin_employee_of_month_screen.dart';
+import '../../features/employee_of_month/presentation/screens/winner_celebration_screen.dart';
+import '../../features/employee_of_month/data/models/winner_model.dart';
 import '../../features/home/cubit/home_cubit.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/hr/cubit/employees_cubit.dart';
@@ -467,6 +469,22 @@ class AppRouter {
           create: (_) => getIt<EmployeeOfMonthCubit>()..loadData(),
           child: const EmployeeOfMonthScreen(),
         ),
+      ),
+
+      // Employee of the Month — winner celebration
+      GoRoute(
+        path: '/employee-of-month/winner',
+        name: 'employee-of-month-winner',
+        builder: (context, state) {
+          final winner = state.extra as WinnerModel?;
+          if (winner != null) {
+            return WinnerCelebrationScreen(winner: winner);
+          }
+          return BlocProvider(
+            create: (_) => getIt<EmployeeOfMonthCubit>()..loadData(),
+            child: const WinnerCelebrationScreen(),
+          );
+        },
       ),
 
       // Super Admin Employee of the Month (Calculate & Manage Winners)
