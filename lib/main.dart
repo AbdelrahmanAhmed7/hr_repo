@@ -27,34 +27,27 @@ Future<void> main() async {
 
       // Must run BEFORE setupServiceLocator(): on iOS the Keychain survives
       // app deletion, so a reinstall would otherwise restore the old session.
-      // Bounded: a hung first-ever secure-storage call (Android Keystore init
-      // on fresh installs) must never block the first frame.
-      await AuthStorageService.clearSecureStorageIfFreshInstall().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {},
-      );
+      await AuthStorageService.clearSecureStorageIfFreshInstall();
 
       await setupServiceLocator();
 
-      // Subscribe to notification taps BEFORE runApp() and before push init
-      // starts, so a cold-start `getInitialMessage()` tap can never be dropped
-      // by the (broadcast) notification stream. The coordinator queues taps
-      // until the router is mounted and the auth session is confirmed.
-      NotificationNavigationService.instance.initialize();
-
-      // Note: DeviceFingerprintService no longer requires startup init.
-      // Fingerprint is generated lazily from authenticated User ID + Phone on first use.
-
+      // Firebase MUST be initialized first: PushNotificationService's
+      // constructor calls FirebaseMessaging.instance, which throws
+      // [core/no-app] "No Firebase App has been created" otherwise - and
+      // that unhandled exception aborts main() before runApp(), leaving the
+      // app frozen on the native splash screen.
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // Time-box FCM init: a hung getToken() (no connectivity / flaky GMS)
-      // must never block the first frame in release builds.
-      await PushNotificationService.instance.initialize().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => false,
-      );
+      // Subscribe to notification taps BEFORE push init starts and before
+      // runApp(), so a cold-start `getInitialMessage()` tap can never be
+      // dropped by the (broadcast) notification stream. The coordinator
+      // queues taps until the router is mounted and the auth session is
+      // confirmed.
+      NotificationNavigationService.instance.initialize();
+
+      await PushNotificationService.instance.initialize();
 
       SystemChrome.setEnabledSystemUIMode(
         SystemUiMode.manual,
