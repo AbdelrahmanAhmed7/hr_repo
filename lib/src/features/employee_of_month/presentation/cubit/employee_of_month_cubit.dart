@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/app_exception.dart';
+import '../../data/models/winner_model.dart';
 import '../../domain/repositories/employee_of_month_repository.dart';
 import 'employee_of_month_state.dart';
 
@@ -17,8 +18,10 @@ class EmployeeOfMonthCubit extends Cubit<EmployeeOfMonthState> {
     return (month: month - 1, year: year);
   }
 
-  /// Load nominees, current-month vote status, and previous-month winners in
-  /// parallel.
+  /// Load nominees, current-month vote status, and winners in parallel.
+  ///
+  /// Winners are announced for the current month as soon as it is calculated,
+  /// falling back to the previous month otherwise.
   Future<void> loadData() async {
     if (isClosed) return;
     emit(
@@ -34,6 +37,7 @@ class EmployeeOfMonthCubit extends Cubit<EmployeeOfMonthState> {
       final results = await Future.wait([
         _repository.getNominees(),
         _repository.getMyVote(month: month, year: year),
+        _repository.getWinners(month: month, year: year),
         _repository.getWinners(month: prev.month, year: prev.year),
       ]);
 
@@ -41,7 +45,12 @@ class EmployeeOfMonthCubit extends Cubit<EmployeeOfMonthState> {
 
       final nominees = results[0] as dynamic;
       final myVote = results[1] as dynamic;
-      final winners = results[2] as dynamic;
+      final currentWinners = results[2] as List<WinnerModel>;
+      final prevWinners = results[3] as List<WinnerModel>;
+
+      // Announce the current month as soon as it's calculated; otherwise show
+      // the previous month (the most recent declared award period).
+      final winners = currentWinners.isNotEmpty ? currentWinners : prevWinners;
 
       emit(
         state.copyWith(

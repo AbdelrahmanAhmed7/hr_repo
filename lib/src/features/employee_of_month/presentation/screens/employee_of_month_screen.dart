@@ -166,7 +166,9 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                 SliverToBoxAdapter(
                   child: _SectionLabel(
                     icon: Icons.emoji_events_rounded,
-                    title: 'قاعة الفائزين',
+                    title: state.winners.isEmpty
+                        ? 'قاعة الفائزين'
+                        : 'فائز شهر ${employeeOfMonthMonthName(state.winners.first.month)} ${state.winners.first.year}',
                     count: state.winners.length,
                     countLabel: 'فائز',
                   ),
