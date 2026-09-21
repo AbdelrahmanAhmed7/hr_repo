@@ -138,111 +138,110 @@ class _LeaveDateRangePickerState extends State<LeaveDateRangePicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Start Date
-        _buildDateField(
-          context,
-          label: widget.isSingleDay ? 'تاريخ الإجازة' : 'تاريخ البداية',
-          date: widget.startDate,
-          onTap: () => _selectDate(context, widget.startDate, widget.onStartDateSelected),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildDateField(
+                context,
+                label: widget.isSingleDay ? 'تاريخ الإجازة' : 'من',
+                date: widget.startDate,
+                onTap: () =>
+                    _selectDate(context, widget.startDate, widget.onStartDateSelected),
+              ),
+            ),
+            if (!widget.isSingleDay) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildDateField(
+                  context,
+                  label: 'إلى',
+                  date: widget.endDate,
+                  onTap: () => _selectDate(
+                    context,
+                    widget.endDate ?? widget.startDate,
+                    widget.onEndDateSelected,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
 
-        if (!widget.isSingleDay) ...[
-          const SizedBox(height: 12),
-
-          // End Date
-          _buildDateField(
-            context,
-            label: 'تاريخ النهاية',
-            date: widget.endDate,
-            onTap: () =>
-                _selectDate(context, widget.endDate ?? widget.startDate, widget.onEndDateSelected),
-          ),
-        ],
-
         if (widget.startDate != null && (widget.isSingleDay || widget.endDate != null)) ...[
-          const SizedBox(height: 16),
-          // Days Summary Card
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.1),
-                  AppColors.primary.withValues(alpha: 0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
+          const SizedBox(height: 10),
+          _buildSummaryRow(context, totalDays),
+          if (widget.currentLeaveBalance != null &&
+              !_isCalculating &&
+              _workingDays > widget.currentLeaveBalance!) ...[
+            const SizedBox(height: 6),
+            Row(
               children: [
-                // Total Days
-                _buildSummaryRow(
-                  context,
-                  icon: Icons.calendar_month,
-                  label: 'إجمالي الأيام',
-                  value: widget.isSingleDay ? '1 يوم' : '$totalDays يوم',
-                  color: AppColors.textSecondary,
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.error,
+                  size: 16,
                 ),
-                if (!widget.isSingleDay) ...[
-                  const Divider(height: 16),
-                  // Working Days
-                  _buildSummaryRow(
-                    context,
-                    icon: Icons.work_history_outlined,
-                    label: 'أيام العمل الفعلي',
-                    value: _isCalculating ? 'جاري الحساب...' : '$_workingDays يوم',
-                    color: AppColors.primary,
-                  ),
-                ],
-                // Remaining Balance (if available)
-                if (widget.currentLeaveBalance != null && !_isCalculating) ...[
-                  const Divider(height: 16),
-                  _buildRemainingBalanceRow(context, _workingDays),
-                ],
-              ],
-            ),
-          ),
-          // Warning if balance is insufficient
-          if (widget.currentLeaveBalance != null && !_isCalculating && _workingDays > widget.currentLeaveBalance!) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.error.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: AppColors.error,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'رصيدك الحالي غير كافٍ لهذه الإجازة',
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'رصيدك الحالي غير كافٍ لهذه الإجازة',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ],
       ],
+    );
+  }
+
+  Widget _buildSummaryRow(BuildContext context, int totalDays) {
+    final isOverBalance = widget.currentLeaveBalance != null &&
+        !_isCalculating &&
+        _workingDays > widget.currentLeaveBalance!;
+
+    final summaryParts = <String>[
+      widget.isSingleDay ? 'يوم واحد' : '$totalDays أيام',
+      if (!widget.isSingleDay)
+        _isCalculating ? 'جاري الحساب...' : '$_workingDays يوم عمل',
+      if (widget.currentLeaveBalance != null && !_isCalculating)
+        'الرصيد بعد: ${widget.currentLeaveBalance! - _workingDays} يوم',
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isOverBalance
+            ? AppColors.error.withValues(alpha: 0.08)
+            : AppColors.primaryTint,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isOverBalance ? Icons.warning_amber_rounded : Icons.calendar_month,
+            size: 16,
+            color: isOverBalance ? AppColors.error : AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              summaryParts.join(' · '),
+              style: TextStyle(
+                color: isOverBalance ? AppColors.error : AppColors.textPrimary,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -257,7 +256,6 @@ class _LeaveDateRangePickerState extends State<LeaveDateRangePicker> {
       builder: (context, snapshot) {
         final isHoliday = snapshot.data?['isHoliday'] ?? false;
         final isWeeklyOff = date != null && AppDateUtils.isWeeklyOff(date);
-        final holidayName = snapshot.data?['holidayName'] as String?;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,7 +271,10 @@ class _LeaveDateRangePickerState extends State<LeaveDateRangePicker> {
             InkWell(
               onTap: onTap,
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 13,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.backgroundSecondary,
                   borderRadius: BorderRadius.circular(8),
@@ -288,45 +289,18 @@ class _LeaveDateRangePickerState extends State<LeaveDateRangePicker> {
                     Icon(
                       Icons.calendar_today_outlined,
                       color: AppColors.textSecondary,
+                      size: 18,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _formatDate(date),
-                            style: TextStyle(
-                              color: date != null
-                                  ? AppColors.textPrimary
-                                  : AppColors.textTertiary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          if (holidayName != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              holidayName,
-                              style: TextStyle(
-                                color: AppColors.warning,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ] else if (isWeeklyOff) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              date.weekday == DateTime.friday
-                                  ? 'إجازة أسبوعية - الجمعة'
-                                  : 'إجازة أسبوعية - السبت',
-                              style: TextStyle(
-                                color: AppColors.warning,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ],
+                      child: Text(
+                        _formatDate(date),
+                        style: TextStyle(
+                          color: date != null
+                              ? AppColors.textPrimary
+                              : AppColors.textTertiary,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -346,106 +320,5 @@ class _LeaveDateRangePickerState extends State<LeaveDateRangePicker> {
       'isHoliday': isHoliday,
       'holidayName': holidayName,
     };
-  }
-
-  Widget _buildSummaryRow(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    bool isBold = false,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: color,
-              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRemainingBalanceRow(BuildContext context, int workingDays) {
-    final remainingBalance = widget.currentLeaveBalance! - workingDays;
-    final isNegative = remainingBalance < 0;
-    final color = isNegative ? AppColors.error : AppColors.success;
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            Icon(Icons.account_balance_wallet, color: color, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'الرصيد المتبقي',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              '$remainingBalance يوم',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'الرصيد الحالي: ${widget.currentLeaveBalance}',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                ' - ',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                ),
-              ),
-              Text(
-                'أيام الإجازة: $workingDays',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 }

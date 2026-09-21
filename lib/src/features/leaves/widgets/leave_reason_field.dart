@@ -31,7 +31,7 @@ class LeaveReasonField extends StatelessWidget {
             placeholder: 'اكتب سبب الإجازة (5 أحرف على الأقل)',
             prefixIcon: Icons.description_outlined,
             keyboardType: TextInputType.multiline,
-            maxLines: 5,
+            maxLines: 3,
             maxLength: 250,
             controller: controller,
             textInputAction: TextInputAction.done,

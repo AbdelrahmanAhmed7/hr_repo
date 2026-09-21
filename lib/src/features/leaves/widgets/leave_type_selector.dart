@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/leave_type_model.dart';
 
-/// Leave-type picker rendered as a compact list of cards.
+/// Leave-type picker rendered as a compact wrap of chips.
 ///
 /// Meant to be embedded in the parent scroll view — this widget does not own
 /// its own scrolling or a page headline.
@@ -54,11 +54,11 @@ class LeaveTypeSelector extends StatelessWidget {
       case 'casual':
         return 'للأمور الشخصية العارضة (يوم واحد)';
       case 'sick':
-        return 'للحالات المرضية (يتطلب إرفاق تقرير طبي) *';
+        return 'للمرض ويحتاج إلى إرفاق تقرير طبي';
       case 'maternity':
-        return 'إجازة الوضع للأمهات (90 يوم)';
+        return 'إجازة الوضع (90 يوم)';
       case 'paternity':
-        return 'إجازة الأبوة (يوم واحد) *';
+        return 'إجازة الأبوة (يوم واحد)';
       case 'hajj':
         return 'إجازة الحج (15 يوم)';
       case 'exam':
@@ -116,89 +116,92 @@ class LeaveTypeSelector extends StatelessWidget {
       );
     }
 
+    final selectedDescription = leaveTypes
+        .where((t) => t.id == selectedTypeId)
+        .map((t) => _getDescriptionForLeaveType(t.name))
+        .firstOrNull;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final leaveType in leaveTypes)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _buildTypeCard(
-              context,
-              type: leaveType,
-              title: leaveType.nameAr,
-              description: _getDescriptionForLeaveType(leaveType.name),
-              icon: _getIconForLeaveType(leaveType.name),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final type in leaveTypes) _buildTypeChip(context, type),
+          ],
+        ),
+        if (selectedDescription != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryTint,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    selectedDescription,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+        ],
       ],
     );
   }
 
-  Widget _buildTypeCard(
-    BuildContext context, {
-    required LeaveTypeModel type,
-    required String title,
-    required String description,
-    required IconData icon,
-  }) {
+  Widget _buildTypeChip(BuildContext context, LeaveTypeModel type) {
     final isSelected = selectedTypeId == type.id;
 
     return InkWell(
       onTap: () => onTypeSelected(type),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(14),
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryTint : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 2 : 1,
+            width: 1.3,
           ),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.backgroundSecondary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                size: 20,
+            Icon(
+              _getIconForLeaveType(type.name),
+              size: 16,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                type.nameAr,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 22),
           ],
         ),
       ),

@@ -49,7 +49,7 @@ class LeaveAttachmentPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     if (attachmentPath != null) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.backgroundSecondary,
           borderRadius: BorderRadius.circular(8),
@@ -57,47 +57,30 @@ class LeaveAttachmentPicker extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primaryTint,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.attach_file,
-                color: AppColors.primary,
-                size: 20,
-              ),
+            Icon(
+              Icons.attach_file,
+              color: AppColors.primary,
+              size: 18,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getFileName(attachmentPath!),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'تم اختيار الملف',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                  ),
-                ],
+              child: Text(
+                _getFileName(attachmentPath!),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              iconSize: 18,
               icon: Icon(
                 Icons.close,
                 color: AppColors.error,
-                size: 20,
               ),
               onPressed: _removeAttachment,
             ),
@@ -110,7 +93,7 @@ class LeaveAttachmentPicker extends StatelessWidget {
       onTap: () => _pickFile(context),
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.backgroundSecondary,
           borderRadius: BorderRadius.circular(8),
@@ -125,15 +108,15 @@ class LeaveAttachmentPicker extends StatelessWidget {
             Icon(
               Icons.attach_file,
               color: AppColors.primary,
-              size: 20,
+              size: 18,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               'اختر ملف',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
