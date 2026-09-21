@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -10,9 +11,9 @@ import '../requests/services/requests_refresh_service.dart';
 import 'cubit/leaves_cubit.dart';
 import 'cubit/leaves_state.dart';
 import 'models/leave_submission_model.dart';
-import 'widgets/leave_type_selector.dart';
 import 'widgets/leave_date_range_picker.dart';
 import 'widgets/leave_reason_field.dart';
+import 'widgets/leave_type_selector.dart';
 
 /// Single-screen leave request: type → dates → reason & attachment in one
 /// scrollable form with a single submit button.
@@ -40,7 +41,8 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
     super.initState();
     _cubit = getIt<LeavesCubit>();
     // Create flow needs types; balance comes from the overview API.
-    if (_cubit.state.leaveBalance == null || _cubit.state.leaveRequests.isEmpty) {
+    if (_cubit.state.leaveBalance == null ||
+        _cubit.state.leaveRequests.isEmpty) {
       _cubit.loadLeavesOverview();
     }
     // Always force-refresh leave types so the user sees the latest list.
@@ -121,7 +123,8 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
 
     // Block early if the annual balance is insufficient.
     final balance = _cubit.state.leaveBalance;
-    final requestedDays = (_endDate ?? _startDate)!.difference(_startDate!).inDays + 1;
+    final requestedDays =
+        (_endDate ?? _startDate)!.difference(_startDate!).inDays + 1;
     final leaveType = _selectedLeaveTypeName?.toLowerCase().trim();
     if (balance != null &&
         (leaveType == 'annual' || leaveType == 'سنوية') &&
@@ -140,7 +143,8 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
       CustomToast.showError('السبب يجب أن يكون 5 أحرف على الأقل');
       return false;
     }
-    if (_selectedLeaveTypeName?.toLowerCase() == 'sick' && _attachmentPath == null) {
+    if (_selectedLeaveTypeName?.toLowerCase() == 'sick' &&
+        _attachmentPath == null) {
       CustomToast.showError('يرجى إرفاق تقرير طبي للإجازة المرضية');
       return false;
     }
@@ -184,10 +188,7 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
         medicalReportUrl: _attachmentPath,
       );
 
-      await _cubit.submitLeave(
-        submission,
-        leaveTypeId: _selectedLeaveTypeId!,
-      );
+      await _cubit.submitLeave(submission, leaveTypeId: _selectedLeaveTypeId!);
     } catch (e) {
       if (!mounted) return;
       CustomToast.showError('حدث خطأ أثناء إرسال الطلب');
@@ -323,9 +324,7 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
               if (state.submissionStatus == SubmissionStatus.submitting)
                 Container(
                   color: Colors.black.withValues(alpha: 0.3),
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
             ],
           );
@@ -354,10 +353,7 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: Text(
-                  'إرسال الطلب',
-                  style: AppTextStyles.buttonLarge,
-                ),
+                child: Text('إرسال الطلب', style: AppTextStyles.buttonLarge),
               );
             },
           ),
@@ -404,9 +400,7 @@ class _SuccessDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
           Container(
@@ -444,8 +438,6 @@ class _QuickDurationChips extends StatelessWidget {
     (1, 'يوم'),
     (3, '3 أيام'),
     (7, 'أسبوع'),
-    (14, '14 يوم'),
-    (30, 'شهر'),
   ];
 
   @override
