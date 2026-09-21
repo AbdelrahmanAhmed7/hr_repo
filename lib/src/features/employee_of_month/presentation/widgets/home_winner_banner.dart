@@ -71,12 +71,12 @@ class _HomeWinnerBannerState extends State<HomeWinnerBanner> {
     if (win == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => context.push('/employee-of-month/winner', extra: win),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           child: Ink(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -84,23 +84,23 @@ class _HomeWinnerBannerState extends State<HomeWinnerBanner> {
                 end: Alignment.bottomRight,
                 colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFCD34D), width: 1.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFCD34D), width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               child: Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
@@ -108,47 +108,29 @@ class _HomeWinnerBannerState extends State<HomeWinnerBanner> {
                         end: Alignment.bottomRight,
                       ),
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: const Icon(
                       Icons.emoji_events_rounded,
                       color: Colors.white,
-                      size: 26,
+                      size: 18,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'مبروك 🎉 فزت بجايزة موظف الشهر',
-                          style: AppTextStyles.titleSmall.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF92400E),
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          win.departmentName,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: const Color(0xFFB45309),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                    child: Text(
+                      'مبروك 🎉 فزت بجايزة موظف الشهر',
+                      style: AppTextStyles.labelMedium.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF92400E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const Icon(
                     Icons.chevron_left_rounded,
                     color: Color(0xFFB45309),
+                    size: 20,
                   ),
                 ],
               ),
