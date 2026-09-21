@@ -213,10 +213,11 @@ class _LeavesScreenState extends State<LeavesScreen>
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: StatusTabsSliverDelegate(
-                        StatusTabsBar(
-                          controller: _tabController,
-                          pendingLabel: 'معلقة',
-                        ),
+  StatusTabsBar(
+                            controller: _tabController,
+                            pendingLabel: 'معلقة',
+                            style: StatusTabsStyle.segmented,
+                          ),
                       ),
                     ),
                   ];

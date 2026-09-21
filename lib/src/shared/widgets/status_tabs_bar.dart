@@ -1,20 +1,83 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
+/// Visual variant of the status tabs bar.
+/// - [underline]: classic text tabs with a bottom indicator (default).
+/// - [segmented]: pill buttons on a tinted track, matching flat card UIs.
+enum StatusTabsStyle { underline, segmented }
+
 /// Reusable status tabs bar component
 /// Used for filtering by status: All, Pending, Approved, Rejected
 class StatusTabsBar extends StatelessWidget {
   final TabController controller;
   final String pendingLabel;
+  final StatusTabsStyle style;
 
   const StatusTabsBar({
     super.key,
     required this.controller,
     this.pendingLabel = 'معلقة',
+    this.style = StatusTabsStyle.underline,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (style == StatusTabsStyle.segmented) {
+      return _buildSegmented();
+    }
+    return _buildUnderline();
+  }
+
+  Widget _buildSegmented() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: SizedBox(
+        height: 34,
+        child: TabBar(
+          controller: controller,
+          indicator: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          dividerColor: Colors.transparent,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            height: 1.2,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+            height: 1.2,
+          ),
+          labelPadding: EdgeInsets.zero,
+          tabs: [
+            const Tab(text: 'الكل'),
+            Tab(text: pendingLabel),
+            const Tab(text: 'موافق عليها'),
+            const Tab(text: 'مرفوضة'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnderline() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -104,6 +167,10 @@ class StatusTabsSliverDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   double get minExtent {
+    if (statusTabsBar.style == StatusTabsStyle.segmented) {
+      // 34 (tabs) + 8 (track padding) + 8 (top margin) + 16 (wrapper padding)
+      return 66;
+    }
     // Create a temporary TabBar to get its preferred size
     final tempTabBar = TabBar(
       controller: statusTabsBar.controller,
@@ -127,9 +194,15 @@ class StatusTabsSliverDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
+    final isSegmented = statusTabsBar.style == StatusTabsStyle.segmented;
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: EdgeInsets.only(
+        top: 8,
+        bottom: 8,
+        left: isSegmented ? 16 : 0,
+        right: isSegmented ? 16 : 0,
+      ),
       child: statusTabsBar,
     );
   }
@@ -137,7 +210,8 @@ class StatusTabsSliverDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(StatusTabsSliverDelegate oldDelegate) {
     return statusTabsBar.controller != oldDelegate.statusTabsBar.controller ||
-        statusTabsBar.pendingLabel != oldDelegate.statusTabsBar.pendingLabel;
+        statusTabsBar.pendingLabel != oldDelegate.statusTabsBar.pendingLabel ||
+        statusTabsBar.style != oldDelegate.statusTabsBar.style;
   }
 }
 
