@@ -76,13 +76,12 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                 child: _HeroHeader(
                   month: state.currentMonth,
                   year: state.currentYear,
-                  showChip: state.status == EmployeeOfMonthStatus.success,
                 ),
               ),
 
               if (state.status == EmployeeOfMonthStatus.loading)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
                   sliver: SliverList.separated(
                     itemCount: 5,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
@@ -122,8 +121,8 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        horizontal: 14,
+                        vertical: 4,
                       ),
                       child: EmptyStateWidget(
                         icon: Icons.people_outline_rounded,
@@ -134,7 +133,7 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
                     sliver: SliverList.separated(
                       itemCount: state.nominees.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
@@ -162,7 +161,7 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                     ),
                   ),
 
-                const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                const SliverToBoxAdapter(child: SizedBox(height: 4)),
 
                 SliverToBoxAdapter(
                   child: _SectionLabel(
@@ -176,7 +175,7 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                 if (state.winners.isEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 20),
                       child: EmptyStateWidget(
                         icon: Icons.emoji_events_outlined,
                         title: 'لم يتم إعلان الفائز بعد',
@@ -190,7 +189,7 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
                   ),
               ],
 
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
             ],
           );
         },
@@ -199,166 +198,105 @@ class _EmployeeOfMonthScreenState extends State<EmployeeOfMonthScreen> {
   }
 }
 
-// ─── Hero Header ──────────────────────────────────────────────────────────────
+// ─── Compact Hero Header ──────────────────────────────────────────────────────
 
 class _HeroHeader extends StatelessWidget {
   final int month;
   final int year;
-  final bool showChip;
 
-  const _HeroHeader({
-    required this.month,
-    required this.year,
-    required this.showChip,
-  });
+  const _HeroHeader({required this.month, required this.year});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primaryDark, AppColors.primary],
-            ),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).maybePop(),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primaryDark, AppColors.primary],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 18),
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'موظف الشهر',
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFF59E0B).withValues(
-                            alpha: 0.5,
-                          ),
-                          blurRadius: 30,
-                          spreadRadius: 4,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
-                    child: const Icon(
+                    const SizedBox(height: 2),
+                    Text(
+                      'صوّت لأفضل موظف هذا الشهر',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFCD34D).withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFFCD34D).withValues(alpha: 0.55),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
                       Icons.emoji_events_rounded,
-                      color: Colors.white,
-                      size: 46,
+                      color: Color(0xFFFDE68A),
+                      size: 16,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'موظف الشهر',
-                    style: AppTextStyles.headlineMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'صوّت لأفضل موظف هذا الشهر',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  if (showChip) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCD34D).withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: const Color(0xFFFCD34D).withValues(
-                            alpha: 0.55,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.calendar_month_rounded,
-                            color: Color(0xFFFDE68A),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${employeeOfMonthMonthName(month)} $year',
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: const Color(0xFFFDE68A),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(width: 5),
+                    Text(
+                      '${employeeOfMonthMonthName(month)} $year',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: const Color(0xFFFDE68A),
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
-        Positioned(
-          left: -40,
-          bottom: -50,
-          child: Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.05),
-            ),
-          ),
-        ),
-        Positioned(
-          right: -30,
-          top: -40,
-          child: Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.04),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -372,8 +310,8 @@ class _VoteSuccessBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      margin: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(18),
@@ -428,18 +366,18 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 14),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 10),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(9),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3D6),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFFB45309), size: 20),
+            child: Icon(icon, color: const Color(0xFFB45309), size: 17),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               title,
@@ -449,14 +387,14 @@ class _SectionLabel extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: const Color(0xFFFEF3C7),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               '$count $countLabel',
-              style: AppTextStyles.labelMedium.copyWith(
+              style: AppTextStyles.labelSmall.copyWith(
                 color: const Color(0xFF92400E),
                 fontWeight: FontWeight.w700,
               ),
@@ -468,7 +406,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ─── Winners Hall (podium + extras) ───────────────────────────────────────────
+// ─── Winners Hall (compact podium + rows) ─────────────────────────────────────
 
 class _WinnersHall extends StatelessWidget {
   final List<WinnerModel> winners;
@@ -480,45 +418,51 @@ class _WinnersHall extends StatelessWidget {
     final sorted = [...winners]
       ..sort((a, b) => b.voteCount.compareTo(a.voteCount));
 
-    final first = sorted[0];
-    final second = sorted.length > 1 ? sorted[1] : null;
-    final third = sorted.length > 2 ? sorted[2] : null;
-    final extras = sorted.length > 3 ? sorted.sublist(3) : const <WinnerModel>[];
-
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+    // Fewer than 3 winners: dense medal rows — no wasted podium columns.
+    if (sorted.length < 3) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Column(
           children: [
-            Expanded(
-              child: second != null
-                  ? _PodiumColumn(winner: second, rank: 2)
-                  : const SizedBox(height: 1),
-            ),
-            const SizedBox(width: 6),
-            Expanded(child: _PodiumColumn(winner: first, rank: 1)),
-            const SizedBox(width: 6),
-            Expanded(
-              child: third != null
-                  ? _PodiumColumn(winner: third, rank: 3)
-                  : const SizedBox(height: 1),
-            ),
+            for (var i = 0; i < sorted.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: WinnerCard(winner: sorted[i], rank: i + 1),
+              ),
           ],
         ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
+      );
+    }
+
+    final first = sorted[0];
+    final second = sorted[1];
+    final third = sorted[2];
+    final extras = sorted.sublist(3);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              for (final w in extras)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: WinnerCard(winner: w, rank: sorted.indexOf(w) + 1),
-                ),
+              Expanded(
+                child: _PodiumColumn(winner: second, rank: 2),
+              ),
+              const SizedBox(width: 4),
+              Expanded(child: _PodiumColumn(winner: first, rank: 1)),
+              const SizedBox(width: 4),
+              Expanded(child: _PodiumColumn(winner: third, rank: 3)),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          for (var i = 0; i < extras.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: WinnerCard(winner: extras[i], rank: 4 + i),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -539,16 +483,16 @@ class _PodiumColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isFirst = rank == 1;
-    final avatarSize = isFirst ? 80.0 : 60.0;
-    final pedestalHeight = isFirst ? 66.0 : 40.0;
+    final avatarSize = isFirst ? 68.0 : 50.0;
+    final pedestalHeight = isFirst ? 48.0 : 30.0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (isFirst) ...[
           const Text('🏆',
-              style: TextStyle(fontSize: 22, height: 1)),
-          const SizedBox(height: 4),
+              style: TextStyle(fontSize: 18, height: 1)),
+          const SizedBox(height: 3),
         ],
         Container(
           padding: const EdgeInsets.all(3),
@@ -607,12 +551,12 @@ class _PodiumColumn extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 2),
           child: Text(
             winner.fullNameAr,
-            style: AppTextStyles.labelMedium.copyWith(
+            style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: isFirst ? FontWeight.w800 : FontWeight.w600,
             ),
@@ -621,7 +565,7 @@ class _PodiumColumn extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         Container(
           height: pedestalHeight,
           width: double.infinity,

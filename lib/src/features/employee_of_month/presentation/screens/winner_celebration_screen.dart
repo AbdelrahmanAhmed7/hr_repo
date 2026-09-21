@@ -171,12 +171,12 @@ class _CelebrationContent extends StatelessWidget {
                 ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 28),
             _Reveal(
               delay: Duration(milliseconds: 400),
               child: const _Trophy(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             _Reveal(
               delay: const Duration(milliseconds: 550),
               child: Text(
@@ -224,7 +224,7 @@ class _CelebrationContent extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 14),
             _Reveal(
               delay: const Duration(milliseconds: 1000),
               child: _WinnerDetailCard(winner: winner, initial: _initial),
@@ -282,8 +282,8 @@ class _Trophy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 128,
-      height: 128,
+      width: 104,
+      height: 104,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
@@ -294,8 +294,8 @@ class _Trophy extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: const Color(0xFFF59E0B).withValues(alpha: 0.55),
-            blurRadius: 40,
-            spreadRadius: 6,
+            blurRadius: 30,
+            spreadRadius: 3,
             offset: const Offset(0, 4),
           ),
         ],
@@ -303,7 +303,7 @@ class _Trophy extends StatelessWidget {
       child: const Icon(
         Icons.emoji_events_rounded,
         color: Colors.white,
-        size: 74,
+        size: 58,
       ),
     );
   }
