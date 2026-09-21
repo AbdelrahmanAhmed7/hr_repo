@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../models/leave_statistics.dart';
 
@@ -18,29 +17,22 @@ class LeavesHeader extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [Color(0xFF0F1F46), Color(0xFF173C7A), Color(0xFF2354A5)],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.16),
                       ),
@@ -48,69 +40,54 @@ class LeavesHeader extends StatelessWidget {
                     child: const Icon(
                       Icons.beach_access_outlined,
                       color: Colors.white,
-                      size: 24,
+                      size: 20,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'الإجازات',
-                          style: AppTextStyles.headlineMedium.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'تابع رصيدك وطلباتك وحالة كل إجازة من مكان واحد',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white.withValues(alpha: 0.84),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'الإجازات',
+                      style: AppTextStyles.headlineMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
+              const SizedBox(height: 12),
+              Row(
                 children: [
-                  _StatCard(
-                    widthFactor: 0.5,
-                    title: 'الرصيد الحالي',
+                  _HeaderStat(
+                    icon: Icons.beach_access_outlined,
+                    color: const Color(0xFF7CE0A0),
                     value: '${statistics.remainingLeaves}',
                     unit: 'يوم',
-                    icon: Icons.beach_access_outlined,
-                    color: AppColors.success,
+                    label: 'الرصيد',
                   ),
-                  _StatCard(
-                    widthFactor: 0.5,
-                    title: 'المستخدم',
+                  const SizedBox(width: 8),
+                  _HeaderStat(
+                    icon: Icons.check_circle_outline_rounded,
+                    color: const Color(0xFFFBBF24),
                     value: '${statistics.usedLeaves}',
                     unit: 'يوم',
-                    icon: Icons.check_circle_outline_rounded,
-                    color: AppColors.warning,
+                    label: 'المستخدم',
                   ),
-                  _StatCard(
-                    widthFactor: 0.5,
-                    title: 'إجمالي الرصيد',
+                  const SizedBox(width: 8),
+                  _HeaderStat(
+                    icon: Icons.calendar_month_outlined,
+                    color: const Color(0xFF93C5FD),
                     value: '${statistics.totalLeaves}',
                     unit: 'يوم',
-                    icon: Icons.calendar_month_outlined,
-                    color: AppColors.primaryLight,
+                    label: 'الإجمالي',
                   ),
-                  _StatCard(
-                    widthFactor: 0.5,
-                    title: 'طلبات معلقة',
+                  const SizedBox(width: 8),
+                  _HeaderStat(
+                    icon: Icons.pending_actions_outlined,
+                    color: const Color(0xFFFCA5A5),
                     value: '${statistics.pendingRequests}',
                     unit: 'طلب',
-                    icon: Icons.pending_actions_outlined,
-                    color: const Color(0xFFF59E0B),
+                    label: 'معلقة',
                   ),
                 ],
               ),
@@ -122,77 +99,65 @@ class LeavesHeader extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final double widthFactor;
-  final String title;
-  final String value;
-  final String unit;
+class _HeaderStat extends StatelessWidget {
   final IconData icon;
   final Color color;
+  final String value;
+  final String unit;
+  final String label;
 
-  const _StatCard({
-    required this.widthFactor,
-    required this.title,
-    required this.value,
-    required this.unit,
+  const _HeaderStat({
     required this.icon,
     required this.color,
+    required this.value,
+    required this.unit,
+    required this.label,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cardWidth = (MediaQuery.of(context).size.width - 46) / 2;
-
-    return SizedBox(
-      width: cardWidth * widthFactor / 0.5,
+    return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Colors.white, size: 19),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: Colors.white.withValues(alpha: 0.76),
-              ),
-            ),
-            const SizedBox(height: 4),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  value,
-                  style: AppTextStyles.titleLarge.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                Icon(icon, color: color, size: 13),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(
-                    unit,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.76),
-                    ),
+                const SizedBox(width: 2),
+                Text(
+                  unit,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: Colors.white.withValues(alpha: 0.72),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: Colors.white.withValues(alpha: 0.72),
+              ),
             ),
           ],
         ),

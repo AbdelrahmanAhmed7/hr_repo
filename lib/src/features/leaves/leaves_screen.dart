@@ -246,71 +246,11 @@ class _LeavesScreenState extends State<LeavesScreen>
         16,
         16 + MediaQuery.of(context).padding.bottom + 72,
       ),
-      itemCount: leaves.length + 1,
+      itemCount: leaves.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return _LeavesListIntro(count: leaves.length);
-        }
-        return LeaveRequestCard(leaveRequest: leaves[index - 1]);
+        return LeaveRequestCard(leaveRequest: leaves[index]);
       },
-    );
-  }
-}
-
-class _LeavesListIntro extends StatelessWidget {
-  final int count;
-
-  const _LeavesListIntro({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.primaryTint,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.folder_open_rounded,
-              color: AppColors.primary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'عرض مرتب لطلبات الإجازة',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'يوجد $count طلب في هذا القسم. افتح أي بطاقة لرؤية التفاصيل الكاملة.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
