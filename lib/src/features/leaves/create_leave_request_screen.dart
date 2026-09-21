@@ -93,6 +93,14 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
     }
   }
 
+  void _applyQuickDuration(int days) {
+    final today = DateTime.now();
+    setState(() {
+      _startDate = today;
+      _endDate = today.add(Duration(days: days - 1));
+    });
+  }
+
   bool _validateForm() {
     if (_selectedLeaveTypeId == null || _selectedLeaveTypeName == null) {
       CustomToast.showError('يرجى اختيار نوع الإجازة');
@@ -263,6 +271,13 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
 
                     const SizedBox(height: 20),
                     const _SectionTitle(title: 'التواريخ'),
+                    if (_selectedLeaveTypeName != null && !_isSingleDay)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _QuickDurationChips(
+                          onSelected: _applyQuickDuration,
+                        ),
+                      ),
                     LeaveDateRangePicker(
                       startDate: _startDate,
                       endDate: _endDate,
@@ -301,25 +316,6 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
                         });
                       },
                     ),
-
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: state.submissionStatus ==
-                              SubmissionStatus.submitting
-                          ? null
-                          : _submitLeaveRequest,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        'إرسال الطلب',
-                        style: AppTextStyles.buttonLarge,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -334,6 +330,38 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
             ],
           );
         },
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 0.5),
+            ),
+          ),
+          child: BlocBuilder<LeavesCubit, LeavesState>(
+            bloc: _cubit,
+            builder: (context, state) {
+              return FilledButton(
+                onPressed: state.submissionStatus == SubmissionStatus.submitting
+                    ? null
+                    : _submitLeaveRequest,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  'إرسال الطلب',
+                  style: AppTextStyles.buttonLarge,
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -402,6 +430,67 @@ class _SuccessDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('حسناً'),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickDurationChips extends StatelessWidget {
+  final ValueChanged<int> onSelected;
+  const _QuickDurationChips({required this.onSelected});
+
+  static const _options = <(int, String)>[
+    (1, 'يوم'),
+    (3, '3 أيام'),
+    (7, 'أسبوع'),
+    (14, '14 يوم'),
+    (30, 'شهر'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          'مدة سريعة:',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final option in _options)
+                InkWell(
+                  onTap: () => onSelected(option.$1),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryTint,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      option.$2,
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
