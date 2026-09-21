@@ -17,7 +17,7 @@ import 'models/leave_request_model.dart';
 import 'models/leave_statistics.dart';
 import 'widgets/leave_balance_details.dart';
 import 'widgets/leave_request_card.dart';
-import 'widgets/leaves_header.dart';
+import 'widgets/leaves_stats_card.dart';
 
 class LeavesScreen extends StatefulWidget {
   final int initialTab;
@@ -122,7 +122,16 @@ class _LeavesScreenState extends State<LeavesScreen>
     return BlocProvider(
       create: (_) => _cubit,
       child: Scaffold(
-        backgroundColor: AppColors.backgroundSecondary,
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            'الإجازات',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          centerTitle: true,
+        ),
         floatingActionButton: BlocBuilder<LeavesCubit, LeavesState>(
           builder: (context, state) {
             return FloatingActionButton.extended(
@@ -192,12 +201,18 @@ class _LeavesScreenState extends State<LeavesScreen>
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
                     SliverToBoxAdapter(
-                      child: LeavesHeader(statistics: statistics),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: LeavesStatsCard(statistics: statistics),
+                      ),
                     ),
                     if (state.leaveBalance != null)
                       SliverToBoxAdapter(
-                        child: LeaveBalanceDetails(
-                          balance: state.leaveBalance!,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: LeaveBalanceDetails(
+                            balance: state.leaveBalance!,
+                          ),
                         ),
                       ),
                     SliverPersistentHeader(

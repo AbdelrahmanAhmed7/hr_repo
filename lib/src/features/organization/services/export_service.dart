@@ -17,27 +17,10 @@ class ExportService {
     );
   }
 
-  /// Export organization chart as PDF
-  /// Note: Requires pdf package for actual implementation
   static Future<void> exportAsPDF({
     required OrganizationData organizationData,
     required BuildContext context,
   }) async {
-    // TODO: Implement with pdf package
-    // Example:
-    // final pdf = pdf.Document();
-    // pdf.addPage(pdf.Page(
-    //   build: (pdf.Context context) {
-    //     return pdf.Table(...);
-    //   },
-    // ));
-    // final bytes = await pdf.save();
-    // final directory = await getApplicationDocumentsDirectory();
-    // final pdfPath = '${directory.path}/org_chart_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    // final pdfFile = File(pdfPath);
-    // await pdfFile.writeAsBytes(bytes);
-    // await Share.shareFiles([pdfPath]);
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('تصدير كـ PDF: تحتاج إضافة package pdf'),
@@ -46,8 +29,6 @@ class ExportService {
     );
   }
 
-  /// Export organization chart as Excel
-  /// Note: Requires excel package for actual implementation
   static Future<void> exportAsExcel({
     required OrganizationData organizationData,
     required BuildContext context,
@@ -60,7 +41,6 @@ class ExportService {
     );
   }
 
-  /// Show export options dialog
   static Future<void> showExportDialog({
     required BuildContext context,
     required OrganizationData organizationData,

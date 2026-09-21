@@ -9,134 +9,90 @@ class LeaveBalanceDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasOther = balance.maternity > 0 ||
+        balance.paternity > 0 ||
+        balance.hajj > 0 ||
+        balance.exam > 0 ||
+        balance.paid > 0;
+
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.account_balance_wallet_outlined,
-                color: AppColors.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'تفاصيل رصيد الإجازات',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Annual Leave
           _buildBalanceRow(
             context,
             icon: Icons.beach_access_outlined,
             title: 'الإجازة السنوية',
-            total: balance.annualLeaveBalance,
-            used: balance.annualLeaveUsed,
-            remaining: balance.annualLeaveRemaining,
             color: AppColors.primary,
+            units: [
+              _UnitChip(label: 'الإجمالي', value: '${balance.annualLeaveBalance}', color: AppColors.textSecondary),
+              _UnitChip(label: 'المستخدم', value: '${balance.annualLeaveUsed}', color: AppColors.warning),
+              _UnitChip(label: 'المتبقي', value: '${balance.annualLeaveRemaining}', color: AppColors.success),
+            ],
           ),
-          const Divider(height: 24),
-
-          // Casual Leave
+          _buildSeparator(),
           _buildBalanceRow(
             context,
             icon: Icons.event_available_outlined,
             title: 'الإجازة العرضية',
-            used: balance.casualLeaveUsed,
             color: AppColors.info,
-            showOnlyUsed: true,
+            units: [
+              _UnitChip(label: 'المستخدم', value: '${balance.casualLeaveUsed}', color: AppColors.warning),
+            ],
           ),
-          const Divider(height: 24),
-
-          // Sick Leave
+          _buildSeparator(),
           _buildBalanceRow(
             context,
             icon: Icons.medical_services_outlined,
             title: 'الإجازة المرضية',
-            total: balance.sickLeaveBalance,
-            used: balance.sickLeaveUsed,
-            remaining: balance.sickLeaveBalance - balance.sickLeaveUsed,
             color: AppColors.error,
+            units: [
+              _UnitChip(label: 'الإجمالي', value: '${balance.sickLeaveBalance}', color: AppColors.textSecondary),
+              _UnitChip(label: 'المستخدم', value: '${balance.sickLeaveUsed}', color: AppColors.warning),
+              _UnitChip(label: 'المتبقي', value: '${balance.sickLeaveBalance - balance.sickLeaveUsed}', color: AppColors.success),
+            ],
           ),
-
-          if (balance.maternity > 0 ||
-              balance.paternity > 0 ||
-              balance.hajj > 0 ||
-              balance.exam > 0 ||
-              balance.paid > 0) ...[
-            const Divider(height: 24),
-            Text(
-              'إجازات أخرى',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Maternity Leave
-            _buildSimpleBalanceRow(
+          if (hasOther) ...[
+            _buildSeparator(),
+            _buildBalanceRow(
               context,
-              icon: Icons.pregnant_woman_outlined,
-              title: 'إجازة وضع',
-              days: balance.maternity,
+              icon: Icons.more_horiz,
+              title: 'إجازات أخرى',
+              color: AppColors.textSecondary,
+              units: [
+                _UnitChip(label: 'وضع', value: '${balance.maternity}', color: AppColors.textPrimary),
+                _UnitChip(label: 'أبوة', value: '${balance.paternity}', color: AppColors.textPrimary),
+                _UnitChip(label: 'حج', value: '${balance.hajj}', color: AppColors.textPrimary),
+                if (balance.exam > 0)
+                  _UnitChip(label: 'امتحانات', value: '${balance.exam}', color: AppColors.textPrimary),
+                if (balance.paid > 0)
+                  _UnitChip(label: 'مدفوعة', value: '${balance.paid}', color: AppColors.textPrimary),
+              ],
             ),
-
-            // Paternity Leave
-            _buildSimpleBalanceRow(
-              context,
-              icon: Icons.family_restroom_outlined,
-              title: 'إجازة أبوة',
-              days: balance.paternity,
-            ),
-
-            // Hajj Leave
-            _buildSimpleBalanceRow(
-              context,
-              icon: Icons.mosque_outlined,
-              title: 'إجازة حج',
-              days: balance.hajj,
-            ),
-
-            // Exam Leave
-            _buildSimpleBalanceRow(
-              context,
-              icon: Icons.school_outlined,
-              title: 'إجازة امتحانات',
-              days: balance.exam,
-            ),
-
-            // Paid Leave
-            if (balance.paid > 0)
-              _buildSimpleBalanceRow(
-                context,
-                icon: Icons.paid_outlined,
-                title: 'إجازة مدفوعة',
-                days: balance.paid,
-              ),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildSeparator() {
+    return Divider(
+      height: 1,
+      thickness: 0.5,
+      color: AppColors.border,
+      indent: 16,
+      endIndent: 16,
     );
   }
 
@@ -144,139 +100,70 @@ class LeaveBalanceDetails extends StatelessWidget {
     BuildContext context, {
     required IconData icon,
     required String title,
-    int? total,
-    required int used,
-    int? remaining,
     required Color color,
-    bool showOnlyUsed = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (showOnlyUsed)
-          Row(
-            children: [
-              const SizedBox(width: 48),
-              Text(
-                'المستخدم: ',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              Text(
-                '$used يوم',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          )
-        else
-          Row(
-            children: [
-              const SizedBox(width: 48),
-              Expanded(
-                child: _buildStatChip(
-                  label: 'المجموع',
-                  value: '$total',
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatChip(
-                  label: 'المستخدم',
-                  value: '$used',
-                  color: AppColors.warning,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatChip(
-                  label: 'المتبقي',
-                  value: '$remaining',
-                  color: AppColors.success,
-                ),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSimpleBalanceRow(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required int days,
+    required List<_UnitChip> units,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.textSecondary, size: 18),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const Spacer(),
-          Text(
-            '$days يوم',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
+          for (final unit in units) ...[
+            if (unit != units.first) const SizedBox(width: 10),
+            _buildUnitChip(context, unit),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildStatChip({
-    required String label,
-    required String value,
-    required Color color,
-  }) {
+  Widget _buildUnitChip(BuildContext context, _UnitChip unit) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: TextStyle(fontSize: 11, color: color)),
-        const SizedBox(height: 4),
         Text(
-          value,
+          unit.value,
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: unit.color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          unit.label,
+          style: TextStyle(
+            fontSize: 9.5,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
     );
   }
+}
+
+class _UnitChip {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _UnitChip({required this.label, required this.value, required this.color});
 }
