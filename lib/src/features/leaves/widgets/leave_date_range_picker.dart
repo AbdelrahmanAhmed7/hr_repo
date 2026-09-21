@@ -135,127 +135,114 @@ class _LeaveDateRangePickerState extends State<LeaveDateRangePicker> {
         ? widget.endDate!.difference(widget.startDate!).inDays + 1
         : 0;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'اختر التواريخ',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Start Date
+        _buildDateField(
+          context,
+          label: widget.isSingleDay ? 'تاريخ الإجازة' : 'تاريخ البداية',
+          date: widget.startDate,
+          onTap: () => _selectDate(context, widget.startDate, widget.onStartDateSelected),
+        ),
 
-          // Start Date
+        if (!widget.isSingleDay) ...[
+          const SizedBox(height: 12),
+
+          // End Date
           _buildDateField(
             context,
-            label: widget.isSingleDay ? 'تاريخ الإجازة' : 'تاريخ البداية',
-            date: widget.startDate,
-            onTap: () => _selectDate(context, widget.startDate, widget.onStartDateSelected),
+            label: 'تاريخ النهاية',
+            date: widget.endDate,
+            onTap: () =>
+                _selectDate(context, widget.endDate ?? widget.startDate, widget.onEndDateSelected),
           ),
+        ],
 
-          if (!widget.isSingleDay) ...[
-            const SizedBox(height: 16),
-
-            // End Date
-            _buildDateField(
-              context,
-              label: 'تاريخ النهاية',
-              date: widget.endDate,
-              onTap: () =>
-                  _selectDate(context, widget.endDate ?? widget.startDate, widget.onEndDateSelected),
-            ),
-          ],
-
-          if (widget.startDate != null && (widget.isSingleDay || widget.endDate != null)) ...[
-            const SizedBox(height: 24),
-            // Days Summary Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.1),
-                    AppColors.primary.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                ),
+        if (widget.startDate != null && (widget.isSingleDay || widget.endDate != null)) ...[
+          const SizedBox(height: 16),
+          // Days Summary Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.1),
+                  AppColors.primary.withValues(alpha: 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Column(
-                children: [
-                  // Total Days
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Total Days
+                _buildSummaryRow(
+                  context,
+                  icon: Icons.calendar_month,
+                  label: 'إجمالي الأيام',
+                  value: widget.isSingleDay ? '1 يوم' : '$totalDays يوم',
+                  color: AppColors.textSecondary,
+                ),
+                if (!widget.isSingleDay) ...[
+                  const Divider(height: 16),
+                  // Working Days
                   _buildSummaryRow(
                     context,
-                    icon: Icons.calendar_month,
-                    label: 'إجمالي الأيام',
-                    value: widget.isSingleDay ? '1 يوم' : '$totalDays يوم',
-                    color: AppColors.textSecondary,
+                    icon: Icons.work_history_outlined,
+                    label: 'أيام العمل الفعلي',
+                    value: _isCalculating ? 'جاري الحساب...' : '$_workingDays يوم',
+                    color: AppColors.primary,
                   ),
-                  if (!widget.isSingleDay) ...[
-                    const Divider(height: 16),
-                    // Working Days
-                    _buildSummaryRow(
-                      context,
-                      icon: Icons.work_history_outlined,
-                      label: 'أيام العمل الفعلي',
-                      value: _isCalculating ? 'جاري الحساب...' : '$_workingDays يوم',
-                      color: AppColors.primary,
+                ],
+                // Remaining Balance (if available)
+                if (widget.currentLeaveBalance != null && !_isCalculating) ...[
+                  const Divider(height: 16),
+                  _buildRemainingBalanceRow(context, _workingDays),
+                ],
+              ],
+            ),
+          ),
+          // Warning if balance is insufficient
+          if (widget.currentLeaveBalance != null && !_isCalculating && _workingDays > widget.currentLeaveBalance!) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.error,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'رصيدك الحالي غير كافٍ لهذه الإجازة',
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ],
-                  // Remaining Balance (if available)
-                  if (widget.currentLeaveBalance != null && !_isCalculating) ...[
-                    const Divider(height: 16),
-                    _buildRemainingBalanceRow(context, _workingDays),
-                  ],
+                  ),
                 ],
               ),
             ),
-            // Warning if balance is insufficient
-            if (widget.currentLeaveBalance != null && !_isCalculating && _workingDays > widget.currentLeaveBalance!) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppColors.error,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'رصيدك الحالي غير كافٍ لهذه الإجازة',
-                        style: TextStyle(
-                          color: AppColors.error,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ],
-      ),
+      ],
     );
   }
 
@@ -286,7 +273,7 @@ class _LeaveDateRangePickerState extends State<LeaveDateRangePicker> {
             InkWell(
               onTap: onTap,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.backgroundSecondary,
                   borderRadius: BorderRadius.circular(8),

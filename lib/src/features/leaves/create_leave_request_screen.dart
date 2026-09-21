@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/mixins/keyboard_dismiss_mixin.dart';
 import '../auth/services/auth_storage_service.dart';
@@ -12,21 +13,21 @@ import 'models/leave_submission_model.dart';
 import 'widgets/leave_type_selector.dart';
 import 'widgets/leave_date_range_picker.dart';
 import 'widgets/leave_reason_field.dart';
-import 'widgets/leave_request_progress_indicator.dart';
-import 'widgets/leave_request_navigation_buttons.dart';
 
+/// Single-screen leave request: type → dates → reason & attachment in one
+/// scrollable form with a single submit button.
 class CreateLeaveRequestScreen extends StatefulWidget {
   const CreateLeaveRequestScreen({super.key});
 
   @override
-  State<CreateLeaveRequestScreen> createState() => _CreateLeaveRequestScreenState();
+  State<CreateLeaveRequestScreen> createState() =>
+      _CreateLeaveRequestScreenState();
 }
 
-class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> with KeyboardDismissMixin {
-  final PageController _pageController = PageController();
+class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen>
+    with KeyboardDismissMixin {
   late LeavesCubit _cubit;
-  int _currentStep = 0;
-  
+
   int? _selectedLeaveTypeId;
   String? _selectedLeaveTypeName;
   DateTime? _startDate;
@@ -37,58 +38,33 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> wit
   @override
   void initState() {
     super.initState();
-    // Use the singleton instance from service locator
     _cubit = getIt<LeavesCubit>();
-    // Create flow needs types; balance comes from overview API.
+    // Create flow needs types; balance comes from the overview API.
     if (_cubit.state.leaveBalance == null || _cubit.state.leaveRequests.isEmpty) {
       _cubit.loadLeavesOverview();
     }
-    // Always force-refresh leave types so the user sees the latest list from the server.
+    // Always force-refresh leave types so the user sees the latest list.
     _cubit.loadLeaveTypes(forceRefresh: true);
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
     _reasonController.dispose();
-    // Don't close the cubit - it's a singleton shared across screens
+    // Don't close the cubit — it's a singleton shared across screens.
     super.dispose();
   }
 
-  void _goToNextStep() {
-    if (_validateCurrentStep()) {
-      if (_currentStep < 2) {
-        FocusScope.of(context).unfocus();
-        
-        // Auto-set dates based on leave type when moving from step 0 to 1
-        if (_currentStep == 0 && _selectedLeaveTypeName != null) {
-          _setDefaultDatesForLeaveType(_selectedLeaveTypeName!);
-        }
-        
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        setState(() {
-          _currentStep++;
-        });
-      } else {
-        _submitLeaveRequest();
-      }
-    }
-  }
+  bool get _isSingleDay =>
+      _selectedLeaveTypeName?.toLowerCase() == 'paternity' ||
+      _selectedLeaveTypeName?.toLowerCase() == 'casual';
 
   void _setDefaultDatesForLeaveType(String leaveType) {
     final today = DateTime.now();
-    
+
     switch (leaveType.toLowerCase()) {
       case 'casual': // إجازة عرضية - يوم واحد
-        setState(() {
-          _startDate = today;
-          _endDate = today;
-        });
-        break;
       case 'sick':
+      case 'paternity':
         setState(() {
           _startDate = today;
           _endDate = today;
@@ -100,19 +76,13 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> wit
           _endDate = today.add(const Duration(days: 89));
         });
         break;
-      case 'paternity': // إجازة أبوة - يوم واحد (كما طلب المستخدم)
-        setState(() {
-          _startDate = today;
-          _endDate = today;
-        });
-        break;
       case 'hajj': // إجازة حج - 15 يوم
         setState(() {
           _startDate = today;
           _endDate = today.add(const Duration(days: 14));
         });
         break;
-      case 'exam': // إجازة امتحانات - يحددها المستخدم يومًا أو فترة
+      case 'exam': // إجازة امتحانات - يحددها المستخدم
         setState(() {
           _startDate = null;
           _endDate = null;
@@ -123,103 +93,78 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> wit
     }
   }
 
-  void _goToPreviousStep() {
-    if (_currentStep > 0) {
-      FocusScope.of(context).unfocus();
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+  bool _validateForm() {
+    if (_selectedLeaveTypeId == null || _selectedLeaveTypeName == null) {
+      CustomToast.showError('يرجى اختيار نوع الإجازة');
+      return false;
+    }
+    if (_startDate == null) {
+      CustomToast.showError('يرجى اختيار تاريخ البداية');
+      return false;
+    }
+    if (!_isSingleDay && _endDate == null) {
+      CustomToast.showError('يرجى اختيار تاريخ النهاية');
+      return false;
+    }
+    if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+      CustomToast.showError('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+      return false;
+    }
+
+    // Block early if the annual balance is insufficient.
+    final balance = _cubit.state.leaveBalance;
+    final requestedDays = (_endDate ?? _startDate)!.difference(_startDate!).inDays + 1;
+    final leaveType = _selectedLeaveTypeName?.toLowerCase().trim();
+    if (balance != null &&
+        (leaveType == 'annual' || leaveType == 'سنوية') &&
+        requestedDays > balance.annualLeaveRemaining) {
+      CustomToast.showError(
+        'رصيد الإجازات غير كافٍ (${balance.annualLeaveRemaining} يوم متاح).',
       );
-      setState(() {
-        _currentStep--;
-      });
+      return false;
     }
-  }
 
-  bool _validateCurrentStep() {
-    switch (_currentStep) {
-      case 0:
-        if (_selectedLeaveTypeId == null || _selectedLeaveTypeName == null) {
-          CustomToast.showError('يرجى اختيار نوع الإجازة');
-          return false;
-        }
-        return true;
-      case 1:
-        if (_startDate == null) {
-          CustomToast.showError('يرجى اختيار تاريخ البداية');
-          return false;
-        }
-        if (_endDate == null) {
-          CustomToast.showError('يرجى اختيار تاريخ النهاية');
-          return false;
-        }
-        if (_endDate!.isBefore(_startDate!)) {
-          CustomToast.showError('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
-          return false;
-        }
-
-        // Block early: don't allow moving to the "send" step if balance is insufficient.
-        final balance = _cubit.state.leaveBalance;
-        final requestedDays = (_endDate!.difference(_startDate!).inDays + 1);
-        final leaveType = _selectedLeaveTypeName?.toLowerCase().trim();
-        if (balance != null &&
-            (leaveType == 'annual' || leaveType == 'سنوية') &&
-            requestedDays > balance.annualLeaveRemaining) {
-          CustomToast.showError(
-            'رصيد الإجازات غير كافٍ (${balance.annualLeaveRemaining} يوم متاح).',
-          );
-          return false;
-        }
-
-        return true;
-      case 2:
-        if (_reasonController.text.trim().isEmpty) {
-          CustomToast.showError('يرجى إدخال سبب الإجازة');
-          return false;
-        }
-        if (_reasonController.text.trim().length < 5) {
-          CustomToast.showError('السبب يجب أن يكون 5 أحرف على الأقل');
-          return false;
-        }
-        // التحقق من المرفق في حالة الإجازة المرضية
-        if (_selectedLeaveTypeName?.toLowerCase() == 'sick' && _attachmentPath == null) {
-          CustomToast.showError('يرجى إرفاق تقرير طبي للإجازة المرضية');
-          return false;
-        }
-        return true;
-      default:
-        return false;
+    if (_reasonController.text.trim().isEmpty) {
+      CustomToast.showError('يرجى إدخال سبب الإجازة');
+      return false;
     }
+    if (_reasonController.text.trim().length < 5) {
+      CustomToast.showError('السبب يجب أن يكون 5 أحرف على الأقل');
+      return false;
+    }
+    if (_selectedLeaveTypeName?.toLowerCase() == 'sick' && _attachmentPath == null) {
+      CustomToast.showError('يرجى إرفاق تقرير طبي للإجازة المرضية');
+      return false;
+    }
+    return true;
   }
 
   Future<void> _submitLeaveRequest() async {
+    FocusScope.of(context).unfocus();
+
+    if (_cubit.state.submissionStatus == SubmissionStatus.submitting) return;
+    if (!_validateForm()) return;
+
     try {
-      FocusScope.of(context).unfocus();
-
-      if (_cubit.state.submissionStatus == SubmissionStatus.submitting) {
-        return;
-      }
-
       final authState = await AuthStorageService.loadAuthState();
-
       if (authState.userId == null) {
         if (!mounted) return;
         CustomToast.showError('خطأ في معرف المستخدم');
         return;
       }
 
-      // Format dates as YYYY-MM-DD (date only, no time)
-      final startDateStr =
-          '${_startDate!.year}-${_startDate!.month.toString().padLeft(2, '0')}-${_startDate!.day.toString().padLeft(2, '0')}';
-      final endDateStr =
-          '${_endDate!.year}-${_endDate!.month.toString().padLeft(2, '0')}-${_endDate!.day.toString().padLeft(2, '0')}';
-      final createdAtStr = DateTime.now().toIso8601String();
-
       if (_selectedLeaveTypeId == null || _selectedLeaveTypeName == null) {
         if (!mounted) return;
         CustomToast.showError('يرجى اختيار نوع الإجازة');
         return;
       }
+
+      // Format dates as YYYY-MM-DD (date only, no time).
+      final startDateStr =
+          '${_startDate!.year}-${_startDate!.month.toString().padLeft(2, '0')}-${_startDate!.day.toString().padLeft(2, '0')}';
+      final endDateStr =
+          '${(_endDate ?? _startDate)!.year}-${(_endDate ?? _startDate)!.month.toString().padLeft(2, '0')}-${(_endDate ?? _startDate)!.day.toString().padLeft(2, '0')}';
+      final createdAtStr = DateTime.now().toIso8601String();
 
       final submission = LeaveSubmissionModel(
         userId: authState.userId!,
@@ -231,22 +176,10 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> wit
         medicalReportUrl: _attachmentPath,
       );
 
-      // Client-side balance guard: prevent sending a request when remaining balance is insufficient.
-      // Applies primarily to annual leave requests.
-      final balance = _cubit.state.leaveBalance;
-      final requestedDays = (_endDate!.difference(_startDate!).inDays + 1);
-      final leaveType = _selectedLeaveTypeName?.toLowerCase().trim();
-      if (balance != null &&
-          (leaveType == 'annual' || leaveType == 'سنوية') &&
-          requestedDays > balance.annualLeaveRemaining) {
-        if (!mounted) return;
-        CustomToast.showError(
-          'رصيد الإجازات غير كافٍ (${balance.annualLeaveRemaining} يوم متاح).',
-        );
-        return;
-      }
-
-      await _cubit.submitLeave(submission, leaveTypeId: _selectedLeaveTypeId!);
+      await _cubit.submitLeave(
+        submission,
+        leaveTypeId: _selectedLeaveTypeId!,
+      );
     } catch (e) {
       if (!mounted) return;
       CustomToast.showError('حدث خطأ أثناء إرسال الطلب');
@@ -274,14 +207,22 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> wit
         bloc: _cubit,
         listener: (context, state) {
           if (state.submissionStatus == SubmissionStatus.success) {
-            CustomToast.showSuccess('تم إرسال طلب الإجازة بنجاح');
-            // Notify other screens (permissions/leaves/all-requests/home) to refresh their lists.
+            // Notify other screens (permissions/leaves/all-requests/home) to refresh.
             getIt<RequestsRefreshService>().notify();
-            
-            // Safety check before popping
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop(true);
-            }
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              showDialog<void>(
+                context: this.context,
+                barrierDismissible: false,
+                builder: (_) => const _SuccessDialog(),
+              ).then((_) {
+                if (!mounted) return;
+                if (Navigator.of(this.context).canPop()) {
+                  Navigator.of(this.context).pop(true);
+                }
+              });
+            });
           } else if (state.submissionStatus == SubmissionStatus.failure) {
             CustomToast.showError(
               state.submissionErrorMessage ?? 'حدث خطأ أثناء إرسال الطلب',
@@ -291,103 +232,178 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> wit
         builder: (context, state) {
           return Stack(
             children: [
-              Column(
+              SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _SectionTitle(title: 'نوع الإجازة'),
+                    LeaveTypeSelector(
+                      selectedTypeId: _selectedLeaveTypeId,
+                      leaveTypes: state.leaveTypes,
+                      isLoading: state.leaveTypesStatus == LeavesStatus.loading,
+                      errorMessage:
+                          state.leaveTypesStatus == LeavesStatus.failure
+                          ? (state.leaveTypesErrorMessage ??
+                                'فشل تحميل أنواع الإجازات')
+                          : null,
+                      onRetry: () {
+                        _cubit.loadLeaveTypes();
+                      },
+                      onTypeSelected: (type) {
+                        setState(() {
+                          _selectedLeaveTypeId = type.id;
+                          _selectedLeaveTypeName = type.name;
+                          _setDefaultDatesForLeaveType(type.name);
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+                    const _SectionTitle(title: 'التواريخ'),
+                    LeaveDateRangePicker(
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      currentLeaveBalance:
+                          state.leaveBalance?.annualLeaveRemaining,
+                      isSingleDay: _isSingleDay,
+                      onStartDateSelected: (date) {
+                        setState(() {
+                          _startDate = date;
+                          if (_isSingleDay) {
+                            _endDate = date;
+                          }
+                        });
+                      },
+                      onEndDateSelected: (date) {
+                        setState(() {
+                          _endDate = date;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+                    const _SectionTitle(title: 'تفاصيل الطلب'),
+                    LeaveReasonField(
+                      controller: _reasonController,
+                      attachmentPath: _attachmentPath,
+                      leaveType: _selectedLeaveTypeName,
+                      onPickAttachment: (path) {
+                        setState(() {
+                          _attachmentPath = path;
+                        });
+                      },
+                      onRemoveAttachment: () {
+                        setState(() {
+                          _attachmentPath = null;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: state.submissionStatus ==
+                              SubmissionStatus.submitting
+                          ? null
+                          : _submitLeaveRequest,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        'إرسال الطلب',
+                        style: AppTextStyles.buttonLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (state.submissionStatus == SubmissionStatus.submitting)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
         children: [
-          // Progress Indicator
-          LeaveRequestProgressIndicator(currentStep: _currentStep),
-          
-          // Page View
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() {
-                  _currentStep = index;
-                });
-              },
-              children: [
-                // Step 1: Leave Type
-                LeaveTypeSelector(
-                  selectedTypeId: _selectedLeaveTypeId,
-                  leaveTypes: state.leaveTypes,
-                  isLoading: state.leaveTypesStatus == LeavesStatus.loading,
-                  errorMessage: state.leaveTypesStatus == LeavesStatus.failure
-                      ? (state.leaveTypesErrorMessage ?? 'فشل تحميل أنواع الإجازات')
-                      : null,
-                  onRetry: () {
-                    _cubit.loadLeaveTypes();
-                  },
-                  onTypeSelected: (type) {
-                    setState(() {
-                      _selectedLeaveTypeId = type.id;
-                      _selectedLeaveTypeName = type.name;
-                      _setDefaultDatesForLeaveType(type.name);
-                    });
-                  },
-                ),
-                
-                // Step 2: Date Range
-                LeaveDateRangePicker(
-                  startDate: _startDate,
-                  endDate: _endDate,
-                  currentLeaveBalance: state.leaveBalance?.annualLeaveRemaining,
-                  isSingleDay: _selectedLeaveTypeName?.toLowerCase() == 'paternity' || 
-                               _selectedLeaveTypeName?.toLowerCase() == 'casual',
-                  onStartDateSelected: (date) {
-                    setState(() {
-                      _startDate = date;
-                      // في حالة الأنواع ذات اليوم الواحد، تاريخ النهاية هو نفس تاريخ البداية
-                      if (_selectedLeaveTypeName?.toLowerCase() == 'paternity' || 
-                          _selectedLeaveTypeName?.toLowerCase() == 'casual') {
-                        _endDate = date;
-                      }
-                    });
-                  },
-                  onEndDateSelected: (date) {
-                    setState(() {
-                      _endDate = date;
-                    });
-                  },
-                ),
-                
-                // Step 3: Reason + Attachment
-                LeaveReasonField(
-                  controller: _reasonController,
-                  attachmentPath: _attachmentPath,
-                  leaveType: _selectedLeaveTypeName,
-                  onPickAttachment: (path) {
-                    setState(() {
-                      _attachmentPath = path;
-                    });
-                  },
-                  onRemoveAttachment: () => setState(() => _attachmentPath = null),
-                ),
-              ],
+          Container(
+            width: 4,
+            height: 18,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
-          // Navigation Buttons
-          LeaveRequestNavigationButtons(
-            currentStep: _currentStep,
-            onPrevious: _currentStep > 0 && state.submissionStatus != SubmissionStatus.submitting 
-                ? _goToPreviousStep 
-                : null,
-            onNext: state.submissionStatus == SubmissionStatus.submitting ? null : _goToNextStep,
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: AppTextStyles.titleMedium.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
-      if (state.submissionStatus == SubmissionStatus.submitting)
-        Container(
-          color: Colors.black.withValues(alpha: 0.3),
-          child: const Center(
-            child: CircularProgressIndicator(),
+    );
+  }
+}
+
+class _SuccessDialog extends StatelessWidget {
+  const _SuccessDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.successTint,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.check_circle_outline,
+              color: AppColors.success,
+              size: 24,
+            ),
           ),
+          const SizedBox(width: 12),
+          const Text('نجاح'),
+        ],
+      ),
+      content: const Text('تم إرسال طلب الإجازة بنجاح'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('حسناً'),
         ),
       ],
-    );
-  },
-),
     );
   }
 }

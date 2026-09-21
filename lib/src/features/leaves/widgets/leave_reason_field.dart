@@ -23,21 +23,9 @@ class LeaveReasonField extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSickLeave = leaveType?.toLowerCase() == 'sick';
     
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'سبب الإجازة',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
           CustomTextField(
             label: 'السبب *',
             placeholder: 'اكتب سبب الإجازة (5 أحرف على الأقل)',
@@ -53,9 +41,9 @@ class LeaveReasonField extends StatelessWidget {
           ),
           
           if (isSickLeave) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
                 color: AppColors.primaryTint,
                 borderRadius: BorderRadius.circular(8),
@@ -85,7 +73,7 @@ class LeaveReasonField extends StatelessWidget {
             ),
           ],
           
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
           
           Row(
             children: [
@@ -109,7 +97,7 @@ class LeaveReasonField extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           
           LeaveAttachmentPicker(
             attachmentPath: attachmentPath,
@@ -117,7 +105,6 @@ class LeaveReasonField extends StatelessWidget {
             onAttachmentRemoved: onRemoveAttachment,
           ),
         ],
-      ),
     );
   }
 }

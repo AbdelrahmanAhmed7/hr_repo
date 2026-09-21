@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/leave_type_model.dart';
 
+/// Leave-type picker rendered as a compact list of cards.
+///
+/// Meant to be embedded in the parent scroll view — this widget does not own
+/// its own scrolling or a page headline.
 class LeaveTypeSelector extends StatelessWidget {
   final int? selectedTypeId;
   final List<LeaveTypeModel> leaveTypes;
@@ -69,71 +73,64 @@ class LeaveTypeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (leaveTypes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.textTertiary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              errorMessage?.trim().isNotEmpty == true
-                  ? (errorMessage!)
-                  : 'لا توجد أنواع إجازات متاحة',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: onRetry,
-                child: const Text('إعادة المحاولة'),
-              ),
-            ],
-          ],
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'اختر نوع الإجازة',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ...leaveTypes.map((leaveType) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _buildTypeCard(
-                context,
-                type: leaveType,
-                title: leaveType.nameAr,
-                description: _getDescriptionForLeaveType(leaveType.name),
-                icon: _getIconForLeaveType(leaveType.name),
+    if (leaveTypes.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.textTertiary,
               ),
-            );
-          }),
-        ],
-      ),
+              const SizedBox(height: 12),
+              Text(
+                errorMessage?.trim().isNotEmpty == true
+                    ? (errorMessage!)
+                    : 'لا توجد أنواع إجازات متاحة',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (onRetry != null) ...[
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: onRetry,
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final leaveType in leaveTypes)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildTypeCard(
+              context,
+              type: leaveType,
+              title: leaveType.nameAr,
+              description: _getDescriptionForLeaveType(leaveType.name),
+              icon: _getIconForLeaveType(leaveType.name),
+            ),
+          ),
+      ],
     );
   }
 
@@ -149,8 +146,9 @@ class LeaveTypeSelector extends StatelessWidget {
     return InkWell(
       onTap: () => onTypeSelected(type),
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryTint : Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -162,7 +160,7 @@ class LeaveTypeSelector extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary
@@ -172,33 +170,35 @@ class LeaveTypeSelector extends StatelessWidget {
               child: Icon(
                 icon,
                 color: isSelected ? Colors.white : AppColors.textSecondary,
-                size: 24,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     description,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              Icon(Icons.check_circle, color: AppColors.primary, size: 24),
+              const Icon(Icons.check_circle, color: AppColors.primary, size: 22),
           ],
         ),
       ),
