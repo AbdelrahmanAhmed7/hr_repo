@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/leave_balance_model.dart';
 
+/// Single unified "رصيد الإجازات" block: quick numbers in the header + a
+/// compact per-type breakdown below (one row per type).
 class LeaveBalanceDetails extends StatelessWidget {
   final LeaveBalanceModel balance;
+  final int remainingLeaves;
+  final int pendingRequests;
 
-  const LeaveBalanceDetails({super.key, required this.balance});
+  const LeaveBalanceDetails({
+    super.key,
+    required this.balance,
+    required this.remainingLeaves,
+    required this.pendingRequests,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,47 +29,42 @@ class LeaveBalanceDetails extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         children: [
+          _buildHeader(context),
+          _buildSeparator(),
           _buildBalanceRow(
             context,
             icon: Icons.beach_access_outlined,
-            title: 'الإجازة السنوية',
+            title: 'السنوية',
             color: AppColors.primary,
             units: [
-              _UnitChip(label: 'الإجمالي', value: '${balance.annualLeaveBalance}', color: AppColors.textSecondary),
-              _UnitChip(label: 'المستخدم', value: '${balance.annualLeaveUsed}', color: AppColors.warning),
-              _UnitChip(label: 'المتبقي', value: '${balance.annualLeaveRemaining}', color: AppColors.success),
+              _UnitChip(label: 'مجموع', value: '${balance.annualLeaveBalance}', color: AppColors.textSecondary),
+              _UnitChip(label: 'مستخدم', value: '${balance.annualLeaveUsed}', color: AppColors.warning),
+              _UnitChip(label: 'متبقي', value: '${balance.annualLeaveRemaining}', color: AppColors.success),
             ],
           ),
           _buildSeparator(),
           _buildBalanceRow(
             context,
             icon: Icons.event_available_outlined,
-            title: 'الإجازة العرضية',
+            title: 'العرضية',
             color: AppColors.info,
             units: [
-              _UnitChip(label: 'المستخدم', value: '${balance.casualLeaveUsed}', color: AppColors.warning),
+              _UnitChip(label: 'مستخدم', value: '${balance.casualLeaveUsed}', color: AppColors.warning),
             ],
           ),
           _buildSeparator(),
           _buildBalanceRow(
             context,
             icon: Icons.medical_services_outlined,
-            title: 'الإجازة المرضية',
+            title: 'المرضية',
             color: AppColors.error,
             units: [
-              _UnitChip(label: 'الإجمالي', value: '${balance.sickLeaveBalance}', color: AppColors.textSecondary),
-              _UnitChip(label: 'المستخدم', value: '${balance.sickLeaveUsed}', color: AppColors.warning),
-              _UnitChip(label: 'المتبقي', value: '${balance.sickLeaveBalance - balance.sickLeaveUsed}', color: AppColors.success),
+              _UnitChip(label: 'مجموع', value: '${balance.sickLeaveBalance}', color: AppColors.textSecondary),
+              _UnitChip(label: 'مستخدم', value: '${balance.sickLeaveUsed}', color: AppColors.warning),
+              _UnitChip(label: 'متبقي', value: '${balance.sickLeaveBalance - balance.sickLeaveUsed}', color: AppColors.success),
             ],
           ),
           if (hasOther) ...[
@@ -68,12 +72,15 @@ class LeaveBalanceDetails extends StatelessWidget {
             _buildBalanceRow(
               context,
               icon: Icons.more_horiz,
-              title: 'إجازات أخرى',
+              title: 'أخرى',
               color: AppColors.textSecondary,
               units: [
-                _UnitChip(label: 'وضع', value: '${balance.maternity}', color: AppColors.textPrimary),
-                _UnitChip(label: 'أبوة', value: '${balance.paternity}', color: AppColors.textPrimary),
-                _UnitChip(label: 'حج', value: '${balance.hajj}', color: AppColors.textPrimary),
+                if (balance.maternity > 0)
+                  _UnitChip(label: 'وضع', value: '${balance.maternity}', color: AppColors.textPrimary),
+                if (balance.paternity > 0)
+                  _UnitChip(label: 'أبوة', value: '${balance.paternity}', color: AppColors.textPrimary),
+                if (balance.hajj > 0)
+                  _UnitChip(label: 'حج', value: '${balance.hajj}', color: AppColors.textPrimary),
                 if (balance.exam > 0)
                   _UnitChip(label: 'امتحانات', value: '${balance.exam}', color: AppColors.textPrimary),
                 if (balance.paid > 0)
@@ -81,6 +88,78 @@ class LeaveBalanceDetails extends StatelessWidget {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primaryTint,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.account_balance_wallet_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'رصيد الإجازات',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'المتبقي من الإجازة السنوية: $remainingLeaves يوم',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.pending_actions_outlined,
+                  color: AppColors.warning,
+                  size: 14,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$pendingRequests معلقة',
+                  style: TextStyle(
+                    color: AppColors.warning,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -108,13 +187,13 @@ class LeaveBalanceDetails extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: color, size: 17),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -127,7 +206,7 @@ class LeaveBalanceDetails extends StatelessWidget {
             ),
           ),
           for (final unit in units) ...[
-            if (unit != units.first) const SizedBox(width: 10),
+            if (unit != units.first) const SizedBox(width: 12),
             _buildUnitChip(context, unit),
           ],
         ],

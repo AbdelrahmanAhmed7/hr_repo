@@ -17,7 +17,6 @@ import 'models/leave_request_model.dart';
 import 'models/leave_statistics.dart';
 import 'widgets/leave_balance_details.dart';
 import 'widgets/leave_request_card.dart';
-import 'widgets/leaves_stats_card.dart';
 
 class LeavesScreen extends StatefulWidget {
   final int initialTab;
@@ -200,18 +199,14 @@ class _LeavesScreenState extends State<LeavesScreen>
               child: NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                        child: LeavesStatsCard(statistics: statistics),
-                      ),
-                    ),
                     if (state.leaveBalance != null)
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                           child: LeaveBalanceDetails(
                             balance: state.leaveBalance!,
+                            remainingLeaves: statistics.remainingLeaves,
+                            pendingRequests: statistics.pendingRequests,
                           ),
                         ),
                       ),
