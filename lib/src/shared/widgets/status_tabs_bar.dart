@@ -12,15 +12,12 @@ class StatusTabsBar extends StatelessWidget {
   final TabController controller;
   final String pendingLabel;
   final StatusTabsStyle style;
-  /// Optional counts shown next to each tab label: [all, pending, approved, rejected].
-  final List<int>? tabCounts;
 
   const StatusTabsBar({
     super.key,
     required this.controller,
     this.pendingLabel = 'معلقة',
     this.style = StatusTabsStyle.underline,
-    this.tabCounts,
   });
 
   @override
@@ -32,14 +29,6 @@ class StatusTabsBar extends StatelessWidget {
   }
 
   Widget _buildSegmented() {
-    final counts = tabCounts;
-    String label(String text, int index) {
-      if (counts != null && index >= 0 && index < counts.length) {
-        return '$text (${counts[index]})';
-      }
-      return text;
-    }
-
     return Container(
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(4),
@@ -53,35 +42,36 @@ class StatusTabsBar extends StatelessWidget {
         child: TabBar(
           controller: controller,
           indicator: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(11),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 5,
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          labelColor: AppColors.primary,
+          labelColor: Colors.white,
           unselectedLabelColor: AppColors.textSecondary,
           dividerColor: Colors.transparent,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 13,
             height: 1.2,
           ),
           unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             fontSize: 13,
             height: 1.2,
           ),
           labelPadding: EdgeInsets.zero,
           tabs: [
-            Tab(text: label('الكل', 0)),
-            Tab(text: label(pendingLabel, 1)),
-            Tab(text: label('موافق عليها', 2)),
-            Tab(text: label('مرفوضة', 3)),
+            const Tab(text: 'الكل'),
+            Tab(text: pendingLabel),
+            const Tab(text: 'موافق عليها'),
+            const Tab(text: 'مرفوضة'),
           ],
         ),
       ),
@@ -222,8 +212,7 @@ class StatusTabsSliverDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(StatusTabsSliverDelegate oldDelegate) {
     return statusTabsBar.controller != oldDelegate.statusTabsBar.controller ||
         statusTabsBar.pendingLabel != oldDelegate.statusTabsBar.pendingLabel ||
-        statusTabsBar.style != oldDelegate.statusTabsBar.style ||
-        statusTabsBar.tabCounts != oldDelegate.statusTabsBar.tabCounts;
+        statusTabsBar.style != oldDelegate.statusTabsBar.style;
   }
 }
 

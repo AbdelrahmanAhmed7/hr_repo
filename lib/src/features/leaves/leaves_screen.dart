@@ -217,12 +217,6 @@ class _LeavesScreenState extends State<LeavesScreen>
                             controller: _tabController,
                             pendingLabel: 'معلقة',
                             style: StatusTabsStyle.segmented,
-                            tabCounts: [
-                              allLeaves.length,
-                              pendingLeaves.length,
-                              approvedLeaves.length,
-                              rejectedLeaves.length,
-                            ],
                           ),
                       ),
                     ),
