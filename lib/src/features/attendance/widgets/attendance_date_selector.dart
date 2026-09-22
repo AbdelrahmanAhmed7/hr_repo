@@ -7,12 +7,16 @@ class AttendanceDateSelector extends StatelessWidget {
   final DateTime selectedDate;
   final Function(DateTime) onDateChanged;
   final VoidCallback? onOpenHistory;
+  final String? statusText;
+  final Color? statusColor;
 
   const AttendanceDateSelector({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
     this.onOpenHistory,
+    this.statusText,
+    this.statusColor,
   });
 
   @override
@@ -80,17 +84,37 @@ class AttendanceDateSelector extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Flexible(
-                          child: Text(
-                            _formatDate(selectedDate),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: isToday
-                                  ? AppColors.primary
-                                  : AppColors.textPrimary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _formatDate(selectedDate),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: isToday
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              if (statusText != null &&
+                                  statusText!.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  statusText!,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: statusColor ??
+                                        AppColors.textSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                         if (isToday) ...[

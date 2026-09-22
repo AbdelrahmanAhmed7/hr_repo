@@ -9,14 +9,12 @@ import '../../utils/attendance_formatters.dart';
 class AttendanceDailyOverviewSection extends StatelessWidget {
   final TodayAttendance attendance;
   final bool isToday;
-  final DateTime selectedDate;
   final List<PermissionRequest> todayPermissions;
 
   const AttendanceDailyOverviewSection({
     super.key,
     required this.attendance,
     required this.isToday,
-    required this.selectedDate,
     this.todayPermissions = const [],
   });
 
@@ -52,21 +50,11 @@ class AttendanceDailyOverviewSection extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isToday ? 'ملخص اليوم' : 'ملخص اليوم المختار',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                      style: AppTextStyles.bodyMedium,
-                    ),
-                  ],
+                child: Text(
+                  isToday ? 'ملخص اليوم' : 'ملخص اليوم المختار',
+                  style: AppTextStyles.titleSmall.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],

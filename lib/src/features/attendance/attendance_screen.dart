@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/features/attendance/cubit/attendance_state.dart';
 
+import '../../core/theme/app_colors.dart';
 import 'attendance_screen_controller.dart';
 import 'cubit/attendance_cubit.dart';
 import 'widgets/attendance_date_selector.dart';
-import 'widgets/attendance_header.dart';
 import 'widgets/attendance_monthly_pdf_card.dart';
 import 'widgets/check_in_out_section.dart';
 import 'widgets/sections/attendance_analytics_section.dart';
@@ -68,12 +68,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
                     SliverToBoxAdapter(
-                      child: AttendanceHeader(
-                        attendance: visibleAttendance,
-                        selectedDate: _controller.selectedDate,
-                      ),
-                    ),
-                    SliverToBoxAdapter(
                       child: AttendanceDateSelector(
                         selectedDate: _controller.selectedDate,
                         onDateChanged: (date) =>
@@ -81,6 +75,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         onOpenHistory: monthlyData != null
                             ? () => _controller.openAttendanceHistory(context)
                             : null,
+                        statusText: visibleAttendance.statusText,
+                        statusColor:
+                            visibleAttendance.isCheckedIn &&
+                                !visibleAttendance.isCheckedOut
+                            ? AppColors.success
+                            : AppColors.textSecondary,
                       ),
                     ),
                     SliverToBoxAdapter(
@@ -108,7 +108,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             child: AttendanceDailyOverviewSection(
                               attendance: visibleAttendance,
                               isToday: _controller.isToday(),
-                              selectedDate: _controller.selectedDate,
                               todayPermissions: todayPermissions,
                             ),
                           ),
