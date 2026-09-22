@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import '../../leaves/cubit/leaves_cubit.dart';
+import '../../notifications/cubit/notifications_cubit.dart';
 import '../repository/auth_repository.dart';
 import 'auth_state.dart';
 
@@ -54,6 +57,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       if (!isClosed) {
         emit(authState);
+        _clearPreviousUserData();
         if (kDebugMode) {
           print(
             'AuthCubit.login: State emitted - isAuth=${state.isAuthenticated}, role=${state.role}',
@@ -72,11 +76,29 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logout() async {
     try {
       await _authRepository.logout();
+      _clearPreviousUserData();
       if (!isClosed) {
         emit(const AuthState());
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Clear user-scoped in-memory state (cubit states + repository caches)
+  /// so the next user never sees the previous user's data.
+  /// Guarded for contexts where the service locator isn't initialized (tests).
+  void _clearPreviousUserData() {
+    try {
+      final getIt = GetIt.I;
+      if (getIt.isRegistered<LeavesCubit>()) {
+        getIt<LeavesCubit>().reset();
+      }
+      if (getIt.isRegistered<NotificationsCubit>()) {
+        getIt<NotificationsCubit>().reset();
+      }
+    } catch (_) {
+      // Best effort only — never break login/logout because of cache clearing.
     }
   }
 

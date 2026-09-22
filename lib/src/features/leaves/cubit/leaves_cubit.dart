@@ -217,4 +217,14 @@ class LeavesCubit extends Cubit<LeavesState> {
       ),
     );
   }
+
+  /// Reset all state and clear the repository cache. Must be called on
+  /// logout/login so a different user never sees the previous user's
+  /// leaves and balance. (The repository instance is owned by this
+  /// singleton cubit, so its cache is cleared here too.)
+  void reset() {
+    if (isClosed) return;
+    _repository.clearCache();
+    emit(const LeavesState());
+  }
 }

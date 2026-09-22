@@ -183,6 +183,8 @@ class LeavesRepository {
     _lastLeavesFetchTime = null;
     _cachedBalance = null;
     _lastBalanceFetchTime = null;
+    _cachedTypes = null;
+    _lastTypesFetchTime = null;
   }
 
   String _extractErrorMessage(dynamic e) {

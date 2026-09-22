@@ -125,4 +125,11 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     final newUnread = updated.where((n) => n.isUnread).length;
     emit(state.copyWith(notifications: updated, unreadCount: newUnread));
   }
+
+  /// Reset all state. Must be called on logout/login so a different user
+  /// never sees the previous user's notifications.
+  void reset() {
+    if (isClosed) return;
+    emit(const NotificationsState());
+  }
 }
