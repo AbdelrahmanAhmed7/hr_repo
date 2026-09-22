@@ -86,10 +86,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     SliverToBoxAdapter(
                       child: Column(
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-                            child: AttendanceMonthlyPdfCard(),
-                          ),
                           if (_controller.isToday())
                             CheckInOutSection(
                               todayAttendance: visibleAttendance,
@@ -142,6 +138,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               ),
                             ),
                           ],
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            child: AttendanceMonthlyPdfCard(),
+                          ),
                           SizedBox(
                             height:
                                 16 + MediaQuery.of(context).padding.bottom,
