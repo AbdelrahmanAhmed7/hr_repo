@@ -56,22 +56,36 @@ class _CreateMissionScreenState extends State<CreateMissionScreen>
           body: Form(
             key: _controller.formKey,
             child: ListView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                16 + MediaQuery.of(context).padding.bottom,
+              ),
               children: [
                 MissionBasicInfoSection(controller: _controller),
-                const SizedBox(height: 24),
-                MissionNotesSection(controller: _controller),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 MissionScheduleSection(controller: _controller),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 MissionTimeSlotSection(controller: _controller),
-                const SizedBox(height: 32),
-                MissionSubmitBar(
-                  isSubmitting: _controller.isSubmitting,
-                  onSubmit: () => _controller.submitMission(context),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                MissionNotesSection(controller: _controller),
               ],
+            ),
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: AppColors.border, width: 0.5),
+                ),
+              ),
+              child: MissionSubmitBar(
+                isSubmitting: _controller.isSubmitting,
+                onSubmit: () => _controller.submitMission(context),
+              ),
             ),
           ),
         );

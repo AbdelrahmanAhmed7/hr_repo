@@ -46,6 +46,10 @@ class CreateMissionController extends ChangeNotifier {
   void initialize() {
     selectedDate = DateTime.now();
     endDate = DateTime.now();
+    // Default to full day so the common case needs no time selection.
+    selectedTimeSlot = 'full_day';
+    startTime = timeSlots['full_day']!['start'];
+    endTime = timeSlots['full_day']!['end'];
   }
 
   @override
@@ -365,8 +369,42 @@ class CreateMissionController extends ChangeNotifier {
     notifyListeners();
 
     if (success) {
-      CustomToast.showSuccess('تم تسجيل المأمورية بنجاح');
-
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.successTint,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.success,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('نجاح'),
+            ],
+          ),
+          content: const Text('تم تسجيل المأمورية بنجاح'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('حسناً'),
+            ),
+          ],
+        ),
+      );
+      if (!context.mounted) return;
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop(true);
       }
