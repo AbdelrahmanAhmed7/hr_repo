@@ -4,7 +4,6 @@ import '../../../core/services/service_locator.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/components/custom_toast.dart';
-import '../leave_details_screen.dart';
 import '../models/leave_request_model.dart';
 import '../repository/leaves_repository.dart';
 
@@ -18,94 +17,99 @@ class LeaveRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  LeaveDetailsScreen(leaveRequest: leaveRequest),
-            ),
-          );
-        },
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: leaveRequest.statusColor.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      leaveRequest.typeIcon,
-                      color: leaveRequest.statusColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          leaveRequest.typeText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.titleSmall.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          leaveRequest.dateRangeText,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _StatusPill(
-                    text: leaveRequest.statusText,
-                    color: leaveRequest.statusColor,
-                  ),
-                  _LeaveQuickRemindIcon(leaveRequest: leaveRequest),
-                ],
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: leaveRequest.statusColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  leaveRequest.typeIcon,
+                  color: leaveRequest.statusColor,
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _InfoChip(
-                    icon: Icons.calendar_today_outlined,
-                    label: '${leaveRequest.numberOfDays} يوم',
-                  ),
-                  _InfoChip(
-                    icon: Icons.schedule_rounded,
-                    label: _formatDate(leaveRequest.submittedDate),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      leaveRequest.typeText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      leaveRequest.dateRangeText,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              _StatusPill(
+                text: leaveRequest.statusText,
+                color: leaveRequest.statusColor,
+              ),
+              _LeaveQuickRemindIcon(leaveRequest: leaveRequest),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _InfoChip(
+                icon: Icons.calendar_today_outlined,
+                label: '${leaveRequest.numberOfDays} يوم',
+              ),
+              _InfoChip(
+                icon: Icons.schedule_rounded,
+                label: _formatDate(leaveRequest.submittedDate),
               ),
             ],
           ),
-        ),
+          if (leaveRequest.reason?.trim().isNotEmpty ?? false) ...[
+            const SizedBox(height: 10),
+            _ReasonBlock(
+              icon: Icons.notes_rounded,
+              title: 'السبب',
+              body: leaveRequest.reason!,
+              color: AppColors.primary,
+            ),
+          ],
+          if (leaveRequest.rejectionReason?.trim().isNotEmpty ?? false) ...[
+            const SizedBox(height: 10),
+            _ReasonBlock(
+              icon: Icons.info_outline_rounded,
+              title: 'ملاحظة الإدارة',
+              body: leaveRequest.rejectionReason!,
+              color: AppColors.error,
+              isError: true,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -118,6 +122,76 @@ class LeaveRequestCard extends StatelessWidget {
     if (difference.inDays == 1) return 'أمس';
     if (difference.inDays < 7) return 'منذ ${difference.inDays} أيام';
     return '${date.day}/${date.month}/${date.year}';
+  }
+}
+
+class _ReasonBlock extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String body;
+  final Color color;
+  final bool isError;
+
+  const _ReasonBlock({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.color,
+    this.isError = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isError
+            ? color.withValues(alpha: 0.06)
+            : AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isError ? color.withValues(alpha: 0.14) : Colors.transparent,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, color: color, size: 15),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: isError ? color : AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  body,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: isError ? color : AppColors.textSecondary,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
