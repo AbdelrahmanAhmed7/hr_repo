@@ -29,6 +29,8 @@ class StatusTabsBar extends StatelessWidget {
   }
 
   Widget _buildSegmented() {
+    final labels = ['الكل', pendingLabel, 'موافق عليها', 'مرفوضة'];
+
     return Container(
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(4),
@@ -37,49 +39,58 @@ class StatusTabsBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
-      child: SizedBox(
-        height: 40,
-        child: TabBar(
-          controller: controller,
-          indicator: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(11),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          return Row(
+            children: [
+              for (int i = 0; i < labels.length; i++)
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => controller.animateTo(i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: controller.index == i
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: controller.index == i
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        labels[i],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: controller.index == i
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          fontSize: 13,
+                          height: 1.2,
+                          color: controller.index == i
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
-          ),
-          // Inset the pill inside its cell so it floats with a gap
-          // instead of sticking to the neighbouring tabs.
-          indicatorPadding: const EdgeInsets.symmetric(
-            horizontal: 3,
-            vertical: 3,
-          ),
-          labelColor: Colors.white,
-          unselectedLabelColor: AppColors.textSecondary,
-          dividerColor: Colors.transparent,
-          overlayColor: WidgetStateProperty.all(Colors.transparent),
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 13,
-            height: 1.2,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-            height: 1.2,
-          ),
-          labelPadding: EdgeInsets.zero,
-          tabs: [
-            const Tab(text: 'الكل'),
-            Tab(text: pendingLabel),
-            const Tab(text: 'موافق عليها'),
-            const Tab(text: 'مرفوضة'),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -175,8 +186,8 @@ class StatusTabsSliverDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get minExtent {
     if (statusTabsBar.style == StatusTabsStyle.segmented) {
-      // 40 (tabs) + 8 (track padding) + 10 (top margin) + 16 (wrapper padding)
-      return 74;
+      // 36 (buttons) + 8 (track padding) + 10 (top margin) + 16 (wrapper padding)
+      return 70;
     }
     // Create a temporary TabBar to get its preferred size
     final tempTabBar = TabBar(
