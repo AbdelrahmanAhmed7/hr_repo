@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -61,8 +60,10 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
 
   /// Decision actions are for admins only. Employees get a read-only view
   /// (plus remind). Matches the admin-area route guard.
-  bool _canSeeDecision(BuildContext context) {
-    final authState = context.read<AuthCubit>().state;
+  /// Reads role from the shared AuthCubit singleton (no BuildContext needed
+  /// so this works from any route).
+  bool get _canSeeDecision {
+    final authState = getIt<AuthCubit>().state;
     return authState.isAdmin || authState.isSuperAdmin;
   }
 
@@ -451,7 +452,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                       ),
                     ),
                   ],
-                  if (_canApproveReject && _canSeeDecision(context)) ...[
+                  if (_canApproveReject && _canSeeDecision) ...[
                     const SizedBox(height: 14),
                     _buildActionButtons(),
                   ],
