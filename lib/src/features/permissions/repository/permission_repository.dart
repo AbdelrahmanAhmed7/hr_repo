@@ -278,15 +278,15 @@ class PermissionRepository {
     try {
       if (e.response?.data is Map) {
         final data = Map<String, dynamic>.from(e.response!.data);
-        return (data['title'] ?? data['message'] ?? 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø°Ù†')
+        return (data['title'] ?? data['message'] ?? 'حدث خطأ أثناء تحديث حالة الإذن')
             .toString();
       }
       if (e.response?.data is String) {
         final data = jsonDecode(e.response!.data) as Map<String, dynamic>;
-        return (data['title'] ?? data['message'] ?? 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø°Ù†')
+        return (data['title'] ?? data['message'] ?? 'حدث خطأ أثناء تحديث حالة الإذن')
             .toString();
       }
     } catch (_) {}
-    return 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø°Ù†';
+    return 'حدث خطأ أثناء تحديث حالة الإذن';
   }
 }

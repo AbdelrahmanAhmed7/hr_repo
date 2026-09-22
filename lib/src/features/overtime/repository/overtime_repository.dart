@@ -74,7 +74,7 @@ class OvertimeRepository {
       );
     } on DioException catch (e) {
       throw Exception(
-        _extractErrorMessage(e, 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ø¯ÙŠØ« Ø·Ù„Ø¨ Ø§Ù„Ø¹Ù…Ù„ Ø§Ù„Ø¥Ø¶Ø§ÙÙŠ'),
+        _extractErrorMessage(e, 'حدث خطأ أثناء تحديث طلب العمل الإضافي'),
       );
     } catch (e) {
       rethrow;

@@ -22,9 +22,9 @@ class AttendanceScopeSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      (scope: AttendancePeriodScope.day, label: 'Ø§Ù„ÙŠÙˆÙ…'),
-      (scope: AttendancePeriodScope.week, label: 'Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹'),
-      (scope: AttendancePeriodScope.month, label: 'Ø§Ù„Ø´Ù‡Ø±'),
+      (scope: AttendancePeriodScope.day, label: 'اليوم'),
+      (scope: AttendancePeriodScope.week, label: 'الأسبوع'),
+      (scope: AttendancePeriodScope.month, label: 'الشهر'),
     ];
 
     return Container(
