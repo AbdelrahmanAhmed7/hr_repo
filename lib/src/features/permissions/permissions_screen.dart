@@ -9,6 +9,8 @@ import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/status_tabs_bar.dart';
+import '../home/models/recent_activity.dart';
+import '../requests/request_details_screen.dart';
 import '../requests/services/requests_refresh_service.dart';
 import '../requests/widgets/create_permission_bottom_sheet.dart';
 import 'models/permission_request.dart';
@@ -216,14 +218,27 @@ class _PermissionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = permission.statusColor;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: statusColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => RequestDetailsScreen(
+                request: RecentActivity.fromPermissionRequest(permission),
+              ),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Container(
-        margin: const EdgeInsets.only(right: 4),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: statusColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Container(
+            margin: const EdgeInsets.only(right: 4),
         padding: const EdgeInsets.all(14),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -311,6 +326,8 @@ class _PermissionCard extends StatelessWidget {
               ),
             ],
           ],
+        ),
+        ),
         ),
       ),
     );

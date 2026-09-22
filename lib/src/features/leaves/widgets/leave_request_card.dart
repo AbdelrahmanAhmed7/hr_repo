@@ -4,6 +4,8 @@ import '../../../core/services/service_locator.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/components/custom_toast.dart';
+import '../../home/models/recent_activity.dart';
+import '../../requests/request_details_screen.dart';
 import '../models/leave_request_model.dart';
 import '../repository/leaves_repository.dart';
 
@@ -19,14 +21,27 @@ class LeaveRequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = leaveRequest.statusColor;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: statusColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => RequestDetailsScreen(
+                request: RecentActivity.fromLeaveRequest(leaveRequest),
+              ),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Container(
-        margin: const EdgeInsets.only(right: 4),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: statusColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Container(
+            margin: const EdgeInsets.only(right: 4),
         padding: const EdgeInsets.all(14),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -134,6 +149,8 @@ class LeaveRequestCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+      ),
       ),
     ),
   );

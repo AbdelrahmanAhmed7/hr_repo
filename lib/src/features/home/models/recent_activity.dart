@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../admin/models/super_admin_dashboard_response.dart';
 import '../../notifications/models/notification.dart';
 import '../../permissions/models/permission_request.dart' as domain;
+import '../../leaves/models/leave_request_model.dart';
+import '../../missions/models/mission.dart' as mission_domain;
 import '../../../core/utils/date_utils.dart';
 
 enum RequestType { leave, permission, overtime, assignment, other }
@@ -162,6 +164,71 @@ class RecentActivity {
       date: permission.date,
       description: permission.durationText,
       reason: permission.reason,
+      startTime: _formatTimeOfDay(permission.startTime.hour, permission.startTime.minute),
+      endTime: _formatTimeOfDay(permission.endTime.hour, permission.endTime.minute),
+      rejectionReason: permission.rejectionReason,
+    );
+  }
+
+  static String _formatTimeOfDay(int hour, int minute) {
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Convert LeaveRequestModel to RecentActivity
+  factory RecentActivity.fromLeaveRequest(LeaveRequestModel leave) {
+    final RequestStatus status;
+    switch (leave.status.trim().toLowerCase()) {
+      case 'approved':
+        status = RequestStatus.approved;
+        break;
+      case 'rejected':
+        status = RequestStatus.rejected;
+        break;
+      default:
+        status = RequestStatus.pending;
+    }
+
+    return RecentActivity(
+      id: leave.id.toString(),
+      type: RequestType.leave,
+      status: status,
+      title: leave.typeText,
+      date: leave.submittedDate,
+      description: leave.dateRangeText,
+      reason: leave.reason,
+      startDate: leave.startDateDateTime,
+      endDate: leave.endDateDateTime,
+      leaveType: leave.leaveType,
+      rejectionReason: leave.rejectionReason,
+    );
+  }
+
+  /// Convert Mission to RecentActivity
+  factory RecentActivity.fromMission(mission_domain.Mission mission) {
+    final RequestStatus status;
+    switch (mission.status) {
+      case mission_domain.MissionStatus.approved:
+        status = RequestStatus.approved;
+        break;
+      case mission_domain.MissionStatus.rejected:
+        status = RequestStatus.rejected;
+        break;
+      case mission_domain.MissionStatus.pending:
+        status = RequestStatus.pending;
+        break;
+    }
+
+    return RecentActivity(
+      id: mission.id,
+      type: RequestType.assignment,
+      status: status,
+      title: mission.title,
+      date: mission.submittedDate,
+      description: mission.description,
+      reason: mission.description,
+      startDate: mission.startDate,
+      endDate: mission.endDate,
+      rejectionReason: mission.rejectionReason,
     );
   }
 
