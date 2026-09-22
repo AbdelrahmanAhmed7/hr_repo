@@ -337,6 +337,7 @@ class _HomePrimaryActions extends StatelessWidget {
               Expanded(
                 child: _ActionTile(
                   title: 'طلب إجازة',
+                  subtitle: 'قدّم طلبك',
                   icon: Icons.beach_access_outlined,
                   color: const Color(0xFF10B981),
                   onTap: onRequestLeave,
@@ -346,6 +347,7 @@ class _HomePrimaryActions extends StatelessWidget {
               Expanded(
                 child: _ActionTile(
                   title: 'إذن',
+                  subtitle: 'خروج مؤقت',
                   icon: Icons.output_outlined,
                   color: const Color(0xFFF59E0B),
                   onTap: onSubmitPermission,
@@ -355,6 +357,7 @@ class _HomePrimaryActions extends StatelessWidget {
               Expanded(
                 child: _ActionTile(
                   title: 'المأموريات',
+                  subtitle: 'خارج المقر',
                   icon: Icons.assignment_outlined,
                   color: AppColors.primary,
                   onTap: onViewMissions,
@@ -364,6 +367,7 @@ class _HomePrimaryActions extends StatelessWidget {
               Expanded(
                 child: _ActionTile(
                   title: 'مهامي',
+                  subtitle: 'تابع شغلك',
                   icon: Icons.task_outlined,
                   color: const Color(0xFF0EA5E9),
                   onTap: onViewTasks,
@@ -379,12 +383,14 @@ class _HomePrimaryActions extends StatelessWidget {
 
 class _ActionTile extends StatelessWidget {
   final String title;
+  final String subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
   const _ActionTile({
     required this.title,
+    required this.subtitle,
     required this.icon,
     required this.color,
     required this.onTap,
@@ -398,7 +404,7 @@ class _ActionTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -408,13 +414,13 @@ class _ActionTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(height: 8),
               Text(
@@ -425,6 +431,16 @@ class _ActionTile extends StatelessWidget {
                 style: AppTextStyles.labelMedium.copyWith(
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],

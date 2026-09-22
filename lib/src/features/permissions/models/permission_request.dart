@@ -7,6 +7,15 @@ enum PermissionStatus {
   rejected,
 }
 
+/// Kind of permission derived from its time.
+/// Reference day is 9–5 (covers most employees); shift workers fall back
+/// to the closest meaning (morning = late arrival, afternoon = early leave).
+enum PermissionKind {
+  lateArrival,
+  earlyLeave,
+  exit,
+}
+
 class PermissionRequest {
   final String id;
   final DateTime date;
@@ -79,7 +88,46 @@ class PermissionRequest {
   }
 
   IconData get icon {
-    return Icons.access_time_rounded;
+    switch (kind) {
+      case PermissionKind.lateArrival:
+        return Icons.login_rounded;
+      case PermissionKind.earlyLeave:
+        return Icons.logout_rounded;
+      case PermissionKind.exit:
+        return Icons.output_outlined;
+    }
+  }
+
+  /// Morning-only permission = late arrival, afternoon-only = early leave,
+  /// anything spanning midday = regular exit permission.
+  PermissionKind get kind {
+    final startMinutes = startTime.hour * 60 + startTime.minute;
+    final endMinutes = endTime.hour * 60 + endTime.minute;
+    if (endMinutes <= 12 * 60) return PermissionKind.lateArrival;
+    if (startMinutes >= 14 * 60) return PermissionKind.earlyLeave;
+    return PermissionKind.exit;
+  }
+
+  String get kindLabel {
+    switch (kind) {
+      case PermissionKind.lateArrival:
+        return 'تأخير صباحي';
+      case PermissionKind.earlyLeave:
+        return 'انصراف مبكر';
+      case PermissionKind.exit:
+        return 'إذن خروج';
+    }
+  }
+
+  Color get kindColor {
+    switch (kind) {
+      case PermissionKind.lateArrival:
+        return AppColors.warning;
+      case PermissionKind.earlyLeave:
+        return AppColors.info;
+      case PermissionKind.exit:
+        return AppColors.primary;
+    }
   }
 }
 

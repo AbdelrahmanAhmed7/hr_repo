@@ -160,7 +160,7 @@ class RecentActivity {
       id: permission.id,
       type: RequestType.permission,
       status: status,
-      title: 'إذن خروج',
+      title: permission.kindLabel,
       date: permission.date,
       description: permission.durationText,
       reason: permission.reason,
