@@ -20,17 +20,23 @@ class LeaveRequestCard extends StatelessWidget {
     final statusColor = leaveRequest.statusColor;
 
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: statusColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border(
-          right: BorderSide(color: statusColor, width: 4),
-          top: const BorderSide(color: AppColors.border),
-          left: const BorderSide(color: AppColors.border),
-          bottom: const BorderSide(color: AppColors.border),
-        ),
+        border: Border.all(color: AppColors.border),
       ),
+      child: Container(
+        margin: const EdgeInsets.only(right: 4),
+        padding: const EdgeInsets.all(14),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -129,7 +135,8 @@ class LeaveRequestCard extends StatelessWidget {
           ],
         ],
       ),
-    );
+    ),
+  );
   }
 
   String _formatDate(DateTime date) {
@@ -167,29 +174,43 @@ class _QuoteBlock extends StatelessWidget {
             ? color.withValues(alpha: 0.05)
             : AppColors.backgroundSecondary.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(10),
-        border: Border(
-          right: BorderSide(color: color, width: 3),
-        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: isError ? color : AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            body,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isError ? color : AppColors.textSecondary,
-              height: 1.6,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: isError ? color : AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    body,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: isError ? color : AppColors.textSecondary,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
