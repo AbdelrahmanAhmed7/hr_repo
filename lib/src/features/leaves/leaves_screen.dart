@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:async';
 
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
@@ -47,9 +48,9 @@ class _LeavesScreenState extends State<LeavesScreen>
     // Keep the screen feeling instant: if we already have data, refresh silently.
     final cubit = getIt<LeavesCubit>();
     final hasData =
-        cubit.state.leaveBalance != null || cubit.state.leaveRequests.isNotEmpty;
-    _cubit = cubit
-      ..loadLeavesOverview(silent: hasData);
+        cubit.state.leaveBalance != null ||
+        cubit.state.leaveRequests.isNotEmpty;
+    _cubit = cubit..loadLeavesOverview(silent: hasData);
     _refreshSubscription = getIt<RequestsRefreshService>().stream.listen((_) {
       if (mounted) {
         _cubit.loadLeavesOverview(silent: true, forceRefresh: true);
@@ -143,17 +144,11 @@ class _LeavesScreenState extends State<LeavesScreen>
                 );
 
                 if (result == true) {
-                  _cubit.loadLeavesOverview(
-                    silent: true,
-                    forceRefresh: true,
-                  );
+                  _cubit.loadLeavesOverview(silent: true, forceRefresh: true);
                 }
               },
               backgroundColor: AppColors.primary,
-              icon: Icon(
-                Icons.add,
-                color: Colors.white,
-              ),
+              icon: Icon(Icons.add, color: Colors.white),
               label: const Text(
                 'إجازة جديدة',
                 style: TextStyle(
@@ -213,11 +208,11 @@ class _LeavesScreenState extends State<LeavesScreen>
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: StatusTabsSliverDelegate(
-  StatusTabsBar(
-                            controller: _tabController,
-                            pendingLabel: 'معلقة',
-                            style: StatusTabsStyle.segmented,
-                          ),
+                        StatusTabsBar(
+                          controller: _tabController,
+                          pendingLabel: 'معلقة',
+                          style: StatusTabsStyle.segmented,
+                        ),
                       ),
                     ),
                   ];
@@ -244,7 +239,7 @@ class _LeavesScreenState extends State<LeavesScreen>
                     _buildLeavesList(
                       rejectedLeaves,
                       emptyTitle: 'لا توجد إجازات مرفوضة',
-                      emptyMessage: 'مفيش طلبات مرفوضة — حاجة كويسة.',
+                      emptyMessage: 'مفيش طلبات مرفوضة — اي خدمه',
                     ),
                   ],
                 ),

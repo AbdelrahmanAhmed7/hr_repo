@@ -26,18 +26,11 @@ class AttendanceDailyOverviewSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryDark.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,11 +38,11 @@ class AttendanceDailyOverviewSection extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.primaryTint,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.timeline_rounded,
@@ -78,13 +71,13 @@ class AttendanceDailyOverviewSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           if (!hasRecord && todayPermissions.isEmpty)
             _EmptyDayCard(isToday: isToday)
           else ...[
             if (hasRecord) ...[
               _TimelineBar(attendance: attendance),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -117,7 +110,7 @@ class AttendanceDailyOverviewSection extends StatelessWidget {
               ),
             ],
             if (todayPermissions.isNotEmpty) ...[
-              if (hasRecord) const SizedBox(height: 16),
+              if (hasRecord) const SizedBox(height: 12),
               _PermissionsSection(permissions: todayPermissions),
             ],
           ],
@@ -284,13 +277,13 @@ class AttendanceFactCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color, size: 18),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(title, style: AppTextStyles.labelMedium),
           const SizedBox(height: 2),
           Text(
@@ -315,19 +308,19 @@ class _EmptyDayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
           const Icon(
             Icons.event_busy_rounded,
             color: AppColors.textTertiary,
-            size: 34,
+            size: 30,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             isToday ? 'لا يوجد سجل حضور لهذا اليوم' : 'لا يوجد سجل حضور لهذا اليوم',
             style: AppTextStyles.titleSmall.copyWith(
@@ -401,7 +394,7 @@ class _TimelineBar extends StatelessWidget {
                 if (!isLast)
                   Container(
                     width: 2,
-                    height: 42,
+                    height: 34,
                     color: AppColors.border,
                   ),
               ],
@@ -409,7 +402,7 @@ class _TimelineBar extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

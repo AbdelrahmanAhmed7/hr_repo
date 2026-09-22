@@ -20,19 +20,12 @@ class AttendanceDateSelector extends StatelessWidget {
     final isToday = _isToday(selectedDate);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            blurRadius: 18,
-            spreadRadius: 1,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -49,7 +42,7 @@ class AttendanceDateSelector extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.chevron_left_rounded),
                   color: AppColors.primary,
-                  iconSize: 30,
+                  iconSize: 26,
                 ),
               ),
               const SizedBox(width: 12),
@@ -59,14 +52,14 @@ class AttendanceDateSelector extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 14,
+                      vertical: 10,
+                      horizontal: 12,
                     ),
                     decoration: BoxDecoration(
                       color: isToday
                           ? AppColors.primary.withValues(alpha: 0.1)
                           : AppColors.backgroundSecondary,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isToday
                             ? AppColors.primary.withValues(alpha: 0.3)
@@ -159,23 +152,23 @@ class AttendanceDateSelector extends StatelessWidget {
                               ),
                   icon: const Icon(Icons.chevron_right_rounded),
                   color: _isFutureDate(
-                            selectedDate.add(const Duration(days: 1)),
-                          )
-                          ? AppColors.textTertiary
-                          : AppColors.primary,
-                  iconSize: 30,
+                        selectedDate.add(const Duration(days: 1)),
+                      )
+                      ? AppColors.textTertiary
+                      : AppColors.primary,
+                  iconSize: 26,
                 ),
               ),
             ],
           ),
           if (onOpenHistory != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.backgroundSecondary,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [

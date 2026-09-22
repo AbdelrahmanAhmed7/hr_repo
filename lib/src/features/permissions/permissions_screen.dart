@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
@@ -8,8 +9,8 @@ import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/status_tabs_bar.dart';
-import '../requests/widgets/create_permission_bottom_sheet.dart';
 import '../requests/services/requests_refresh_service.dart';
+import '../requests/widgets/create_permission_bottom_sheet.dart';
 import 'models/permission_request.dart';
 import 'repository/permission_repository.dart';
 
@@ -85,10 +86,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
-          'الإذونات',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        title: Text('الإذونات', style: Theme.of(context).textTheme.titleLarge),
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -171,7 +169,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                     _buildList(
                       _filter(PermissionStatus.rejected),
                       emptyTitle: 'ليس لديك أذونات مرفوضة',
-                      emptyMessage: 'مفيش أذونات مرفوضة — حاجة كويسة.',
+                      emptyMessage: 'مفيش أذونات مرفوضة — اي خدمه.',
                     ),
                   ],
                 ),
@@ -204,9 +202,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       ),
       itemCount: items.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (_, index) => _PermissionCard(
-        permission: items[index],
-      ),
+      itemBuilder: (_, index) => _PermissionCard(permission: items[index]),
     );
   }
 }
@@ -250,11 +246,7 @@ class _PermissionCard extends StatelessWidget {
                     color: statusColor.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    permission.icon,
-                    color: statusColor,
-                    size: 20,
-                  ),
+                  child: Icon(permission.icon, color: statusColor, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -450,10 +442,7 @@ class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {

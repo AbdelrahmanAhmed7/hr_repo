@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/features/attendance/cubit/attendance_state.dart';
 
-import '../../core/theme/app_colors.dart';
 import 'attendance_screen_controller.dart';
 import 'cubit/attendance_cubit.dart';
 import 'widgets/attendance_date_selector.dart';
@@ -53,7 +52,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             final monthlyData = attendanceState.monthlyData;
 
             return Scaffold(
-              backgroundColor: AppColors.backgroundSecondary,
+              backgroundColor: Colors.white,
+              appBar: AppBar(
+                backgroundColor: Colors.white,
+                elevation: 0,
+                title: Text(
+                  'الحضور',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                centerTitle: true,
+              ),
               body: RefreshIndicator(
                 onRefresh: () => _controller.refresh(context, mounted: mounted),
                 child: CustomScrollView(
@@ -79,7 +87,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       child: Column(
                         children: [
                           const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
+                            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
                             child: AttendanceMonthlyPdfCard(),
                           ),
                           if (_controller.isToday())
@@ -96,7 +104,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               isLoading: _controller.isProcessingAttendance,
                             ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                             child: AttendanceDailyOverviewSection(
                               attendance: visibleAttendance,
                               isToday: _controller.isToday(),
@@ -106,14 +114,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           ),
                           if (monthlyData != null) ...[
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: AttendanceScopeSwitcher(
                                 selectedScope: _controller.selectedScope,
                                 onScopeChanged: _controller.setScope,
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: AttendancePeriodSnapshotSection(
                                 data: monthlyData,
                                 selectedDate: _controller.selectedDate,
@@ -121,7 +129,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: AttendanceRangeSection(
                                 data: monthlyData,
                                 onOpenHistory: () =>
@@ -129,12 +137,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                               child: AttendanceMonthlyRecordsDeskSection(
                                 data: monthlyData,
                               ),
                             ),
                           ],
+                          SizedBox(
+                            height:
+                                16 + MediaQuery.of(context).padding.bottom,
+                          ),
                         ],
                       ),
                     ),

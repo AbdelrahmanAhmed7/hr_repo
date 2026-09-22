@@ -1,18 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:async';
+
+import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/status_tabs_bar.dart';
-import '../../core/services/service_locator.dart';
 import '../requests/services/requests_refresh_service.dart';
-import 'models/mission.dart';
-import 'widgets/mission_card.dart';
 import 'cubit/assignment_cubit.dart';
 import 'cubit/assignment_state.dart';
+import 'models/mission.dart';
+import 'widgets/mission_card.dart';
 
 class MissionsScreen extends StatefulWidget {
   const MissionsScreen({super.key});
@@ -21,7 +23,8 @@ class MissionsScreen extends StatefulWidget {
   State<MissionsScreen> createState() => _MissionsScreenState();
 }
 
-class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProviderStateMixin {
+class _MissionsScreenState extends State<MissionsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   StreamSubscription<void>? _refreshSubscription;
 
@@ -48,7 +51,10 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
     await context.read<AssignmentCubit>().loadMyAssignments();
   }
 
-  List<Mission> _getMissionsByStatus(List<Mission> allMissions, MissionStatus status) {
+  List<Mission> _getMissionsByStatus(
+    List<Mission> allMissions,
+    MissionStatus status,
+  ) {
     return allMissions.where((mission) => mission.status == status).toList();
   }
 
@@ -88,55 +94,65 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
         },
         builder: (context, state) {
           final allMissions = state.assignments;
-          final pendingMissions = _getMissionsByStatus(allMissions, MissionStatus.pending);
-          final approvedMissions = _getMissionsByStatus(allMissions, MissionStatus.approved);
-          final rejectedMissions = _getMissionsByStatus(allMissions, MissionStatus.rejected);
+          final pendingMissions = _getMissionsByStatus(
+            allMissions,
+            MissionStatus.pending,
+          );
+          final approvedMissions = _getMissionsByStatus(
+            allMissions,
+            MissionStatus.approved,
+          );
+          final rejectedMissions = _getMissionsByStatus(
+            allMissions,
+            MissionStatus.rejected,
+          );
 
           return RefreshIndicator(
             onRefresh: _refreshData,
             child: state.isLoading && allMissions.isEmpty
                 ? const ListShimmerLoading()
                 : NestedScrollView(
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return [
-              // Tabs
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: StatusTabsSliverDelegate(
-                  StatusTabsBar(
-                    controller: _tabController,
-                    style: StatusTabsStyle.segmented,
+                    headerSliverBuilder:
+                        (BuildContext context, bool innerBoxIsScrolled) {
+                          return [
+                            // Tabs
+                            SliverPersistentHeader(
+                              pinned: true,
+                              delegate: StatusTabsSliverDelegate(
+                                StatusTabsBar(
+                                  controller: _tabController,
+                                  style: StatusTabsStyle.segmented,
+                                ),
+                              ),
+                            ),
+                          ];
+                        },
+                    body: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildMissionsList(
+                          allMissions,
+                          emptyTitle: 'لا توجد مأموريات',
+                          emptyMessage: 'ستظهر المأموريات هنا بمجرد إضافتها.',
+                        ),
+                        _buildMissionsList(
+                          pendingMissions,
+                          emptyTitle: 'ليس لديك مأموريات معلقة',
+                          emptyMessage: 'مفيش مأموريات مستنية القرار دلوقتي.',
+                        ),
+                        _buildMissionsList(
+                          approvedMissions,
+                          emptyTitle: 'ليس لديك مأموريات مقبولة',
+                          emptyMessage: 'لسه مفيش مأموريات اتقبلت.',
+                        ),
+                        _buildMissionsList(
+                          rejectedMissions,
+                          emptyTitle: 'ليس لديك مأموريات مرفوضة',
+                          emptyMessage: 'مفيش مأموريات مرفوضة — اي خدمه',
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildMissionsList(
-                allMissions,
-                emptyTitle: 'لا توجد مأموريات',
-                emptyMessage: 'ستظهر المأموريات هنا بمجرد إضافتها.',
-              ),
-              _buildMissionsList(
-                pendingMissions,
-                emptyTitle: 'ليس لديك مأموريات معلقة',
-                emptyMessage: 'مفيش مأموريات مستنية القرار دلوقتي.',
-              ),
-              _buildMissionsList(
-                approvedMissions,
-                emptyTitle: 'ليس لديك مأموريات مقبولة',
-                emptyMessage: 'لسه مفيش مأموريات اتقبلت.',
-              ),
-              _buildMissionsList(
-                rejectedMissions,
-                emptyTitle: 'ليس لديك مأموريات مرفوضة',
-                emptyMessage: 'مفيش مأموريات مرفوضة — حاجة كويسة.',
-              ),
-            ],
-          ),
-        ),
           );
         },
       ),
