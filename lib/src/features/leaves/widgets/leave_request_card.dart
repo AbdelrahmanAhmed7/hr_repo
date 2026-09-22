@@ -17,29 +17,35 @@ class LeaveRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = leaveRequest.statusColor;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(16),
+        border: Border(
+          right: BorderSide(color: statusColor, width: 4),
+          top: const BorderSide(color: AppColors.border),
+          left: const BorderSide(color: AppColors.border),
+          bottom: const BorderSide(color: AppColors.border),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: leaveRequest.statusColor.withValues(alpha: 0.10),
+                  color: statusColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   leaveRequest.typeIcon,
-                  color: leaveRequest.statusColor,
+                  color: statusColor,
                   size: 20,
                 ),
               ),
@@ -58,11 +64,25 @@ class LeaveRequestCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      leaveRequest.dateRangeText,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.date_range_outlined,
+                          size: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            leaveRequest.dateRangeText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -70,30 +90,29 @@ class LeaveRequestCard extends StatelessWidget {
               const SizedBox(width: 10),
               _StatusPill(
                 text: leaveRequest.statusText,
-                color: leaveRequest.statusColor,
+                color: statusColor,
               ),
-              _LeaveQuickRemindIcon(leaveRequest: leaveRequest),
             ],
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          Row(
             children: [
               _InfoChip(
                 icon: Icons.calendar_today_outlined,
                 label: '${leaveRequest.numberOfDays} يوم',
               ),
+              const SizedBox(width: 8),
               _InfoChip(
                 icon: Icons.schedule_rounded,
                 label: _formatDate(leaveRequest.submittedDate),
               ),
+              const Spacer(),
+              _LeaveQuickRemindIcon(leaveRequest: leaveRequest),
             ],
           ),
           if (leaveRequest.reason?.trim().isNotEmpty ?? false) ...[
             const SizedBox(height: 10),
-            _ReasonBlock(
-              icon: Icons.notes_rounded,
+            _QuoteBlock(
               title: 'السبب',
               body: leaveRequest.reason!,
               color: AppColors.primary,
@@ -101,8 +120,7 @@ class LeaveRequestCard extends StatelessWidget {
           ],
           if (leaveRequest.rejectionReason?.trim().isNotEmpty ?? false) ...[
             const SizedBox(height: 10),
-            _ReasonBlock(
-              icon: Icons.info_outline_rounded,
+            _QuoteBlock(
               title: 'ملاحظة الإدارة',
               body: leaveRequest.rejectionReason!,
               color: AppColors.error,
@@ -125,15 +143,14 @@ class LeaveRequestCard extends StatelessWidget {
   }
 }
 
-class _ReasonBlock extends StatelessWidget {
-  final IconData icon;
+/// Slim quote-style block with a colored side accent instead of a boxed card.
+class _QuoteBlock extends StatelessWidget {
   final String title;
   final String body;
   final Color color;
   final bool isError;
 
-  const _ReasonBlock({
-    required this.icon,
+  const _QuoteBlock({
     required this.title,
     required this.body,
     required this.color,
@@ -144,49 +161,32 @@ class _ReasonBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: isError
-            ? color.withValues(alpha: 0.06)
-            : AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isError ? color.withValues(alpha: 0.14) : Colors.transparent,
+            ? color.withValues(alpha: 0.05)
+            : AppColors.backgroundSecondary.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          right: BorderSide(color: color, width: 3),
         ),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(9),
+          Text(
+            title,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: isError ? color : AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
             ),
-            child: Icon(icon, color: color, size: 15),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: isError ? color : AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  body,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: isError ? color : AppColors.textSecondary,
-                    height: 1.6,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 3),
+          Text(
+            body,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isError ? color : AppColors.textSecondary,
+              height: 1.6,
             ),
           ),
         ],
@@ -234,25 +234,32 @@ class _LeaveQuickRemindIconState extends State<_LeaveQuickRemindIcon> {
   Widget build(BuildContext context) {
     if (!_canRemind) return const SizedBox.shrink();
 
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        splashRadius: 22,
-        tooltip: 'تذكير',
-        onPressed: _isLoading ? null : _handleRemind,
-        icon: _isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(
-                Icons.notifications_active_outlined,
-                size: 20,
-                color: AppColors.warning.withValues(alpha: 0.95),
-              ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isLoading ? null : _handleRemind,
+        borderRadius: BorderRadius.circular(10),
+        child: Ink(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: _isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    Icons.notifications_active_outlined,
+                    size: 17,
+                    color: AppColors.warning,
+                  ),
+          ),
+        ),
       ),
     );
   }
@@ -298,7 +305,7 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.backgroundSecondary,
         borderRadius: BorderRadius.circular(999),
@@ -306,7 +313,7 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.textSecondary),
+          Icon(icon, size: 13, color: AppColors.textSecondary),
           const SizedBox(width: 6),
           Text(
             label,
