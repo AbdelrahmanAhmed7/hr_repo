@@ -335,38 +335,34 @@ class _HomePrimaryActions extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _ActionCard(
+                child: _ActionTile(
                   title: 'طلب إجازة',
                   icon: Icons.beach_access_outlined,
                   color: const Color(0xFF10B981),
                   onTap: onRequestLeave,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: _ActionCard(
+                child: _ActionTile(
                   title: 'إذن',
                   icon: Icons.output_outlined,
                   color: const Color(0xFFF59E0B),
                   onTap: onSubmitPermission,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
+              const SizedBox(width: 8),
               Expanded(
-                child: _ActionCard(
+                child: _ActionTile(
                   title: 'المأموريات',
                   icon: Icons.assignment_outlined,
                   color: AppColors.primary,
                   onTap: onViewMissions,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: _ActionCard(
+                child: _ActionTile(
                   title: 'مهامي',
                   icon: Icons.task_outlined,
                   color: const Color(0xFF0EA5E9),
@@ -381,13 +377,13 @@ class _HomePrimaryActions extends StatelessWidget {
   }
 }
 
-class _ActionCard extends StatelessWidget {
+class _ActionTile extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionCard({
+  const _ActionTile({
     required this.title,
     required this.icon,
     required this.color,
@@ -402,39 +398,33 @@ class _ActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Ink(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: 22),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 8),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.labelMedium.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
