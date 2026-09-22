@@ -400,12 +400,12 @@ class _ActionCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Ink(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
@@ -416,7 +416,7 @@ class _ActionCard extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 20),
               ),
@@ -619,63 +619,53 @@ class _EmployeeOfMonthBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           child: Ink(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF1E3A8A), Color(0xFF172554)],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.emoji_events_rounded,
-                      color: Color(0xFFFCD34D),
-                      size: 26,
+                      color: Color(0xFFB45309),
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
+                  const SizedBox(width: 12),
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'موظف الشهر',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           'صوّت لأفضل موظف هذا الشهر',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
+                            color: AppColors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -688,13 +678,13 @@ class _EmployeeOfMonthBanner extends StatelessWidget {
                       vertical: 7,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFCD34D),
+                      color: const Color(0xFFB45309),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
                       'صوّت الآن',
                       style: TextStyle(
-                        color: Color(0xFF92400E),
+                        color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
