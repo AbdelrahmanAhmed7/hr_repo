@@ -4,7 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/skeleton/skeleton_activity_item.dart';
 import '../models/recent_activity.dart';
-import 'recent_activity_card.dart';
+import '../../requests/widgets/unified_request_card.dart';
 
 class RecentActivitySection extends StatefulWidget {
   final List<RecentActivity>? activities;
@@ -149,7 +149,7 @@ class _RecentActivitySectionState extends State<RecentActivitySection> {
             ...currentList.take(3).map(
                   (activity) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: RecentActivityCard(activity: activity),
+                    child: UnifiedRequestCard(request: activity),
                   ),
                 ),
         ],

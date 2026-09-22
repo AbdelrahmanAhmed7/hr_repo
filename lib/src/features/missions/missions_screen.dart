@@ -14,7 +14,8 @@ import '../requests/services/requests_refresh_service.dart';
 import 'cubit/assignment_cubit.dart';
 import 'cubit/assignment_state.dart';
 import 'models/mission.dart';
-import 'widgets/mission_card.dart';
+import '../home/models/recent_activity.dart';
+import '../requests/widgets/unified_request_card.dart';
 
 class MissionsScreen extends StatefulWidget {
   const MissionsScreen({super.key});
@@ -184,7 +185,9 @@ class _MissionsScreenState extends State<MissionsScreen>
       itemCount: missions.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return MissionCard(mission: missions[index]);
+        return UnifiedRequestCard(
+          request: RecentActivity.fromMission(missions[index]),
+        );
       },
     );
   }

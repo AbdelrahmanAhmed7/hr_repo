@@ -19,7 +19,7 @@ import 'cubit/home_state.dart';
 import 'models/attendance_status.dart';
 import 'models/recent_activity.dart';
 import 'widgets/employee_dashboard_sections.dart';
-import 'widgets/recent_activity_card.dart';
+import '../requests/widgets/unified_request_card.dart';
 import '../notifications/cubit/notifications_cubit.dart';
 import '../employee_of_month/presentation/widgets/home_winner_banner.dart';
 
@@ -471,7 +471,7 @@ class _HomeRecentRequests extends StatelessWidget {
           ...activities.map(
             (a) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: RecentActivityCard(activity: a),
+              child: UnifiedRequestCard(request: a),
             ),
           ),
         ],

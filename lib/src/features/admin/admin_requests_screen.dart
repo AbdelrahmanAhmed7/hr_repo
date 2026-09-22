@@ -10,7 +10,7 @@ import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/skeleton/skeleton_list_item.dart';
 import '../home/models/recent_activity.dart';
 import 'cubit/admin_requests_cubit.dart';
-import 'widgets/admin_request_card.dart';
+import '../requests/widgets/unified_request_card.dart';
 
 class AdminRequestsScreen extends StatefulWidget {
   const AdminRequestsScreen({super.key});
@@ -263,7 +263,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen>
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final request = filteredRequests[index];
-          return AdminRequestCard(
+          return UnifiedRequestCard(
             request: request,
             isLoading: cubit.state.processingRequestId == request.id,
             onApprove: request.status == RequestStatus.pending

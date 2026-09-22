@@ -7,7 +7,8 @@ import '../../shared/components/custom_toast.dart';
 import '../missions/models/mission.dart';
 import '../missions/models/mission_statistics.dart';
 import '../missions/widgets/missions_header.dart';
-import '../missions/widgets/mission_card.dart';
+import '../home/models/recent_activity.dart';
+import '../requests/widgets/unified_request_card.dart';
 import '../missions/cubit/assignment_cubit.dart';
 import '../missions/cubit/assignment_state.dart';
 import 'widgets/hr_screen_header.dart';
@@ -181,57 +182,12 @@ class _HRAssignmentsScreenState extends State<HRAssignmentsScreen>
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final mission = missions[index];
-        return Card(
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              MissionCard(mission: mission),
-              // Action buttons for pending missions
-              if (mission.status == MissionStatus.pending)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundSecondary,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _handleReject(mission),
-                          icon: const Icon(Icons.close, size: 18),
-                          label: const Text('رفض'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.error,
-                            side: const BorderSide(color: AppColors.error),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _handleApprove(mission),
-                          icon: const Icon(Icons.check, size: 18),
-                          label: const Text('موافقة'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.success,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+        final isPending = mission.status == MissionStatus.pending;
+        return UnifiedRequestCard(
+          request: RecentActivity.fromMission(mission),
+          showRemind: false,
+          onApprove: isPending ? () => _handleApprove(mission) : null,
+          onReject: isPending ? () => _handleReject(mission) : null,
         );
       },
     );

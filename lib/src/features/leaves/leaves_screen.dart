@@ -17,7 +17,8 @@ import 'models/leave_balance_model.dart';
 import 'models/leave_request_model.dart';
 import 'models/leave_statistics.dart';
 import 'widgets/leave_balance_details.dart';
-import 'widgets/leave_request_card.dart';
+import '../home/models/recent_activity.dart';
+import '../requests/widgets/unified_request_card.dart';
 
 class LeavesScreen extends StatefulWidget {
   final int initialTab;
@@ -276,7 +277,9 @@ class _LeavesScreenState extends State<LeavesScreen>
       itemCount: leaves.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return LeaveRequestCard(leaveRequest: leaves[index]);
+        return UnifiedRequestCard(
+          request: RecentActivity.fromLeaveRequest(leaves[index]),
+        );
       },
     );
   }

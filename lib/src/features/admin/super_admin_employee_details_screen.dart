@@ -3,7 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../home/models/recent_activity.dart';
 import '../../shared/widgets/empty_state_widget.dart';
-import 'widgets/admin_request_card.dart';
+import '../requests/widgets/unified_request_card.dart';
 import 'models/super_admin_dashboard_response.dart';
 
 class SuperAdminEmployeeDetailsScreen extends StatefulWidget {
@@ -110,7 +110,7 @@ class _SuperAdminEmployeeDetailsScreenState
               sliver: SliverList.separated(
                 itemCount: _filtered.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, i) => AdminRequestCard(
+                itemBuilder: (context, i) => UnifiedRequestCard(
                   request: RecentActivity.fromSuperAdminRequest(_filtered[i]),
                 ),
               ),

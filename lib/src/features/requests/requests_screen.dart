@@ -11,7 +11,7 @@ import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../home/models/home_api_response.dart';
 import '../home/models/recent_activity.dart';
-import '../home/widgets/recent_activity_card.dart';
+import 'widgets/unified_request_card.dart';
 import 'repository/requests_repository.dart';
 import 'services/requests_refresh_service.dart';
 import 'widgets/create_permission_bottom_sheet.dart';
@@ -378,7 +378,7 @@ class _RequestsScreenState extends State<RequestsScreen>
                     itemCount: currentList.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      return RecentActivityCard(activity: currentList[index]);
+                      return UnifiedRequestCard(request: currentList[index]);
                     },
                   ),
                 ),

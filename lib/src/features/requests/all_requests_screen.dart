@@ -12,7 +12,7 @@ import '../home/models/recent_activity.dart';
 import 'management/management_requests_repository.dart';
 import 'repository/requests_repository.dart';
 import 'services/requests_refresh_service.dart';
-import 'widgets/request_card.dart';
+import 'widgets/unified_request_card.dart';
 import 'widgets/requests_header.dart';
 
 class AllRequestsScreen extends StatefulWidget {
@@ -325,7 +325,7 @@ class _AllRequestsScreenState extends State<AllRequestsScreen>
         itemCount: filteredRequests.length,
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          return RequestCard(request: filteredRequests[index]);
+          return UnifiedRequestCard(request: filteredRequests[index]);
         },
       ),
     );

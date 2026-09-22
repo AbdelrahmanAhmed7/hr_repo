@@ -7,7 +7,7 @@ import '../../shared/widgets/empty_state_widget.dart';
 import '../auth/cubit/auth_cubit.dart';
 import '../home/models/recent_activity.dart';
 import '../requests/all_requests_screen.dart';
-import '../requests/request_details_screen.dart';
+import '../requests/widgets/unified_request_card.dart';
 import '../attendance/attendance_screen.dart';
 import 'cubit/notifications_cubit.dart';
 import 'cubit/notifications_state.dart';
@@ -52,15 +52,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     // ── Admin / Super Admin: display-only, no navigation ─────────────────
     if (authState.isAdmin || authState.isSuperAdmin) return;
 
-    // ── Employee: navigate to request details or relevant screen ──────────
+    // ── Employee: show the request in a bottom sheet ─────────────────────
     if (notification.type == NotificationType.leave ||
         notification.type == NotificationType.permission ||
         notification.type == NotificationType.overtime ||
         notification.type == NotificationType.mission) {
       final request = RecentActivity.fromNotification(notification);
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => RequestDetailsScreen(request: request),
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            16 + MediaQuery.of(context).padding.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: UnifiedRequestCard(request: request),
+                ),
+              ),
+            ],
+          ),
         ),
       );
       return;
