@@ -71,6 +71,10 @@ class UnifiedRequestCard extends StatelessWidget {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  static bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   List<String> _detailChips() {
     final chips = <String>[];
 
@@ -78,7 +82,9 @@ class UnifiedRequestCard extends StatelessWidget {
       case RequestType.leave:
         if (request.startDate != null && request.endDate != null) {
           chips.add(
-            '${_formatShort(request.startDate!)} → ${_formatShort(request.endDate!)}',
+            _isSameDay(request.startDate!, request.endDate!)
+                ? _formatShort(request.startDate!)
+                : '${_formatShort(request.startDate!)} → ${_formatShort(request.endDate!)}',
           );
         }
         if (request.leaveType?.trim().isNotEmpty == true) {
@@ -112,21 +118,14 @@ class UnifiedRequestCard extends StatelessWidget {
     return chips;
   }
 
+  /// Structured rows for info NOT already shown in chips
+  /// (dates/times/location/type live in chips to avoid duplication).
   List<(String, String)> _detailRows() {
     final r = request;
     return [
-      if (r.startDate != null)
-        ('تاريخ البداية', _formatShort(r.startDate!)),
-      if (r.endDate != null) ('تاريخ النهاية', _formatShort(r.endDate!)),
-      if (r.startTime?.trim().isNotEmpty == true &&
-          r.endTime?.trim().isNotEmpty == true)
-        ('الوقت', '${r.startTime!.trim()} - ${r.endTime!.trim()}'),
-      if (r.leaveType?.trim().isNotEmpty == true)
-        ('نوع الإجازة', r.leaveType!.trim()),
-      if (r.deductionType?.trim().isNotEmpty == true)
+      if (r.deductionType?.trim().isNotEmpty == true &&
+          r.type != RequestType.leave)
         ('نوع الخصم', r.deductionType!.trim()),
-      if (r.location?.trim().isNotEmpty == true)
-        ('المكان', r.location!.trim()),
       if (r.totalHours != null) ('عدد الساعات', '${r.totalHours}'),
       if (r.amount != null) ('القيمة', AppFormatters.currency(r.amount)),
       if (r.type == RequestType.leave && r.remainingVacationBalance != null)
