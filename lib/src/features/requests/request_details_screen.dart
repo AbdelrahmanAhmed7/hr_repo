@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -10,6 +11,7 @@ import '../../shared/widgets/approve_reject_sheet.dart';
 import '../admin/repository/admin_leaves_repository.dart';
 import '../admin/repository/admin_permissions_repository.dart';
 import '../admin/repository/admin_assignments_repository.dart';
+import '../auth/cubit/auth_cubit.dart';
 import '../leaves/repository/leaves_repository.dart';
 import '../missions/repository/assignment_repository.dart';
 import '../permissions/repository/permission_repository.dart';
@@ -56,6 +58,13 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
   bool get _isPending => request.status == RequestStatus.pending;
   bool get _isApproved => request.status == RequestStatus.approved;
   bool get _isRejected => request.status == RequestStatus.rejected;
+
+  /// Decision actions are for admins only. Employees get a read-only view
+  /// (plus remind). Matches the admin-area route guard.
+  bool _canSeeDecision(BuildContext context) {
+    final authState = context.read<AuthCubit>().state;
+    return authState.isAdmin || authState.isSuperAdmin;
+  }
 
   Future<void> _handleRemind() async {
     if (_isReminding || !_canRemind) return;
@@ -442,7 +451,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                       ),
                     ),
                   ],
-                  if (_canApproveReject) ...[
+                  if (_canApproveReject && _canSeeDecision(context)) ...[
                     const SizedBox(height: 14),
                     _buildActionButtons(),
                   ],
