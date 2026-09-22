@@ -29,22 +29,13 @@ class LeaveRequestCard extends StatelessWidget {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(14),
         child: Ink(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: leaveRequest.statusColor.withValues(alpha: 0.14),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryDark.withValues(alpha: 0.05),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,16 +44,16 @@ class LeaveRequestCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: leaveRequest.statusColor.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       leaveRequest.typeIcon,
                       color: leaveRequest.statusColor,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -72,7 +63,7 @@ class LeaveRequestCard extends StatelessWidget {
                       children: [
                         Text(
                           leaveRequest.typeText,
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.titleSmall.copyWith(
                             color: AppColors.textPrimary,
@@ -97,7 +88,7 @@ class LeaveRequestCard extends StatelessWidget {
                   _LeaveQuickRemindIcon(leaveRequest: leaveRequest),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -109,47 +100,6 @@ class LeaveRequestCard extends StatelessWidget {
                   _InfoChip(
                     icon: Icons.schedule_rounded,
                     label: _formatDate(leaveRequest.submittedDate),
-                  ),
-                  _InfoChip(
-                    icon: Icons.label_outline_rounded,
-                    label: leaveRequest.leaveType,
-                  ),
-                ],
-              ),
-              if (leaveRequest.reason?.trim().isNotEmpty ?? false) ...[
-                const SizedBox(height: 14),
-                _DetailPanel(
-                  icon: Icons.notes_rounded,
-                  title: 'السبب',
-                  body: leaveRequest.reason!,
-                  color: AppColors.primary,
-                ),
-              ],
-              if (leaveRequest.rejectionReason?.trim().isNotEmpty ?? false) ...[
-                const SizedBox(height: 10),
-                _DetailPanel(
-                  icon: Icons.info_outline_rounded,
-                  title: 'سبب الرفض',
-                  body: leaveRequest.rejectionReason!,
-                  color: AppColors.error,
-                  isError: true,
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Text(
-                    'عرض التفاصيل',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: leaveRequest.statusColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: leaveRequest.statusColor,
-                    size: 18,
                   ),
                 ],
               ),
@@ -289,75 +239,6 @@ class _InfoChip extends StatelessWidget {
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailPanel extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String body;
-  final Color color;
-  final bool isError;
-
-  const _DetailPanel({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.color,
-    this.isError = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isError
-            ? color.withValues(alpha: 0.08)
-            : AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isError ? color.withValues(alpha: 0.14) : Colors.transparent,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: isError ? color : AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isError ? color : AppColors.textSecondary,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
