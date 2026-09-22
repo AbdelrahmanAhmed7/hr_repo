@@ -114,10 +114,26 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
           body: TabBarView(
             controller: _tabController,
             children: [
-                        _buildMissionsList(allMissions),
-                        _buildMissionsList(pendingMissions),
-                        _buildMissionsList(approvedMissions),
-                        _buildMissionsList(rejectedMissions),
+              _buildMissionsList(
+                allMissions,
+                emptyTitle: 'لا توجد مأموريات',
+                emptyMessage: 'ستظهر المأموريات هنا بمجرد إضافتها.',
+              ),
+              _buildMissionsList(
+                pendingMissions,
+                emptyTitle: 'ليس لديك مأموريات معلقة',
+                emptyMessage: 'مفيش مأموريات مستنية القرار دلوقتي.',
+              ),
+              _buildMissionsList(
+                approvedMissions,
+                emptyTitle: 'ليس لديك مأموريات مقبولة',
+                emptyMessage: 'لسه مفيش مأموريات اتقبلت.',
+              ),
+              _buildMissionsList(
+                rejectedMissions,
+                emptyTitle: 'ليس لديك مأموريات مرفوضة',
+                emptyMessage: 'مفيش مأموريات مرفوضة — حاجة كويسة.',
+              ),
             ],
           ),
         ),
@@ -127,12 +143,16 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildMissionsList(List<Mission> missions) {
+  Widget _buildMissionsList(
+    List<Mission> missions, {
+    required String emptyTitle,
+    required String emptyMessage,
+  }) {
     if (missions.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.assignment_outlined,
-        title: 'لا توجد مأموريات',
-        message: 'لم يتم العثور على أي مأموريات في هذه الفئة',
+        title: emptyTitle,
+        message: emptyMessage,
         iconColor: AppColors.textTertiary,
       );
     }

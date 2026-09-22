@@ -225,10 +225,27 @@ class _LeavesScreenState extends State<LeavesScreen>
                 body: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildLeavesList(allLeaves),
-                    _buildLeavesList(pendingLeaves),
-                    _buildLeavesList(approvedLeaves),
-                    _buildLeavesList(rejectedLeaves),
+                    _buildLeavesList(
+                      allLeaves,
+                      emptyTitle: 'لا توجد إجازات',
+                      emptyMessage:
+                          'ستظهر طلبات الإجازات هنا بمجرد إضافتها أو تحديث حالتها.',
+                    ),
+                    _buildLeavesList(
+                      pendingLeaves,
+                      emptyTitle: 'لا توجد إجازات معلقة',
+                      emptyMessage: 'مفيش طلبات مستنية القرار دلوقتي.',
+                    ),
+                    _buildLeavesList(
+                      approvedLeaves,
+                      emptyTitle: 'لا توجد إجازات مقبولة',
+                      emptyMessage: 'لسه مفيش طلبات اتقبلت.',
+                    ),
+                    _buildLeavesList(
+                      rejectedLeaves,
+                      emptyTitle: 'لا توجد إجازات مرفوضة',
+                      emptyMessage: 'مفيش طلبات مرفوضة — حاجة كويسة.',
+                    ),
                   ],
                 ),
               ),
@@ -239,12 +256,16 @@ class _LeavesScreenState extends State<LeavesScreen>
     );
   }
 
-  Widget _buildLeavesList(List<LeaveRequestModel> leaves) {
+  Widget _buildLeavesList(
+    List<LeaveRequestModel> leaves, {
+    required String emptyTitle,
+    required String emptyMessage,
+  }) {
     if (leaves.isEmpty) {
-      return const EmptyStateWidget(
+      return EmptyStateWidget(
         icon: Icons.calendar_today_outlined,
-        title: 'لا توجد إجازات',
-        message: 'ستظهر طلبات الإجازات هنا بمجرد إضافتها أو تحديث حالتها.',
+        title: emptyTitle,
+        message: emptyMessage,
         iconColor: AppColors.textTertiary,
       );
     }

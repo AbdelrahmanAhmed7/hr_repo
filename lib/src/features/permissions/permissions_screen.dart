@@ -153,10 +153,26 @@ class _PermissionsScreenState extends State<PermissionsScreen>
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildList(_filter(null)),
-                    _buildList(_filter(PermissionStatus.pending)),
-                    _buildList(_filter(PermissionStatus.approved)),
-                    _buildList(_filter(PermissionStatus.rejected)),
+                    _buildList(
+                      _filter(null),
+                      emptyTitle: 'لا توجد إذونات',
+                      emptyMessage: 'ستظهر طلبات الإذن هنا بمجرد إضافتها.',
+                    ),
+                    _buildList(
+                      _filter(PermissionStatus.pending),
+                      emptyTitle: 'ليس لديك أذونات معلقة',
+                      emptyMessage: 'مفيش أذونات مستنية القرار دلوقتي.',
+                    ),
+                    _buildList(
+                      _filter(PermissionStatus.approved),
+                      emptyTitle: 'ليس لديك أذونات مقبولة',
+                      emptyMessage: 'لسه مفيش أذونات اتقبلت.',
+                    ),
+                    _buildList(
+                      _filter(PermissionStatus.rejected),
+                      emptyTitle: 'ليس لديك أذونات مرفوضة',
+                      emptyMessage: 'مفيش أذونات مرفوضة — حاجة كويسة.',
+                    ),
                   ],
                 ),
         ),
@@ -164,12 +180,16 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     );
   }
 
-  Widget _buildList(List<PermissionRequest> items) {
+  Widget _buildList(
+    List<PermissionRequest> items, {
+    required String emptyTitle,
+    required String emptyMessage,
+  }) {
     if (items.isEmpty) {
-      return const EmptyStateWidget(
+      return EmptyStateWidget(
         icon: Icons.access_time_outlined,
-        title: 'لا توجد إذونات',
-        message: 'ستظهر طلبات الإذن هنا بمجرد إضافتها.',
+        title: emptyTitle,
+        message: emptyMessage,
         iconColor: AppColors.textTertiary,
       );
     }
