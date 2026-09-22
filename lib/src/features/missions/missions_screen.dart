@@ -10,8 +10,6 @@ import '../../shared/widgets/status_tabs_bar.dart';
 import '../../core/services/service_locator.dart';
 import '../requests/services/requests_refresh_service.dart';
 import 'models/mission.dart';
-import 'models/mission_statistics.dart';
-import 'widgets/missions_header.dart';
 import 'widgets/mission_card.dart';
 import 'cubit/assignment_cubit.dart';
 import 'cubit/assignment_state.dart';
@@ -54,24 +52,20 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
     return allMissions.where((mission) => mission.status == status).toList();
   }
 
-  MissionStatistics _calculateStatistics(List<Mission> missions) {
-    final pending = missions.where((m) => m.status == MissionStatus.pending).length;
-    final approved = missions.where((m) => m.status == MissionStatus.approved).length;
-    final rejected = missions.where((m) => m.status == MissionStatus.rejected).length;
-    
-    return MissionStatistics(
-      totalMissions: missions.length,
-      pendingCount: pending,
-      approvedCount: approved,
-      rejectedCount: rejected,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      floatingActionButton: FloatingActionButton(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'المأموريات',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        centerTitle: true,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         heroTag: 'missions_fab',
         onPressed: () {
           context.push('/missions/create').then((_) {
@@ -80,7 +74,11 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
           });
         },
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'مأمورية جديدة',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
       ),
       body: BlocConsumer<AssignmentCubit, AssignmentState>(
         listener: (context, state) {
@@ -90,7 +88,6 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
         },
         builder: (context, state) {
           final allMissions = state.assignments;
-          final statistics = _calculateStatistics(allMissions);
           final pendingMissions = _getMissionsByStatus(allMissions, MissionStatus.pending);
           final approvedMissions = _getMissionsByStatus(allMissions, MissionStatus.approved);
           final rejectedMissions = _getMissionsByStatus(allMissions, MissionStatus.rejected);
@@ -102,15 +99,14 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                 : NestedScrollView(
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return [
-              // Header
-              SliverToBoxAdapter(
-                          child: MissionsHeader(statistics: statistics),
-              ),
               // Tabs
               SliverPersistentHeader(
                 pinned: true,
                 delegate: StatusTabsSliverDelegate(
-                  StatusTabsBar(controller: _tabController),
+                  StatusTabsBar(
+                    controller: _tabController,
+                    style: StatusTabsStyle.segmented,
+                  ),
                 ),
               ),
             ];
@@ -142,7 +138,13 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(24),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        16 + MediaQuery.of(context).padding.bottom + 72,
+      ),
       itemCount: missions.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

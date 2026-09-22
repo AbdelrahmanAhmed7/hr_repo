@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mediconsult_internal/src/features/permissions/permission_details_screen.dart';
 import 'dart:async';
 
 import '../../core/services/service_locator.dart';
@@ -77,19 +76,21 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     return _permissions.where((p) => p.status == status).toList();
   }
 
-  int get _pendingCount =>
-      _permissions.where((p) => p.status == PermissionStatus.pending).length;
-  int get _approvedCount =>
-      _permissions.where((p) => p.status == PermissionStatus.approved).length;
-  int get _rejectedCount =>
-      _permissions.where((p) => p.status == PermissionStatus.rejected).length;
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'الإذونات',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        centerTitle: true,
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'permissions_fab',
         onPressed: () async {
@@ -112,13 +113,13 @@ class _PermissionsScreenState extends State<PermissionsScreen>
         onRefresh: _loadData,
         child: NestedScrollView(
           headerSliverBuilder: (context, _) => [
-            SliverToBoxAdapter(child: _buildHeader()),
             SliverPersistentHeader(
               pinned: true,
               delegate: StatusTabsSliverDelegate(
                 StatusTabsBar(
                   controller: _tabController,
                   pendingLabel: 'معلقة',
+                  style: StatusTabsStyle.segmented,
                 ),
               ),
             ),
@@ -163,88 +164,6 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.access_time_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'الإذونات',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'إجمالي ${_permissions.length} إذن',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  _StatChip(
-                    label: 'معلقة',
-                    count: _pendingCount,
-                    color: AppColors.warning,
-                  ),
-                  const SizedBox(width: 8),
-                  _StatChip(
-                    label: 'مقبولة',
-                    count: _approvedCount,
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(width: 8),
-                  _StatChip(
-                    label: 'مرفوضة',
-                    count: _rejectedCount,
-                    color: AppColors.error,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildList(List<PermissionRequest> items) {
     if (items.isEmpty) {
       return const EmptyStateWidget(
@@ -267,43 +186,6 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (_, index) => _PermissionCard(
         permission: items[index],
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PermissionDetailsScreen(permission: items[index]),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-
-  const _StatChip({
-    required this.label,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        '$label $count',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }
@@ -311,128 +193,112 @@ class _StatChip extends StatelessWidget {
 
 class _PermissionCard extends StatelessWidget {
   final PermissionRequest permission;
-  final VoidCallback? onTap;
 
-  const _PermissionCard({required this.permission, this.onTap});
+  const _PermissionCard({required this.permission});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    final statusColor = permission.statusColor;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: statusColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Container(
-        decoration: BoxDecoration(
+        margin: const EdgeInsets.only(right: 4),
+        padding: const EdgeInsets.all(14),
+        decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.border.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryTint,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.output_outlined,
-                      color: AppColors.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'إذن خروج',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          permission.dateText,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _StatusBadge(status: permission.status),
-                  _PermissionQuickRemindIcon(permission: permission),
-                ],
-              ),
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 14),
-              // Time range
-              _InfoRow(
-                icon: Icons.schedule_outlined,
-                label: 'الوقت',
-                value: permission.timeRangeText,
-              ),
-              const SizedBox(height: 8),
-              _InfoRow(
-                icon: Icons.timer_outlined,
-                label: 'المدة',
-                value: permission.durationText,
-              ),
-              const SizedBox(height: 8),
-              _InfoRow(
-                icon: Icons.description_outlined,
-                label: 'السبب',
-                value: permission.reason,
-              ),
-              if (permission.rejectionReason != null &&
-                  permission.rejectionReason!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.errorTint,
-                    borderRadius: BorderRadius.circular(8),
+                    color: statusColor.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
+                  child: Icon(
+                    permission.icon,
+                    color: statusColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.info_outline,
-                        color: AppColors.error,
-                        size: 16,
+                      const Text(
+                        'إذن خروج',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'سبب الرفض: ${permission.rejectionReason}',
-                          style: const TextStyle(
-                            color: AppColors.error,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        permission.dateText,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 10),
+                _StatusBadge(status: permission.status),
               ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _InfoChip(
+                  icon: Icons.schedule_outlined,
+                  label: permission.timeRangeText,
+                ),
+                const SizedBox(width: 8),
+                _InfoChip(
+                  icon: Icons.timer_outlined,
+                  label: permission.durationText,
+                ),
+                const Spacer(),
+                _PermissionQuickRemindIcon(permission: permission),
+              ],
+            ),
+            if (permission.reason.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _QuoteBlock(
+                title: 'السبب',
+                body: permission.reason,
+                color: AppColors.primary,
+              ),
             ],
-          ),
+            if (permission.rejectionReason != null &&
+                permission.rejectionReason!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _QuoteBlock(
+                title: 'ملاحظة الإدارة',
+                body: permission.rejectionReason!,
+                color: AppColors.error,
+                isError: true,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -529,67 +395,136 @@ class _PermissionQuickRemindIconState
   Widget build(BuildContext context) {
     if (!_canRemind) return const SizedBox.shrink();
 
-    return SizedBox(
-      width: 38,
-      height: 38,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        splashRadius: 22,
-        tooltip: 'تذكير',
-        onPressed: _isLoading ? null : _handleRemind,
-        icon: _isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(
-                Icons.notifications_active_outlined,
-                size: 20,
-                color: AppColors.warning.withValues(alpha: 0.95),
-              ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isLoading ? null : _handleRemind,
+        borderRadius: BorderRadius.circular(10),
+        child: Ink(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: _isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    Icons.notifications_active_outlined,
+                    size: 17,
+                    color: AppColors.warning,
+                  ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
+class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String value;
 
-  const _InfoRow({
+  const _InfoChip({
     required this.icon,
     required this.label,
-    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textTertiary),
-        const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            label,
             style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuoteBlock extends StatelessWidget {
+  final String title;
+  final String body;
+  final Color color;
+  final bool isError;
+
+  const _QuoteBlock({
+    required this.title,
+    required this.body,
+    required this.color,
+    this.isError = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isError
+            ? color.withValues(alpha: 0.05)
+            : AppColors.backgroundSecondary.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isError ? color : AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    body,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isError ? color : AppColors.textSecondary,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
