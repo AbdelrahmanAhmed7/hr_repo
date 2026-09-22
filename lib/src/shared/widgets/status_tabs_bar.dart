@@ -52,6 +52,12 @@ class StatusTabsBar extends StatelessWidget {
               ),
             ],
           ),
+          // Inset the pill inside its cell so it floats with a gap
+          // instead of sticking to the neighbouring tabs.
+          indicatorPadding: const EdgeInsets.symmetric(
+            horizontal: 3,
+            vertical: 3,
+          ),
           labelColor: Colors.white,
           unselectedLabelColor: AppColors.textSecondary,
           dividerColor: Colors.transparent,
