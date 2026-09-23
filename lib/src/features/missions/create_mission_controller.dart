@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -169,6 +170,32 @@ class CreateMissionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Quick durations (hours) starting from now (rounded up) for today,
+  /// or 9:00 AM for future dates. Switches to custom slot.
+  void applyQuickDuration(int hours) {
+    final now = DateTime.now();
+    final baseDate = selectedDate ?? now;
+    final isToday = baseDate.year == now.year &&
+        baseDate.month == now.month &&
+        baseDate.day == now.day;
+
+    late DateTime base;
+    if (isToday) {
+      final totalMinutes = now.hour * 60 + now.minute;
+      final rounded = ((totalMinutes + 29) ~/ 30) * 30;
+      base = DateTime(now.year, now.month, now.day)
+          .add(Duration(minutes: rounded));
+    } else {
+      base = DateTime(baseDate.year, baseDate.month, baseDate.day, 9);
+    }
+
+    final end = base.add(Duration(hours: hours));
+    selectedTimeSlot = 'custom';
+    startTime = TimeOfDay(hour: base.hour, minute: base.minute);
+    endTime = TimeOfDay(hour: end.hour, minute: end.minute);
+    notifyListeners();
+  }
+
   Future<void> pickStartDate(BuildContext context) async {
     FocusScope.of(context).unfocus();
 
@@ -225,13 +252,84 @@ class CreateMissionController extends ChangeNotifier {
     }
   }
 
+  /// Scroll-wheel time picker (numbers) instead of the clock dial.
+  /// Returns null when dismissed without confirming.
+  Future<TimeOfDay?> _pickWheelTime(
+    BuildContext context,
+    TimeOfDay initial,
+  ) async {
+    var temp = DateTime(2026, 1, 1, initial.hour, initial.minute);
+    var confirmed = false;
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheetContext) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: const Text('إلغاء'),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        confirmed = true;
+                        Navigator.of(sheetContext).pop();
+                      },
+                      child: const Text(
+                        'تم',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 220,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  use24hFormat: true,
+                  minuteInterval: 15,
+                  initialDateTime: DateTime(
+                    2026,
+                    1,
+                    1,
+                    initial.hour,
+                    initial.minute - (initial.minute % 15),
+                  ),
+                  onDateTimeChanged: (picked) => temp = picked,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!confirmed) return null;
+    return TimeOfDay(hour: temp.hour, minute: temp.minute);
+  }
+
   Future<void> pickStartTime(BuildContext context) async {
     FocusScope.of(context).unfocus();
 
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: startTime ?? TimeOfDay.now(),
-      builder: AppTheme.getTimePickerThemeBuilder(),
+    final picked = await _pickWheelTime(
+      context,
+      startTime ?? TimeOfDay.now(),
     );
 
     if (picked != null) {
@@ -256,22 +354,9 @@ class CreateMissionController extends ChangeNotifier {
       return;
     }
 
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: endTime ?? startTime!,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
+    final picked = await _pickWheelTime(
+      context,
+      endTime ?? startTime!,
     );
 
     if (!context.mounted) return;

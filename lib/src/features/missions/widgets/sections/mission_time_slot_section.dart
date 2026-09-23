@@ -127,6 +127,46 @@ class MissionTimeSlotSection extends StatelessWidget {
             ],
           ),
         ],
+        if (!controller.isMultiDay) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                'مدة سريعة:',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _QuickDurationChip(
+                      label: 'ساعة',
+                      onTap: () => controller.applyQuickDuration(1),
+                    ),
+                    _QuickDurationChip(
+                      label: 'ساعتين',
+                      onTap: () => controller.applyQuickDuration(2),
+                    ),
+                    _QuickDurationChip(
+                      label: '3 ساعات',
+                      onTap: () => controller.applyQuickDuration(3),
+                    ),
+                    _QuickDurationChip(
+                      label: '4 ساعات',
+                      onTap: () => controller.applyQuickDuration(4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
         if (controller.startTime != null &&
             controller.endTime != null &&
             durationText.isNotEmpty) ...[
@@ -161,6 +201,36 @@ class MissionTimeSlotSection extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _QuickDurationChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickDurationChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.primaryTint,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: AppColors.primary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }
