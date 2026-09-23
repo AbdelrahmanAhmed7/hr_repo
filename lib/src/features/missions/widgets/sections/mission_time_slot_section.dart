@@ -42,22 +42,6 @@ class MissionTimeSlotSection extends StatelessWidget {
               selected: controller.selectedTimeSlot == 'full_day',
               onTap: () => controller.selectTimeSlot('full_day'),
             ),
-            if (!controller.isMultiDay)
-              _SlotTile(
-                title: 'صباحية',
-                subtitle: '9 - 1',
-                icon: Icons.wb_twilight,
-                selected: controller.selectedTimeSlot == 'morning',
-                onTap: () => controller.selectTimeSlot('morning'),
-              ),
-            if (!controller.isMultiDay)
-              _SlotTile(
-                title: 'مسائية',
-                subtitle: '1 - 5',
-                icon: Icons.dark_mode_outlined,
-                selected: controller.selectedTimeSlot == 'afternoon',
-                onTap: () => controller.selectTimeSlot('afternoon'),
-              ),
             _SlotTile(
               title: 'مخصص',
               subtitle: controller.selectedTimeSlot == 'custom' &&

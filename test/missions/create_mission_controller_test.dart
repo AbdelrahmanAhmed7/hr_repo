@@ -20,11 +20,11 @@ void main() {
     });
 
     test('selectTimeSlot sets slot and default times', () {
-      controller.selectTimeSlot('morning');
+      controller.selectTimeSlot('full_day');
 
-      expect(controller.selectedTimeSlot, 'morning');
-      expect(controller.startTime, const TimeOfDay(hour: 9, minute: 0));
-      expect(controller.endTime, const TimeOfDay(hour: 13, minute: 0));
+      expect(controller.selectedTimeSlot, 'full_day');
+      expect(controller.startTime, const TimeOfDay(hour: 0, minute: 0));
+      expect(controller.endTime, const TimeOfDay(hour: 23, minute: 59));
     });
 
     test('toggleMultiDay true forces full day slot', () {

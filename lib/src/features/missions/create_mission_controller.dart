@@ -27,14 +27,6 @@ class CreateMissionController extends ChangeNotifier {
       'start': TimeOfDay(hour: 0, minute: 0),
       'end': TimeOfDay(hour: 23, minute: 59),
     },
-    'morning': {
-      'start': TimeOfDay(hour: 9, minute: 0),
-      'end': TimeOfDay(hour: 13, minute: 0),
-    },
-    'afternoon': {
-      'start': TimeOfDay(hour: 13, minute: 0),
-      'end': TimeOfDay(hour: 17, minute: 0),
-    },
   };
 
   static const List<String> quickDestinations = [
