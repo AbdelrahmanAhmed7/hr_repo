@@ -332,43 +332,48 @@ class _HomePrimaryActions extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                _ActionRow(
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
                   title: 'طلب إجازة',
                   icon: Icons.beach_access_outlined,
                   color: const Color(0xFF10B981),
                   onTap: onRequestLeave,
                 ),
-                const _ActionDivider(),
-                _ActionRow(
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ActionCard(
                   title: 'إذن',
                   icon: Icons.output_outlined,
                   color: const Color(0xFFF59E0B),
                   onTap: onSubmitPermission,
                 ),
-                const _ActionDivider(),
-                _ActionRow(
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
                   title: 'تسجيل مأمورية',
                   icon: Icons.assignment_outlined,
                   color: AppColors.primary,
                   onTap: onViewMissions,
                 ),
-                const _ActionDivider(),
-                _ActionRow(
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ActionCard(
                   title: 'مهامي',
                   icon: Icons.task_outlined,
                   color: const Color(0xFF0EA5E9),
                   onTap: onViewTasks,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -376,28 +381,13 @@ class _HomePrimaryActions extends StatelessWidget {
   }
 }
 
-class _ActionDivider extends StatelessWidget {
-  const _ActionDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(
-      height: 1,
-      thickness: 0.5,
-      color: AppColors.border,
-      indent: 62,
-      endIndent: 14,
-    );
-  }
-}
-
-class _ActionRow extends StatelessWidget {
+class _ActionCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionRow({
+  const _ActionCard({
     required this.title,
     required this.icon,
     required this.color,
@@ -411,8 +401,13 @@ class _ActionRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
           child: Row(
             children: [
               Container(
@@ -435,11 +430,6 @@ class _ActionRow extends StatelessWidget {
                     color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary,
-                size: 20,
               ),
             ],
           ),
