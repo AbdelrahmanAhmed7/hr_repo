@@ -26,83 +26,51 @@ class MissionTimeSlotSection extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
-        _TimeSlotCard(
-          slotKey: 'full_day',
-          title: 'يوم كامل',
-          subtitle: '24 ساعة (طوال اليوم)',
-          icon: Icons.wb_sunny,
-          selected: controller.selectedTimeSlot == 'full_day',
-          onTap: () => controller.selectTimeSlot('full_day'),
-        ),
-        if (!controller.isMultiDay) ...[
-          const SizedBox(height: 12),
-          _TimeSlotCard(
-            slotKey: 'morning',
-            title: 'فترة صباحية',
-            subtitle: '9:00 - 1:00 (4 ساعات)',
-            icon: Icons.wb_twilight,
-            selected: controller.selectedTimeSlot == 'morning',
-            onTap: () => controller.selectTimeSlot('morning'),
-          ),
-          const SizedBox(height: 12),
-          _TimeSlotCard(
-            slotKey: 'afternoon',
-            title: 'فترة مسائية',
-            subtitle: '1:00 - 5:00 (4 ساعات)',
-            icon: Icons.dark_mode_outlined,
-            selected: controller.selectedTimeSlot == 'afternoon',
-            onTap: () => controller.selectTimeSlot('afternoon'),
-          ),
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: controller.selectCustomTime,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: controller.selectedTimeSlot == 'custom'
-                    ? AppColors.primaryTint
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: controller.selectedTimeSlot == 'custom'
-                      ? AppColors.primary
-                      : AppColors.border,
-                  width: controller.selectedTimeSlot == 'custom' ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.schedule,
-                    color: controller.selectedTimeSlot == 'custom'
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'وقت مخصص',
-                      style: TextStyle(
-                        color: controller.selectedTimeSlot == 'custom'
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
-                        fontWeight: controller.selectedTimeSlot == 'custom'
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  if (controller.selectedTimeSlot == 'custom')
-                    const Icon(
-                      Icons.check_circle,
-                      color: AppColors.primary,
-                    ),
-                ],
-              ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.5,
+          children: [
+            _SlotTile(
+              title: 'يوم كامل',
+              subtitle: '24 ساعة',
+              icon: Icons.wb_sunny,
+              selected: controller.selectedTimeSlot == 'full_day',
+              onTap: () => controller.selectTimeSlot('full_day'),
             ),
-          ),
-        ],
+            if (!controller.isMultiDay)
+              _SlotTile(
+                title: 'صباحية',
+                subtitle: '9 - 1',
+                icon: Icons.wb_twilight,
+                selected: controller.selectedTimeSlot == 'morning',
+                onTap: () => controller.selectTimeSlot('morning'),
+              ),
+            if (!controller.isMultiDay)
+              _SlotTile(
+                title: 'مسائية',
+                subtitle: '1 - 5',
+                icon: Icons.dark_mode_outlined,
+                selected: controller.selectedTimeSlot == 'afternoon',
+                onTap: () => controller.selectTimeSlot('afternoon'),
+              ),
+            _SlotTile(
+              title: 'مخصص',
+              subtitle: controller.selectedTimeSlot == 'custom' &&
+                      controller.startTime != null &&
+                      controller.endTime != null
+                  ? '${controller.formatTime(controller.startTime)} - ${controller.formatTime(controller.endTime)}'
+                  : 'حدد الوقت',
+              icon: Icons.schedule,
+              selected: controller.selectedTimeSlot == 'custom',
+              onTap: controller.selectCustomTime,
+            ),
+          ],
+        ),
         if (controller.selectedTimeSlot == 'custom') ...[
           const SizedBox(height: 16),
           Row(
@@ -296,16 +264,14 @@ class _TimePickerCell extends StatelessWidget {
   }
 }
 
-class _TimeSlotCard extends StatelessWidget {
-  final String slotKey;
+class _SlotTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
-  const _TimeSlotCard({
-    required this.slotKey,
+  const _SlotTile({
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -317,50 +283,49 @@ class _TimeSlotCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryTint : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
-            width: selected ? 2 : 1,
+            width: selected ? 1.5 : 1,
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
         ),
         child: Row(
           children: [
             Icon(
               icon,
+              size: 18,
               color: selected ? AppColors.primary : AppColors.textSecondary,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      fontSize: 13,
                       color: AppColors.textPrimary,
-                      fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -370,6 +335,7 @@ class _TimeSlotCard extends StatelessWidget {
               const Icon(
                 Icons.check_circle,
                 color: AppColors.primary,
+                size: 16,
               ),
           ],
         ),
