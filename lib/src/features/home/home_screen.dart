@@ -332,48 +332,47 @@ class _HomePrimaryActions extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _ActionTile(
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                _ActionRow(
                   title: 'طلب إجازة',
                   subtitle: 'قدّم طلبك',
                   icon: Icons.beach_access_outlined,
                   color: const Color(0xFF10B981),
                   onTap: onRequestLeave,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ActionTile(
+                const _ActionDivider(),
+                _ActionRow(
                   title: 'إذن',
                   subtitle: 'خروج مؤقت',
                   icon: Icons.output_outlined,
                   color: const Color(0xFFF59E0B),
                   onTap: onSubmitPermission,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ActionTile(
+                const _ActionDivider(),
+                _ActionRow(
                   title: 'المأموريات',
                   subtitle: 'خارج المقر',
                   icon: Icons.assignment_outlined,
                   color: AppColors.primary,
                   onTap: onViewMissions,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ActionTile(
+                const _ActionDivider(),
+                _ActionRow(
                   title: 'مهامي',
                   subtitle: 'تابع شغلك',
                   icon: Icons.task_outlined,
                   color: const Color(0xFF0EA5E9),
                   onTap: onViewTasks,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -381,14 +380,29 @@ class _HomePrimaryActions extends StatelessWidget {
   }
 }
 
-class _ActionTile extends StatelessWidget {
+class _ActionDivider extends StatelessWidget {
+  const _ActionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(
+      height: 1,
+      thickness: 0.5,
+      color: AppColors.border,
+      indent: 62,
+      endIndent: 14,
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionTile({
+  const _ActionRow({
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -403,45 +417,49 @@ class _ActionTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(16),
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(icon, color: color, size: 22),
               ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 20,
               ),
             ],
           ),
