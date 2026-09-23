@@ -342,7 +342,6 @@ class _HomePrimaryActions extends StatelessWidget {
               children: [
                 _ActionRow(
                   title: 'طلب إجازة',
-                  subtitle: 'قدّم طلبك',
                   icon: Icons.beach_access_outlined,
                   color: const Color(0xFF10B981),
                   onTap: onRequestLeave,
@@ -350,15 +349,13 @@ class _HomePrimaryActions extends StatelessWidget {
                 const _ActionDivider(),
                 _ActionRow(
                   title: 'إذن',
-                  subtitle: 'خروج مؤقت',
                   icon: Icons.output_outlined,
                   color: const Color(0xFFF59E0B),
                   onTap: onSubmitPermission,
                 ),
                 const _ActionDivider(),
                 _ActionRow(
-                  title: 'المأموريات',
-                  subtitle: 'خارج المقر',
+                  title: 'تسجيل مأمورية',
                   icon: Icons.assignment_outlined,
                   color: AppColors.primary,
                   onTap: onViewMissions,
@@ -366,7 +363,6 @@ class _HomePrimaryActions extends StatelessWidget {
                 const _ActionDivider(),
                 _ActionRow(
                   title: 'مهامي',
-                  subtitle: 'تابع شغلك',
                   icon: Icons.task_outlined,
                   color: const Color(0xFF0EA5E9),
                   onTap: onViewTasks,
@@ -397,14 +393,12 @@ class _ActionDivider extends StatelessWidget {
 
 class _ActionRow extends StatelessWidget {
   final String title;
-  final String subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
   const _ActionRow({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.color,
     required this.onTap,
@@ -418,7 +412,7 @@ class _ActionRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
               Container(
@@ -432,28 +426,14 @@ class _ActionRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.titleSmall.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
               const Icon(
