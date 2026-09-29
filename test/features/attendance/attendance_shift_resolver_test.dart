@@ -212,12 +212,65 @@ void main() {
       expect(state.checkInDateTime, DateTime(2026, 9, 28, 23, 0, 0));
     });
 
-    test('garbage times fail open to noRecord', () {
+    test('garbage times yield unknown, never noRecord', () {
       final state = resolveAttendanceState(
         records: [_record(date: '2026-09-28', inTime: 'not-a-time')],
         now: _at(9, 28, 23, 5),
       );
-      expect(state.status, AttendanceShiftStatus.noRecord);
+      expect(state.status, AttendanceShiftStatus.unknown);
+      expect(state.warnings, isNotEmpty);
+    });
+
+    test('unparseable date with a check-in yields unknown', () {
+      final state = resolveAttendanceState(
+        records: [_record(date: 'not-a-date', inTime: '23:00:00')],
+        now: _at(9, 28, 23, 5),
+      );
+      expect(state.status, AttendanceShiftStatus.unknown);
+    });
+
+    test('valid active shift wins over an unparseable record', () {
+      final state = resolveAttendanceState(
+        records: [
+          _record(date: '2026-09-28', inTime: 'not-a-time'),
+          _record(date: '2026-09-28', inTime: '23:00:00'),
+        ],
+        now: _at(9, 28, 23, 5),
+      );
+      expect(state.status, AttendanceShiftStatus.checkedInActive);
+    });
+
+    test('ISO date with time part parses', () {
+      final state = resolveAttendanceState(
+        records: [
+          _record(date: '2026-09-28T00:00:00', inTime: '23:00:00'),
+        ],
+        now: _at(9, 28, 23, 5),
+      );
+      expect(state.status, AttendanceShiftStatus.checkedInActive);
+      expect(state.checkInDateTime, DateTime(2026, 9, 28, 23, 0));
+    });
+
+    test('DST-safe next-day departure keeps wall time', () {
+      final spring = resolveAttendanceState(
+        records: [
+          _record(date: '2026-04-23', inTime: '23:00:00', outTime: '08:00:00'),
+        ],
+        now: DateTime(2026, 4, 24, 8, 5),
+      );
+      expect(spring.status, AttendanceShiftStatus.completed);
+      expect(spring.departureDateTime?.day, 24);
+      expect(spring.departureDateTime?.hour, 8);
+
+      final autumn = resolveAttendanceState(
+        records: [
+          _record(date: '2026-10-28', inTime: '23:00:00', outTime: '08:00:00'),
+        ],
+        now: DateTime(2026, 10, 29, 8, 5),
+      );
+      expect(autumn.status, AttendanceShiftStatus.completed);
+      expect(autumn.departureDateTime?.day, 29);
+      expect(autumn.departureDateTime?.hour, 8);
     });
 
     test('today completed wins over an older stale open record', () {
