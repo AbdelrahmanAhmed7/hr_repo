@@ -36,6 +36,18 @@ class ServerClock {
     return _elapsed <= maxSyncAge;
   }
 
+  Future<bool> waitForSync({
+    Duration timeout = const Duration(seconds: 5),
+    Duration pollEvery = const Duration(milliseconds: 200),
+  }) async {
+    var waited = Duration.zero;
+    while (!isSynced && waited < timeout) {
+      await Future.delayed(pollEvery);
+      waited += pollEvery;
+    }
+    return isSynced;
+  }
+
   DateTime? tryNowServerUtc() {
     if (!isSynced) return null;
     return _lastSyncUtc!.add(_elapsed);

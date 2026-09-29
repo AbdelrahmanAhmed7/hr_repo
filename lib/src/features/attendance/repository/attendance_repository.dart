@@ -39,10 +39,22 @@ class AttendanceRepository {
     return await _service.checkOut(request);
   }
 
-  Future<AttendanceRecord?> getTodayAttendance() async {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    return await _service.getAttendanceByDate(today);
+  Future<List<AttendanceRecord>> getTodayAndYesterdayRecords({
+    required DateTime cairoNow,
+  }) async {
+    final today = DateTime(cairoNow.year, cairoNow.month, cairoNow.day);
+    final yesterday =
+        DateTime(cairoNow.year, cairoNow.month, cairoNow.day - 1);
+    final results = await Future.wait([
+      _service.getAttendanceByDate(_dayString(today)),
+      _service.getAttendanceByDate(_dayString(yesterday)),
+    ]);
+    return [...results.whereType<AttendanceRecord>()]
+      ..removeWhere((record) => record.id == 0);
   }
+
+  String _dayString(DateTime date) =>
+      DateFormat('yyyy-MM-dd').format(date);
 
   Future<AttendanceRecord?> getAttendanceByDate(DateTime date) async {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
