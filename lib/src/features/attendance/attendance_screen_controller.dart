@@ -41,6 +41,10 @@ class AttendanceScreenController extends ChangeNotifier {
     if (!mounted) return;
   }
 
+  Future<void> refreshToday(BuildContext context) async {
+    await context.read<AttendanceCubit>().refreshTodayAttendance();
+  }
+
   void onDateChanged(BuildContext context, DateTime newDate) {
     selectedDate = newDate;
     notifyListeners();

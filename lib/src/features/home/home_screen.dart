@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:go_router/go_router.dart';
+import '../../core/network/cache_interceptor.dart';
 import '../../core/services/attendance_handler.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
@@ -30,14 +33,53 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver {
   bool _isProcessingAttendance = false;
+  Timer? _resolveTimer;
 
   @override
   void initState() {
     super.initState();
     // Refresh notification badge count when home loads
     _refreshNotificationBadge();
+    WidgetsBinding.instance.addObserver(this);
+    _resolveTimer = Timer.periodic(
+      const Duration(seconds: 45),
+      (_) => _refreshTodayState(),
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _resolveTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshTodayState();
+    }
+  }
+
+  Future<void> _refreshTodayState() async {
+    if (!mounted) return;
+    try {
+      await CacheInterceptor.evictPath('/api/Home');
+    } catch (_) {}
+    if (!mounted) return;
+    try {
+      await context.read<AttendanceCubit>().refreshTodayAttendance();
+      if (!mounted) return;
+      final latestAttendance =
+          context.read<AttendanceCubit>().state.todayAttendance;
+      await context.read<HomeCubit>().refreshHomeData(
+        attendance: latestAttendance,
+      );
+      _refreshNotificationBadge();
+    } catch (_) {}
   }
 
   void _refreshNotificationBadge() {
@@ -55,6 +97,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final attendanceCubit = context.read<AttendanceCubit>();
+      // Guard: unknown state must never trigger a punch action.
+      if (attendanceCubit.state.todayAttendance.isUnknown) {
+        CustomToast.showError('تعذر تحديد حالة اليوم. أعد المحاولة.');
+        return;
+      }
       // Guard: if the day is already complete, don't attempt another action.
       if (attendanceCubit.state.todayAttendance.isCheckedOut) {
         CustomToast.showInfo('اليوم مكتمل بالفعل');
@@ -168,7 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: BlocBuilder<AttendanceCubit, AttendanceState>(
             builder: (context, attendanceState) {
               final attendanceInfo = _buildAttendanceInfo(
-                homeState,
                 attendanceState,
               );
 
@@ -222,6 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   attendanceState.isLoading ||
                                   _isProcessingAttendance,
                               onCheckInOut: _handleCheckInOut,
+                              onRetry: _refreshTodayState,
                               onNotificationTap: _handleViewNotifications,
                               onMenuTap: _handleViewOrganization,
                             ),
@@ -263,45 +310,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   AttendanceInfo _buildAttendanceInfo(
-    HomeState homeState,
     AttendanceState state,
   ) {
     final attendance = state.todayAttendance;
-    final apiCheckIn = _parseApiTime(homeState.todayAttendanceTime);
-    final apiCheckOut = _parseApiTime(homeState.todayDepartureTime);
-
-    final checkInTime = attendance.checkInTime ?? apiCheckIn;
-    final checkOutTime = attendance.checkOutTime ?? apiCheckOut;
-    final isCheckedOut = attendance.isCheckedOut || checkOutTime != null;
-    final isCheckedIn = attendance.isCheckedIn || checkInTime != null;
 
     return AttendanceInfo(
-      status: isCheckedOut
+      status: attendance.isCheckedOut
           ? AttendanceStatus.checkedOut
-          : isCheckedIn
+          : attendance.isCheckedIn
           ? AttendanceStatus.checkedIn
           : AttendanceStatus.notCheckedIn,
-      checkInTime: checkInTime,
-      checkOutTime: checkOutTime,
+      checkInTime: attendance.checkInTime,
+      checkOutTime: attendance.checkOutTime,
+      isUnknown: attendance.isUnknown,
     );
-  }
-
-  DateTime? _parseApiTime(String? value) {
-    if (value == null || value.trim().isEmpty) return null;
-
-    try {
-      final parts = value.split(':');
-      if (parts.length < 2) return null;
-
-      final now = DateTime.now();
-      final hour = int.tryParse(parts[0]) ?? 0;
-      final minute = int.tryParse(parts[1]) ?? 0;
-      final second = parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0;
-
-      return DateTime(now.year, now.month, now.day, hour, minute, second);
-    } catch (_) {
-      return null;
-    }
   }
 }
 

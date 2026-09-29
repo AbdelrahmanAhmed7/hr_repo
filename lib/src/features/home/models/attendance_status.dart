@@ -8,11 +8,13 @@ class AttendanceInfo {
   final AttendanceStatus status;
   final DateTime? checkInTime;
   final DateTime? checkOutTime;
+  final bool isUnknown;
 
   AttendanceInfo({
     required this.status,
     this.checkInTime,
     this.checkOutTime,
+    this.isUnknown = false,
   });
 
   String get statusText {

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediconsult_internal/src/core/time/server_clock.dart';
 import 'package:mediconsult_internal/src/features/attendance/cubit/attendance_cubit.dart';
-import 'package:mediconsult_internal/src/features/attendance/models/attendance_checkin_request.dart';
 import 'package:mediconsult_internal/src/features/attendance/models/attendance_list_response.dart';
 import 'package:mediconsult_internal/src/features/attendance/models/attendance_record.dart';
 import 'package:mediconsult_internal/src/features/attendance/models/monthly_report_file.dart';

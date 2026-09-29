@@ -8,6 +8,7 @@ class CheckInOutSection extends StatelessWidget {
   final TodayAttendance todayAttendance;
   final VoidCallback? onCheckIn;
   final VoidCallback? onCheckOut;
+  final VoidCallback? onRetry;
   final bool isLoading;
 
   const CheckInOutSection({
@@ -15,6 +16,7 @@ class CheckInOutSection extends StatelessWidget {
     required this.todayAttendance,
     this.onCheckIn,
     this.onCheckOut,
+    this.onRetry,
     this.isLoading = false,
   });
 
@@ -95,6 +97,9 @@ class CheckInOutSection extends StatelessWidget {
   }
 
   String _sectionSubtitle() {
+    if (todayAttendance.isUnknown) {
+      return 'تعذر تحديد حالة اليوم.';
+    }
     if (!todayAttendance.isCheckedIn) {
       return 'ابدأ يومك بتسجيل الحضور من هنا.';
     }
@@ -105,6 +110,9 @@ class CheckInOutSection extends StatelessWidget {
   }
 
   Widget _buildActionArea() {
+    if (todayAttendance.isUnknown) {
+      return _RetrySurface(onRetry: onRetry);
+    }
     if (!todayAttendance.isCheckedIn) {
       return _ActionSurface(
         title: 'ابدأ يومك الآن',
@@ -217,6 +225,70 @@ class _ActionSurface extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RetrySurface extends StatelessWidget {
+  final VoidCallback? onRetry;
+
+  const _RetrySurface({this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onRetry,
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.warning.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.warning,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.refresh_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'تعذر تحديد الحالة',
+                    style: AppTextStyles.titleSmall.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'تحقق من الاتصال ثم أعد المحاولة',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
