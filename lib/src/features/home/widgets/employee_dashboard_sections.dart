@@ -36,6 +36,7 @@ class EmployeeImmersiveTopSection extends StatelessWidget {
   final String greeting;
   final bool isLoading;
   final VoidCallback? onCheckInOut;
+  final VoidCallback? onRetry;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onMenuTap;
 
@@ -46,6 +47,7 @@ class EmployeeImmersiveTopSection extends StatelessWidget {
     required this.greeting,
     required this.isLoading,
     required this.onCheckInOut,
+    this.onRetry,
     required this.onNotificationTap,
     required this.onMenuTap,
   });
@@ -250,10 +252,72 @@ class EmployeeImmersiveTopSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: (isLoading || isCheckedOut) ? null : onCheckInOut,
+                  if (attendanceInfo.isUnknown)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: onRetry,
+                        borderRadius: BorderRadius.circular(14),
+                        child: Ink(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AppColors.warning,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'تعذر تحديد حالة اليوم',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.titleSmall.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'تحقق من الاتصال ثم أعد المحاولة',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: (isLoading || isCheckedOut)
+                            ? null
+                            : onCheckInOut,
                       borderRadius: BorderRadius.circular(14),
                       child: Ink(
                         padding: const EdgeInsets.all(12),

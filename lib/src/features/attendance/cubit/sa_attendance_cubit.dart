@@ -100,10 +100,12 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
     return {};
   }
 
-  Future<void> loadAttendance({DateTime? date}) async {
+  Future<void> loadAttendance({DateTime? date, bool showLoading = true}) async {
     final targetDate = date ?? state.selectedDate;
 
-    emit(state.copyWith(status: SAAttendanceStatus.loading));
+    if (showLoading) {
+      emit(state.copyWith(status: SAAttendanceStatus.loading));
+    }
 
     try {
       final response = await _repository.getAllAttendance(
@@ -140,8 +142,11 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
   Future<void> loadAttendanceWithRange({
     required DateTime startDate,
     required DateTime endDate,
+    bool showLoading = true,
   }) async {
-    emit(state.copyWith(status: SAAttendanceStatus.loading));
+    if (showLoading) {
+      emit(state.copyWith(status: SAAttendanceStatus.loading));
+    }
 
     try {
       final response = await _repository.getAllAttendance(
@@ -193,6 +198,26 @@ class SAAttendanceCubit extends Cubit<SAAttendanceState> {
 
   Future<void> goToToday() async {
     await changeDate(DateTime.now());
+  }
+
+  /// Re-fetch using the currently active selection, preserving every filter
+  /// (date range, department, device type, status, search).
+  ///
+  /// Used by pull-to-refresh. Skips the full-screen shimmer when cached
+  /// records exist so the list stays visible under the refresh indicator;
+  /// on failure the error state is emitted and the UI keeps showing the
+  /// stale data with a retry option.
+  Future<void> refresh() async {
+    final silent = state.records.isNotEmpty;
+    if (state.startDate != null && state.endDate != null) {
+      await loadAttendanceWithRange(
+        startDate: state.startDate!,
+        endDate: state.endDate!,
+        showLoading: !silent,
+      );
+    } else {
+      await loadAttendance(showLoading: !silent);
+    }
   }
 
   void applyFilter(AttendanceFilter filter) {

@@ -97,7 +97,14 @@ class NotificationModel {
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
+    // Server clock slightly ahead of the device (or UTC vs local skew) can
+    // stamp a just-created notification a few minutes in the future. Showing
+    // an absolute date for it looks like a wrong/stale date, so treat the
+    // near future as "now".
     if (date.isAfter(now)) {
+      if (date.difference(now) <= const Duration(hours: 24)) {
+        return 'الآن';
+      }
       return AppDateUtils.formatDate(date);
     }
     final difference = now.difference(date);
@@ -149,9 +156,38 @@ class NotificationModel {
 
   factory NotificationModel.fromApi(Map<String, dynamic> json) {
     // `createdAt` may arrive as ISO-8601, `yyyy-MM-dd[ HH:mm:ss]`,
-    // `dd/MM/yyyy`, `MM/dd/yyyy` or epoch millis/seconds. Parse explicitly so
-    // a valid-but-non-ISO date is never silently replaced with `DateTime.now()`.
-    final parsed = AppDateUtils.parseFlexible(json['createdAt']);
+    // `dd/MM/yyyy`, `MM/dd/yyyy` or epoch millis/seconds, and under
+    // different key casings/names depending on the endpoint. Try every known
+    // key and keep the first value that parses, so a valid-but-non-ISO date
+    // is never silently replaced with `DateTime.now()`.
+    DateTime? parsed;
+    Object? rawDate;
+    for (final key in const [
+      'createdAt',
+      'CreatedAt',
+      'creationTime',
+      'CreationTime',
+      'sentAt',
+      'SentAt',
+      'timestamp',
+      'Timestamp',
+      'date',
+      'Date',
+    ]) {
+      if (!json.containsKey(key) || json[key] == null) continue;
+      rawDate = json[key];
+      parsed = AppDateUtils.parseFlexible(rawDate);
+      if (parsed != null) break;
+    }
+    if (parsed == null && rawDate != null) {
+      // Surface the offending payload in debug logs so an unrecognised
+      // backend format can be captured from a device and added to the parser
+      // instead of silently showing a fabricated date.
+      assert(() {
+        debugPrint('[Notifications] unparseable date value: "$rawDate"');
+        return true;
+      }());
+    }
     final dateTime = parsed ?? DateTime.now();
 
     final messageRaw = json['message'] as String?;

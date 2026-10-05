@@ -9,6 +9,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/app_exception.dart';
 import '../../shared/widgets/error_state_widget.dart';
 import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/searchable_dropdown_field.dart';
@@ -113,9 +114,11 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
               // Tab 1: Attendance
               BlocBuilder<SAAttendanceCubit, SAAttendanceState>(
                 builder: (context, state) {
-                  return CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
+                  return RefreshIndicator(
+                    onRefresh: () => _handleRefresh(context),
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
                       SliverToBoxAdapter(
                         child: _SimpleDatePicker(
                           selectedDate: state.selectedDate,
@@ -151,6 +154,7 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
                       ),
                       _buildBodySliver(context, state),
                     ],
+                  ),
                   );
                 },
               ),
@@ -210,8 +214,18 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
     switch (state.status) {
       case SAAttendanceStatus.initial:
       case SAAttendanceStatus.loading:
+        // Keep stale data visible while a silent pull-to-refresh is in
+        // flight instead of flashing the shimmer over it.
+        if (state.filteredRecords.isNotEmpty) {
+          return _buildList(context, state);
+        }
         return _buildShimmer();
       case SAAttendanceStatus.error:
+        // A failed pull-to-refresh must not wipe the list: keep showing the
+        // cached records (the toast from _handleRefresh explains the failure).
+        if (state.filteredRecords.isNotEmpty) {
+          return _buildList(context, state);
+        }
         return SliverFillRemaining(
           hasScrollBody: false,
           child: ErrorStateWidget(
@@ -233,6 +247,18 @@ class _SAAttendanceContentState extends State<_SAAttendanceContent> {
           );
         }
         return _buildList(context, state);
+    }
+  }
+
+  /// Pull-to-refresh: re-calls the API with the current date/range and
+  /// filters intact, then toasts if the refresh failed.
+  Future<void> _handleRefresh(BuildContext context) async {
+    await context.read<SAAttendanceCubit>().refresh();
+    if (!context.mounted) return;
+    final state = context.read<SAAttendanceCubit>().state;
+    if (state.status == SAAttendanceStatus.error &&
+        state.records.isNotEmpty) {
+      CustomToast.showError(state.errorMessage ?? 'تعذر تحديث البيانات');
     }
   }
 
@@ -807,12 +833,16 @@ class _PunchTabContent extends StatelessWidget {
             }
             return false;
           },
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              const SliverToBoxAdapter(child: PunchFilterBar()),
-              _buildPunchBodySliver(context, state),
-            ],
+          child: RefreshIndicator(
+            onRefresh: () =>
+                context.read<PunchCubit>().loadSummary(refresh: true),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                const SliverToBoxAdapter(child: PunchFilterBar()),
+                _buildPunchBodySliver(context, state),
+              ],
+            ),
           ),
         );
       },

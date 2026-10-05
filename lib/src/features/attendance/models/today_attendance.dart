@@ -5,14 +5,16 @@ class TodayAttendance {
   final bool isCheckedOut;
   final String? location;
   final double? currentWorkHours;
+  final bool isUnknown;
 
-  TodayAttendance({
+  const TodayAttendance({
     this.checkInTime,
     this.checkOutTime,
     this.isCheckedIn = false,
     this.isCheckedOut = false,
     this.location,
     this.currentWorkHours,
+    this.isUnknown = false,
   });
 
   String get statusText {

@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/account_status.dart';
 import '../cubit/auth_state.dart';
 import '../../../core/constants/storage_keys.dart';
+import '../../../core/network/cache_interceptor.dart';
+import '../../attendance/cubit/attendance_cubit.dart';
 
 /// Service for handling authentication-related storage operations
 class AuthStorageService {
@@ -206,6 +208,14 @@ class AuthStorageService {
     await _secureStorage.delete(key: StorageKeys.authUserPhone);
     await _secureStorage.delete(key: StorageKeys.authExpiresAt);
     // Note: We don't remove accountStatus to maintain the approval state
+
+    // Drop offline HTTP cache + attendance snapshot so the next user on
+    // this device can never see the previous user's cached data.
+    try {
+      await CacheInterceptor.clearNetworkCache();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AttendanceCubit.todayCacheKey);
+    } catch (_) {}
   }
 
   static Future<String?> loadUserId() async {

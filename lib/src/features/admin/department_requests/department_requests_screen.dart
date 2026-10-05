@@ -77,6 +77,15 @@ class DepartmentRequestsScreen extends StatelessWidget {
             child: _EmptyView(),
           );
         }
+        if (state.visibleDepartments.isEmpty) {
+          return const SliverFillRemaining(
+            hasScrollBody: false,
+            child: _EmptyView(
+              title: 'لا توجد نتائج مطابقة',
+              hint: 'جرّب تغيير البحث أو الفلاتر',
+            ),
+          );
+        }
         return _DepartmentsList(state: state);
     }
   }
@@ -84,8 +93,26 @@ class DepartmentRequestsScreen extends StatelessWidget {
 
 // ─── Header ──────────────────────────────────────────────────────────────────
 
-class _Header extends StatelessWidget {
+class _Header extends StatefulWidget {
   const _Header();
+
+  @override
+  State<_Header> createState() => _HeaderState();
+}
+
+class _HeaderState extends State<_Header> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _clearFilters(DepartmentRequestsCubit cubit) {
+    _searchController.clear();
+    cubit.clearFilters();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,46 +120,26 @@ class _Header extends StatelessWidget {
     final state = cubit.state;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F1F46),
-            Color(0xFF173C7A),
-            Color(0xFF2354A5),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      color: Colors.white,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.16),
-                      ),
+                      color: AppColors.primaryTint,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
                       Icons.domain_rounded,
-                      color: Colors.white,
+                      color: AppColors.primary,
                       size: 24,
                     ),
                   ),
@@ -143,71 +150,190 @@ class _Header extends StatelessWidget {
                       children: [
                         Text(
                           'طلبات الأقسام',
-                          style: AppTextStyles.headlineMedium.copyWith(
-                            color: Colors.white,
+                          style: AppTextStyles.titleLarge.copyWith(
+                            color: AppColors.textPrimary,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
-                          '${state.departments.length} قسم • ${state.totalRequests} طلب',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white.withValues(alpha: 0.84),
+                          '${state.visibleDepartments.length} قسم • ${state.visibleTotalRequests} طلب',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.14),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _PeriodDropdown(
-                        icon: Icons.calendar_month_rounded,
-                        value: state.selectedMonth == 0
-                            ? null
-                            : state.selectedMonth,
-                        items: _kMonths.entries
-                            .map((e) => DropdownMenuItem<int?>(
-                                  value: e.key,
-                                  child: Text(e.value),
-                                ))
-                            .toList(),
-                        onChanged: (m) => cubit.changeMonth(m),
+                  if (state.hasActiveFilters)
+                    TextButton.icon(
+                      onPressed: () => _clearFilters(cubit),
+                      icon: const Icon(Icons.filter_alt_off_outlined, size: 16),
+                      label: const Text('مسح'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _PeriodDropdown<int>(
-                        icon: Icons.date_range_rounded,
-                        value: state.selectedYear,
-                        items: List.generate(5, (i) {
-                          final y = DateTime.now().year - i;
-                          return DropdownMenuItem<int>(
-                            value: y,
-                            child: Text('$y'),
-                          );
-                        }),
-                        onChanged: (y) {
-                          if (y != null) cubit.changeYear(y);
-                        },
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _searchController,
+                onChanged: cubit.applySearch,
+                decoration: InputDecoration(
+                  hintText: 'ابحث بقسم أو اسم موظف',
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textSecondary,
+                  ),
+                  suffixIcon: state.searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: AppColors.textSecondary,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            cubit.applySearch('');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: AppColors.backgroundSecondary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PeriodDropdown(
+                      icon: Icons.calendar_month_rounded,
+                      value: state.selectedMonth == 0
+                          ? null
+                          : state.selectedMonth,
+                      items: _kMonths.entries
+                          .map((e) => DropdownMenuItem<int?>(
+                                value: e.key,
+                                child: Text(e.value),
+                              ))
+                          .toList(),
+                      onChanged: (m) => cubit.changeMonth(m),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _PeriodDropdown<int>(
+                      icon: Icons.date_range_rounded,
+                      value: state.selectedYear,
+                      items: List.generate(5, (i) {
+                        final y = DateTime.now().year - i;
+                        return DropdownMenuItem<int>(
+                          value: y,
+                          child: Text('$y'),
+                        );
+                      }),
+                      onChanged: (y) {
+                        if (y != null) cubit.changeYear(y);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _StatusChip(
+                      label: 'الكل',
+                      color: AppColors.primary,
+                      selected: state.statusFilter == null,
+                      onTap: () => cubit.applyStatusFilter(null),
+                    ),
+                    const SizedBox(width: 8),
+                    _StatusChip(
+                      label: 'معلق',
+                      color: AppColors.warning,
+                      selected:
+                          state.statusFilter == DeptRequestStatus.pending,
+                      onTap: () => cubit.applyStatusFilter(
+                        DeptRequestStatus.pending,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _StatusChip(
+                      label: 'مقبول',
+                      color: AppColors.success,
+                      selected:
+                          state.statusFilter == DeptRequestStatus.approved,
+                      onTap: () => cubit.applyStatusFilter(
+                        DeptRequestStatus.approved,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _StatusChip(
+                      label: 'مرفوض',
+                      color: AppColors.error,
+                      selected:
+                          state.statusFilter == DeptRequestStatus.rejected,
+                      onTap: () => cubit.applyStatusFilter(
+                        DeptRequestStatus.rejected,
                       ),
                     ),
                   ],
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _StatusChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : AppColors.backgroundSecondary,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? color : AppColors.border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.labelMedium.copyWith(
+            color: selected ? color : AppColors.textSecondary,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),
@@ -231,10 +357,11 @@ class _PeriodDropdown<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.backgroundSecondary,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -246,7 +373,14 @@ class _PeriodDropdown<T> extends StatelessWidget {
                 isExpanded: true,
                 value: value,
                 borderRadius: BorderRadius.circular(16),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: AppColors.textPrimary,
+                ),
                 items: items.map((item) {
                   return DropdownMenuItem<T>(
                     value: item.value,
@@ -277,9 +411,7 @@ class _DepartmentsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final departments = state.departments
-        .where((d) => d.employees.isNotEmpty)
-        .toList();
+    final departments = state.visibleDepartments;
 
     if (departments.isEmpty) {
       return const SliverFillRemaining(
@@ -960,7 +1092,13 @@ class _ErrorView extends StatelessWidget {
 }
 
 class _EmptyView extends StatelessWidget {
-  const _EmptyView();
+  final String title;
+  final String hint;
+
+  const _EmptyView({
+    this.title = 'لا توجد أقسام أو طلبات',
+    this.hint = 'جرّب تغيير الشهر أو السنة',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -983,7 +1121,7 @@ class _EmptyView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'لا توجد أقسام أو طلبات',
+            title,
             style: AppTextStyles.titleMedium.copyWith(
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -991,7 +1129,7 @@ class _EmptyView extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'جرّب تغيير الشهر أو السنة',
+            hint,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),

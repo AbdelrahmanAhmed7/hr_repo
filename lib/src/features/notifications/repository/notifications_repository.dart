@@ -21,7 +21,11 @@ class NotificationsRepository {
         list = [];
       }
 
-      return NotificationModel.fromApiList(list);
+      final notifications = NotificationModel.fromApiList(list);
+      // Newest first: the API does not guarantee ordering, and without this
+      // stale items (e.g. old January dates) can sit on top of fresh ones.
+      notifications.sort((a, b) => b.date.compareTo(a.date));
+      return notifications;
     } catch (e) {
       throw AppException.from(e, fallbackMessage: 'تعذر تحميل الإشعارات.');
     }

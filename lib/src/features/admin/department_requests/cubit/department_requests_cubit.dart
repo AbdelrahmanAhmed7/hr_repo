@@ -8,6 +8,7 @@ import '../../../missions/repository/assignment_repository.dart';
 import '../../../permissions/repository/permission_repository.dart';
 import '../department_requests_service.dart';
 import 'department_requests_state.dart';
+import '../models/department_requests_response.dart';
 
 enum DeptRequestKind { leave, permission, assignment }
 
@@ -76,6 +77,27 @@ class DepartmentRequestsCubit extends Cubit<DepartmentRequestsState> {
   }
 
   Future<void> refresh() => load();
+
+  /// Client-side status filter — no reload, applied over loaded data.
+  void applyStatusFilter(DeptRequestStatus? filter) {
+    if (isClosed || state.statusFilter == filter) return;
+    if (filter == null) {
+      emit(state.copyWith(clearStatusFilter: true));
+    } else {
+      emit(state.copyWith(statusFilter: filter));
+    }
+  }
+
+  /// Client-side search by department or employee name — no reload.
+  void applySearch(String query) {
+    if (isClosed || state.searchQuery == query) return;
+    emit(state.copyWith(searchQuery: query));
+  }
+
+  void clearFilters() {
+    if (isClosed) return;
+    emit(state.copyWith(clearStatusFilter: true, searchQuery: ''));
+  }
 
   /// status: 1 = pending, 2 = approved, 3 = rejected (same as AdminRequestsCubit).
   Future<bool> updateRequestStatus({

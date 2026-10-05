@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediconsult_internal/src/features/attendance/cubit/attendance_state.dart';
@@ -20,20 +22,41 @@ class AttendanceScreen extends StatefulWidget {
   State<AttendanceScreen> createState() => _AttendanceScreenState();
 }
 
-class _AttendanceScreenState extends State<AttendanceScreen> {
+class _AttendanceScreenState extends State<AttendanceScreen>
+    with WidgetsBindingObserver {
   late final AttendanceScreenController _controller;
+  Timer? _resolveTimer;
 
   @override
   void initState() {
     super.initState();
     _controller = AttendanceScreenController();
     _controller.initialize(context);
+    WidgetsBinding.instance.addObserver(this);
+    _resolveTimer = Timer.periodic(
+      const Duration(seconds: 45),
+      (_) => _refreshTodayState(),
+    );
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _resolveTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshTodayState();
+    }
+  }
+
+  void _refreshTodayState() {
+    if (!mounted) return;
+    _controller.refreshToday(context);
   }
 
   @override
@@ -97,6 +120,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 context,
                                 mounted: mounted,
                               ),
+                              onRetry: () => _controller.refreshToday(context),
                               isLoading: _controller.isProcessingAttendance,
                             ),
                           Padding(

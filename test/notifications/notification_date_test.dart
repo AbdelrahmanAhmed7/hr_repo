@@ -58,6 +58,62 @@ void main() {
       expect(d.day, 1);
       expect(AppDateUtils.formatDate(d), '01/03/2026');
     });
+
+    test('12-hour clock with AM/PM parses (backend default string)', () {
+      final am = AppDateUtils.parseFlexible('31/01/2026 08:30:00 AM');
+      expect(am, isNotNull);
+      expect(am!.day, 31);
+      expect(am.month, 1);
+      expect(am.hour, 8);
+
+      final pm = AppDateUtils.parseFlexible('31/01/2026 08:30:00 PM');
+      expect(pm, isNotNull);
+      expect(pm!.hour, 20);
+
+      final us = AppDateUtils.parseFlexible('01/31/2026 08:30:00 AM');
+      expect(us, isNotNull);
+      expect(us!.day, 31);
+      expect(us.month, 1);
+    });
+
+    test('dash/dot separators and yyyy/MM/dd ordering parse', () {
+      for (final s in ['31-01-2026', '31.01.2026', '2026/01/31']) {
+        final d = AppDateUtils.parseFlexible(s);
+        expect(d, isNotNull, reason: s);
+        expect(d!.year, 2026, reason: s);
+        expect(d.month, 1, reason: s);
+        expect(d.day, 31, reason: s);
+      }
+      final withTime = AppDateUtils.parseFlexible('31-01-2026 08:30:00');
+      expect(withTime, isNotNull);
+      expect(withTime!.hour, 8);
+    });
+
+    test('legacy .NET /Date()/ payload parses as epoch', () {
+      final d = AppDateUtils.parseFlexible('/Date(1769817600000)/');
+
+      expect(d, isNotNull);
+      expect(d!.toUtc(), DateTime.utc(2026, 1, 31));
+    });
+
+    test('Arabic-Indic digits parse like Latin digits', () {
+      final d = AppDateUtils.parseFlexible('٣١/٠١/٢٠٢٦');
+
+      expect(d, isNotNull);
+      expect(d!.year, 2026);
+      expect(d.month, 1);
+      expect(d.day, 31);
+      expect(AppDateUtils.formatDate(d), '31/01/2026');
+    });
+
+    test('fractional seconds do not break slash formats', () {
+      final d = AppDateUtils.parseFlexible('31/01/2026 08:30:00.000');
+
+      expect(d, isNotNull);
+      expect(d!.day, 31);
+      expect(d.hour, 8);
+      expect(d.minute, 30);
+    });
   });
 
   group('NotificationModel.fromApi', () {
@@ -99,6 +155,34 @@ void main() {
       });
 
       expect(model.date, isNotNull);
+    });
+
+    test('capitalized CreatedAt key is honoured', () {
+      final model = NotificationModel.fromApi({
+        'id': '10',
+        'type': 'general',
+        'message': 'إشعار',
+        'isRead': false,
+        'CreatedAt': '2026-01-31T08:30:00',
+      });
+
+      expect(model.date.year, 2026);
+      expect(model.date.month, 1);
+      expect(model.date.day, 31);
+    });
+
+    test('near-future date from clock skew shows as now, not a stale date',
+        () {
+      final model = NotificationModel.fromApi({
+        'id': '11',
+        'type': 'general',
+        'message': 'إشعار جديد',
+        'isRead': false,
+        'createdAt':
+            DateTime.now().add(const Duration(hours: 2)).toIso8601String(),
+      });
+
+      expect(model.timeAgo, 'الآن');
     });
   });
 }

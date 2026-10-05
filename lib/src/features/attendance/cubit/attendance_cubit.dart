@@ -1,13 +1,12 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/service_locator.dart';
+import '../../../core/time/server_clock.dart';
 import '../../../core/utils/app_exception.dart';
 import '../../../core/utils/device_fingerprint.dart';
 import '../../../core/utils/work_rules.dart';
@@ -16,142 +15,141 @@ import '../../permissions/repository/permission_repository.dart';
 import '../models/attendance_record.dart';
 import '../models/today_attendance.dart';
 import '../repository/attendance_repository.dart';
+import '../utils/attendance_shift_resolver.dart';
 import 'attendance_state.dart';
 
 /// Attendance Cubit
 class AttendanceCubit extends Cubit<AttendanceState> {
   final AttendanceRepository _repository;
+  final ServerClock _serverClock;
 
-  AttendanceCubit(this._repository)
-    : super(AttendanceState(todayAttendance: TodayAttendance())) {
+  AttendanceCubit(this._repository, {ServerClock? serverClock})
+    : _serverClock = serverClock ?? ServerClock.instance,
+      super(AttendanceState(todayAttendance: TodayAttendance())) {
     _loadAttendanceState();
   }
 
-  static const String _keyTodayAttendance = 'attendance_today';
+  static const String todayCacheKey = 'attendance_today';
 
   /// Bumps when a check-in/out action starts so in-flight initial loads cannot
   /// overwrite fresher attendance state.
   int _stateGeneration = 0;
 
   /// Public refresh for today's attendance.
-  /// Ensures local cached attendance is cleared if API has no record.
   Future<void> refreshTodayAttendance() async {
     await _loadAttendanceState();
   }
 
-  /// Load saved attendance state from API
+  void _emitUnknown(int generation) {
+    if (generation != _stateGeneration || isClosed) return;
+    emit(
+      state.copyWith(todayAttendance: const TodayAttendance(isUnknown: true)),
+    );
+  }
+
+  /// Resolves today's punch state from today+yesterday records using the
+  /// server clock. Any failure (unsynced clock, either request failing)
+  /// yields unknown — never a default that could disable punch wrongly.
+  /// Displayed (history browsing) state is left untouched here.
   Future<void> _loadAttendanceState() async {
     final generation = ++_stateGeneration;
     debugPrint('[Attendance] loadToday start (gen=$generation)');
 
+    final synced = await _serverClock.waitForSync();
+    final now = _serverClock.tryCairoNow();
+    if (!synced || now == null) {
+      debugPrint('[Attendance] loadToday unsynced clock -> unknown');
+      _emitUnknown(generation);
+      return;
+    }
+
     try {
-      final record = await _repository.getTodayAttendance();
-      final todayPermissions = await _loadTodayPermissions();
-
-      if (generation != _stateGeneration) {
-        debugPrint(
-          '[Attendance] loadToday skipped stale emit (gen=$generation, current=$_stateGeneration)',
-        );
-        return;
-      }
-
-      if (record != null) {
-        final attendance = _convertRecordToTodayAttendance(record);
-        await _saveAttendanceState(attendance);
-        emit(
-          AttendanceState(
-            todayAttendance: attendance,
-            displayedAttendance: attendance,
-            todayPermissions: todayPermissions,
-          ),
-        );
-        debugPrint(
-          '[Attendance] loadToday emitted isCheckedIn=${attendance.isCheckedIn}, '
-          'isCheckedOut=${attendance.isCheckedOut}',
-        );
-        return;
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_keyTodayAttendance);
-      emit(
-        AttendanceState(
-          todayAttendance: TodayAttendance(),
-          displayedAttendance: TodayAttendance(),
-          todayPermissions: todayPermissions,
-        ),
+      final records = await _repository.getTodayAndYesterdayRecords(
+        cairoNow: now,
       );
-      debugPrint('[Attendance] loadToday emitted empty state');
-    } catch (_) {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final attendanceJson = prefs.getString(_keyTodayAttendance);
-        final todayPermissions = await _loadTodayPermissions();
+      final todayPermissions = await _loadTodayPermissions(now);
 
-        if (attendanceJson != null) {
-          final data = jsonDecode(attendanceJson) as Map<String, dynamic>;
-          final today = DateTime.now();
-          final savedDate = data['date'] != null
-              ? DateTime.parse(data['date'])
-              : null;
+      if (generation != _stateGeneration || isClosed) {
+        debugPrint('[Attendance] loadToday skipped stale emit');
+        return;
+      }
 
-          if (savedDate != null &&
-              savedDate.year == today.year &&
-              savedDate.month == today.month &&
-              savedDate.day == today.day) {
-            final attendance = TodayAttendance(
-              checkInTime: data['checkInTime'] != null
-                  ? DateTime.parse(data['checkInTime'])
-                  : null,
-              checkOutTime: data['checkOutTime'] != null
-                  ? DateTime.parse(data['checkOutTime'])
-                  : null,
-              isCheckedIn: data['isCheckedIn'] ?? false,
-              isCheckedOut: data['isCheckedOut'] ?? false,
-              location: data['location'],
-              currentWorkHours: data['currentWorkHours']?.toDouble(),
-            );
-            if (generation != _stateGeneration) return;
-
-            emit(
-              AttendanceState(
-                todayAttendance: attendance,
-                displayedAttendance: attendance,
-                todayPermissions: todayPermissions,
+      final resolved = resolveAttendanceState(records: records, now: now);
+      for (final warning in resolved.warnings) {
+        debugPrint('[Attendance] $warning');
+      }
+      switch (resolved.status) {
+        case AttendanceShiftStatus.checkedInActive:
+          final checkIn = resolved.checkInDateTime!;
+          emit(
+            AttendanceState(
+              todayAttendance: TodayAttendance(
+                checkInTime: checkIn,
+                isCheckedIn: true,
+                currentWorkHours: WorkRules.workedHours(checkIn, now),
               ),
-            );
-            debugPrint(
-              '[Attendance] loadToday cache emitted isCheckedIn=${attendance.isCheckedIn}',
-            );
-            return;
-          }
-        }
-      } catch (_) {}
-
-      if (generation != _stateGeneration) return;
-
-      emit(
-        AttendanceState(
-          todayAttendance: TodayAttendance(),
-          displayedAttendance: TodayAttendance(),
-        ),
+              displayedAttendance: state.displayedAttendance,
+              todayPermissions: todayPermissions,
+            ),
+          );
+        case AttendanceShiftStatus.completed:
+          final checkIn = resolved.checkInDateTime!;
+          final departure = resolved.departureDateTime!;
+          emit(
+            AttendanceState(
+              todayAttendance: TodayAttendance(
+                checkInTime: checkIn,
+                checkOutTime: departure,
+                isCheckedIn: true,
+                isCheckedOut: true,
+                currentWorkHours: WorkRules.workedHours(checkIn, departure),
+              ),
+              displayedAttendance: state.displayedAttendance,
+              todayPermissions: todayPermissions,
+            ),
+          );
+        case AttendanceShiftStatus.staleOpen:
+          debugPrint(
+            '[Attendance] stale open shift, check-in stays available',
+          );
+          emit(
+            AttendanceState(
+              todayAttendance: TodayAttendance(),
+              displayedAttendance: state.displayedAttendance,
+              todayPermissions: todayPermissions,
+            ),
+          );
+        case AttendanceShiftStatus.noRecord:
+          emit(
+            AttendanceState(
+              todayAttendance: TodayAttendance(),
+              displayedAttendance: state.displayedAttendance,
+              todayPermissions: todayPermissions,
+            ),
+          );
+        case AttendanceShiftStatus.unknown:
+          _emitUnknown(generation);
+      }
+      debugPrint(
+        '[Attendance] loadToday resolved status=${resolved.status}',
       );
-      debugPrint('[Attendance] loadToday fallback empty state');
+    } catch (_) {
+      debugPrint('[Attendance] loadToday failed -> unknown');
+      _emitUnknown(generation);
     }
   }
 
   /// Load today's permissions from permission repository
-  Future<List<PermissionRequest>> _loadTodayPermissions() async {
+  Future<List<PermissionRequest>> _loadTodayPermissions(DateTime now) async {
     try {
       final permissionRepo = getIt<PermissionRepository>();
       final allPermissions = await permissionRepo.getMyPermissions();
-      final today = DateTime.now();
       return allPermissions
           .where(
             (p) =>
-                p.date.year == today.year &&
-                p.date.month == today.month &&
-                p.date.day == today.day,
+                p.date.year == now.year &&
+                p.date.month == now.month &&
+                p.date.day == now.day,
           )
           .toList();
     } catch (_) {
@@ -191,23 +189,6 @@ class AttendanceCubit extends Cubit<AttendanceState> {
     );
   }
 
-  /// Save attendance state to SharedPreferences
-  Future<void> _saveAttendanceState(TodayAttendance attendance) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final data = {
-        'date': DateTime.now().toIso8601String(),
-        'checkInTime': attendance.checkInTime?.toIso8601String(),
-        'checkOutTime': attendance.checkOutTime?.toIso8601String(),
-        'isCheckedIn': attendance.isCheckedIn,
-        'isCheckedOut': attendance.isCheckedOut,
-        'location': attendance.location,
-        'currentWorkHours': attendance.currentWorkHours,
-      };
-      await prefs.setString(_keyTodayAttendance, jsonEncode(data));
-    } catch (_) {}
-  }
-
   /// Check In with API
   Future<void> checkIn({
     String? location,
@@ -235,7 +216,6 @@ class AttendanceCubit extends Cubit<AttendanceState> {
         fallbackRecord: record,
         isCheckIn: true,
       );
-      await _saveAttendanceState(newAttendance);
 
       if (actionGeneration != _stateGeneration) {
         debugPrint('[Attendance] checkIn skipped stale emit');
@@ -288,7 +268,6 @@ class AttendanceCubit extends Cubit<AttendanceState> {
         fallbackRecord: record,
         isCheckIn: false,
       );
-      await _saveAttendanceState(newAttendance);
 
       if (actionGeneration != _stateGeneration) {
         debugPrint('[Attendance] checkOut skipped stale emit');
@@ -315,7 +294,8 @@ class AttendanceCubit extends Cubit<AttendanceState> {
   }
 
   /// Mobile check-in/out responses may omit times even when the record is saved.
-  /// Re-fetch today's record, then fall back to an optimistic local update.
+  /// Re-resolves from today+yesterday records, then falls back to an
+  /// optimistic local update stamped with the server clock.
   Future<TodayAttendance> _resolveTodayAttendanceAfterAction({
     required AttendanceRecord fallbackRecord,
     required bool isCheckIn,
@@ -330,24 +310,44 @@ class AttendanceCubit extends Cubit<AttendanceState> {
       return fromAction;
     }
 
-    debugPrint('[Attendance] action response incomplete, re-fetching today');
-    final today = await _repository.getTodayAttendance();
-    if (today != null) {
-      final refreshed = _convertRecordToTodayAttendance(today);
-      final refreshedReflected = isCheckIn
-          ? refreshed.isCheckedIn
-          : refreshed.isCheckedOut;
-      if (refreshedReflected) {
-        debugPrint('[Attendance] re-fetch resolved today state');
-        return refreshed;
-      }
+    final serverNow = _serverClock.tryCairoNow();
+    if (serverNow != null) {
+      try {
+        final records = await _repository.getTodayAndYesterdayRecords(
+          cairoNow: serverNow,
+        );
+        final resolved = resolveAttendanceState(
+          records: records,
+          now: serverNow,
+        );
+        final checkIn = resolved.checkInDateTime;
+        if (resolved.status == AttendanceShiftStatus.checkedInActive &&
+            checkIn != null) {
+          return TodayAttendance(
+            checkInTime: checkIn,
+            isCheckedIn: true,
+            currentWorkHours: WorkRules.workedHours(checkIn, serverNow),
+          );
+        }
+        final departure = resolved.departureDateTime;
+        if (resolved.status == AttendanceShiftStatus.completed &&
+            checkIn != null &&
+            departure != null) {
+          return TodayAttendance(
+            checkInTime: checkIn,
+            checkOutTime: departure,
+            isCheckedIn: true,
+            isCheckedOut: true,
+            currentWorkHours: WorkRules.workedHours(checkIn, departure),
+          );
+        }
+      } catch (_) {}
     }
 
-    final now = DateTime.now();
+    debugPrint('[Attendance] optimistic fallback without server time');
     if (isCheckIn) {
-      debugPrint('[Attendance] optimistic check-in fallback');
       return TodayAttendance(
-        checkInTime: now,
+        checkInTime: serverNow,
         checkOutTime: state.todayAttendance.checkOutTime,
         isCheckedIn: true,
         isCheckedOut: state.todayAttendance.isCheckedOut,
@@ -358,15 +358,14 @@ class AttendanceCubit extends Cubit<AttendanceState> {
 
     final checkInTime =
         state.todayAttendance.checkInTime ?? fromAction.checkInTime;
-    debugPrint('[Attendance] optimistic check-out fallback');
     return TodayAttendance(
       checkInTime: checkInTime,
-      checkOutTime: now,
+      checkOutTime: serverNow,
       isCheckedIn: true,
       isCheckedOut: true,
       location: fallbackRecord.location ?? state.todayAttendance.location,
-      currentWorkHours: checkInTime != null
-          ? WorkRules.workedHours(checkInTime, now)
+      currentWorkHours: checkInTime != null && serverNow != null
+          ? WorkRules.workedHours(checkInTime, serverNow)
           : null,
     );
   }
@@ -379,9 +378,11 @@ class AttendanceCubit extends Cubit<AttendanceState> {
     );
     emit(state.copyWith(isLoading: true));
 
+    final serverToday = _serverClock.tryCairoNow();
+
     try {
       final record = await _repository.getAttendanceByDate(date);
-      final isToday = _isSameDay(date, DateTime.now());
+      final isToday = serverToday != null && _isSameDay(date, serverToday);
 
       if (loadGeneration != _stateGeneration) {
         debugPrint('[Attendance] loadByDate skipped stale emit');
@@ -423,7 +424,8 @@ class AttendanceCubit extends Cubit<AttendanceState> {
       debugPrint('[Attendance] loadByDate failed: $e');
       if (loadGeneration != _stateGeneration || isClosed) return;
 
-      final isToday = _isSameDay(date, DateTime.now());
+      final isToday =
+          serverToday != null && _isSameDay(date, serverToday);
       final preserveCheckedInToday =
           isToday && state.todayAttendance.isCheckedIn;
       emit(
