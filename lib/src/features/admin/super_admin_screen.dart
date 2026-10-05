@@ -99,6 +99,21 @@ class _SuperAdminScreenBody extends StatelessWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+
+        // A pushed detail page is open above the tabs — pop it first.
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.pop();
+          return;
+        }
+
+        // On any tab other than Home, back goes back to Home instead of
+        // exiting the app (same behaviour as the employee MainScreen).
+        if (currentIndex != 0) {
+          onIndexChanged(0);
+          return;
+        }
+
         final now = DateTime.now();
         if (lastBackPress == null ||
             now.difference(lastBackPress!) > const Duration(seconds: 2)) {

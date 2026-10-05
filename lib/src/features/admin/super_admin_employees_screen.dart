@@ -97,65 +97,77 @@ class _SuperAdminEmployeesScreenState extends State<SuperAdminEmployeesScreen> {
 
   Widget _buildHeader(EmployeesState state) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.25),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.primaryTint,
+                borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
                 Icons.people_alt_outlined,
-                color: Colors.white,
-                size: 24,
+                color: AppColors.primary,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'الموظفون',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                    style: AppTextStyles.titleLarge.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${state.totalCount} موظف',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 13,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
+            if (_hasActiveFilters(state))
+              TextButton.icon(
+                onPressed: _clearFilters,
+                icon: const Icon(Icons.filter_alt_off_outlined, size: 16),
+                label: const Text('مسح'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  textStyle: AppTextStyles.labelMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  bool _hasActiveFilters(EmployeesState state) {
+    return state.selectedDepartmentId != null ||
+        state.selectedIsActive != true;
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    context.read<EmployeesCubit>().applyFilters(
+          clearDepartment: true,
+          isActive: true,
+        );
   }
 
   Widget _buildSearchBar(EmployeesState state) {
@@ -190,33 +202,43 @@ class _SuperAdminEmployeesScreenState extends State<SuperAdminEmployeesScreen> {
   Widget _buildFilterChips(EmployeesState state) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       child: Row(
         children: [
-          _FilterChip(
-            icon: Icons.business_rounded,
-            label: state.selectedDepartmentId == null
-                ? 'كل الأقسام'
-                : _departmentName(state),
-            selected: state.selectedDepartmentId != null,
-            onTap: () => _showDepartmentPicker(state),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _FilterChip(
+                    icon: Icons.business_rounded,
+                    label: state.selectedDepartmentId == null
+                        ? 'كل الأقسام'
+                        : _departmentName(state),
+                    selected: state.selectedDepartmentId != null,
+                    onTap: () => _showDepartmentPicker(state),
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    icon: Icons.toggle_on_outlined,
+                    label: state.selectedIsActive == null
+                        ? 'الحالة'
+                        : (state.selectedIsActive! ? 'نشط' : 'غير نشط'),
+                    selected: state.selectedIsActive != true,
+                    onTap: () => _showStatusPicker(state),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            icon: Icons.toggle_on_outlined,
-            label: state.selectedIsActive == null
-                ? 'الحالة'
-                : (state.selectedIsActive! ? 'نشط' : 'غير نشط'),
-            selected: state.selectedIsActive != null,
-            onTap: () => _showStatusPicker(state),
-          ),
-          const Spacer(),
-          if (state.isLoading)
+          if (state.isLoading) ...[
+            const SizedBox(width: 8),
             const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
+          ],
         ],
       ),
     );
