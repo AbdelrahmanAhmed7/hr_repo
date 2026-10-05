@@ -467,15 +467,15 @@ class _DepartmentCard extends StatelessWidget {
           title: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryTint,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.backgroundSecondary,
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
                   Icons.apartment_rounded,
-                  color: AppColors.primary,
+                  color: AppColors.textSecondary,
                   size: 22,
                 ),
               ),
@@ -589,21 +589,17 @@ class _EmployeeSection extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 alignment: Alignment.center,
                 decoration: const BoxDecoration(
+                  color: AppColors.backgroundSecondary,
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                  ),
                 ),
                 child: Text(
                   _initials,
                   style: AppTextStyles.labelMedium.copyWith(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -802,44 +798,51 @@ class _RequestRow extends StatelessWidget {
       builder: (sheetContext) => SafeArea(
         child: Container(
           margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
+          child: Material(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  'تغيير القرار',
-                  style: AppTextStyles.titleSmall.copyWith(
-                    fontWeight: FontWeight.w800,
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      'تغيير القرار',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-                ),
+                  ListTile(
+                    leading:
+                        const Icon(Icons.check_rounded, color: AppColors.success),
+                    title: const Text('اعتماد الطلب'),
+                    onTap: () => Navigator.pop(sheetContext, 'approve'),
+                  ),
+                  ListTile(
+                    leading:
+                        const Icon(Icons.close_rounded, color: AppColors.error),
+                    title: const Text('رفض الطلب'),
+                    onTap: () => Navigator.pop(sheetContext, 'reject'),
+                  ),
+                  ListTile(
+                    leading:
+                        const Icon(Icons.undo_rounded, color: AppColors.warning),
+                    title: const Text('إرجاع لقيد الانتظار'),
+                    onTap: () => Navigator.pop(sheetContext, 'pending'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.cancel_outlined,
+                        color: AppColors.textTertiary),
+                    title: const Text('إلغاء'),
+                    onTap: () => Navigator.pop(sheetContext),
+                  ),
+                ],
               ),
-              ListTile(
-                leading: const Icon(Icons.check_rounded, color: AppColors.success),
-                title: const Text('اعتماد الطلب'),
-                onTap: () => Navigator.pop(sheetContext, 'approve'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.close_rounded, color: AppColors.error),
-                title: const Text('رفض الطلب'),
-                onTap: () => Navigator.pop(sheetContext, 'reject'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.undo_rounded, color: AppColors.warning),
-                title: const Text('إرجاع لقيد الانتظار'),
-                onTap: () => Navigator.pop(sheetContext, 'pending'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.cancel_outlined, color: AppColors.textTertiary),
-                title: const Text('إلغاء'),
-                onTap: () => Navigator.pop(sheetContext),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -870,11 +873,18 @@ class _RequestRow extends StatelessWidget {
     final anyUpdating = updatingKey != null;
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -882,13 +892,13 @@ class _RequestRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(icon, color: accent, size: 16),
+                child: Icon(icon, color: accent, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -912,7 +922,7 @@ class _RequestRow extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.1),
@@ -929,13 +939,14 @@ class _RequestRow extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.labelSmall.copyWith(
                         color: AppColors.textSecondary,
+                        height: 1.5,
                       ),
                     ),
                   ],

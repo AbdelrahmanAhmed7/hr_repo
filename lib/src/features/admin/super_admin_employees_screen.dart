@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -9,6 +10,8 @@ import '../../features/hr/employee_profile_screen.dart';
 import '../../features/hr/models/employee.dart';
 import '../../shared/utils/debouncer.dart';
 import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/error_state_widget.dart';
+import '../../shared/widgets/shimmer_loading.dart';
 
 /// Lightweight read-only employees list for the Super Admin.
 /// Reuses the EmployeesCubit/APIs but with a compact UI (slim header +
@@ -374,80 +377,125 @@ class _SuperAdminEmployeesScreenState extends State<SuperAdminEmployeesScreen> {
 
   Widget _buildList(BuildContext context, EmployeesState state) {
     if (state.isLoading && state.employees.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildLoadingShimmer();
     }
     if (state.error != null && state.employees.isEmpty) {
-      return _buildErrorState(state.error!);
+      return ErrorStateWidget(
+        error: state.error!,
+        buttonLabel: 'إعادة المحاولة',
+        onRetry: () => context.read<EmployeesCubit>().loadInitialData(),
+      );
     }
     if (state.employees.isEmpty) {
       return const EmptyStateWidget(
         icon: Icons.people_outline,
         title: 'لا يوجد موظفون',
         message: 'لم يتم العثور على موظفين بالمعايير الحالية',
-        iconColor: AppColors.primary,
+        iconColor: AppColors.textTertiary,
       );
     }
-    return NotificationListener<ScrollNotification>(
-      onNotification: (n) {
-        if (n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
-          final cubit = context.read<EmployeesCubit>();
-          if (!cubit.state.isLoadingMore && cubit.state.hasMore) {
-            cubit.loadMoreEmployees();
-          }
-        }
-        return false;
-      },
-      child: ListView.separated(
-        controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-        itemCount: state.employees.length +
-            (state.isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          if (index >= state.employees.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            );
-          }
-          final employee = state.employees[index];
-          return _CompactEmployeeTile(
-            employee: employee,
-            onTap: () => _handleEmployeeTap(employee),
-          );
-        },
-      ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+          child: Row(
+            children: [
+              Text(
+                '${state.totalCount} موظف',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (state.isLoading) ...[
+                const SizedBox(width: 8),
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () =>
+                context.read<EmployeesCubit>().loadInitialData(),
+            child: ListView.separated(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+              itemCount:
+                  state.employees.length + (state.isLoadingMore ? 1 : 0),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                if (index >= state.employees.length) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child:
+                        Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  );
+                }
+                final employee = state.employees[index];
+                return _CompactEmployeeTile(
+                  employee: employee,
+                  onTap: () => _handleEmployeeTap(employee),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline,
-                size: 56, color: AppColors.error),
-            const SizedBox(height: 16),
-            Text(error,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: AppColors.textSecondary)),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () =>
-                  context.read<EmployeesCubit>().loadInitialData(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('إعادة المحاولة'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
+  Widget _buildLoadingShimmer() {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      itemCount: 8,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ],
-        ),
-      ),
+            child: Row(
+              children: [
+                const ShimmerPlaceholder(
+                  width: 46,
+                  height: 46,
+                  borderRadius: 23,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ShimmerPlaceholder(
+                        width: 140 + (index % 3) * 30.0,
+                        height: 14,
+                        borderRadius: 4,
+                      ),
+                      const SizedBox(height: 8),
+                      const ShimmerPlaceholder(
+                        width: 100,
+                        height: 10,
+                        borderRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -511,50 +559,110 @@ class _CompactEmployeeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isActive = employee.isActive != false;
+    final statusColor = isActive ? AppColors.success : AppColors.error;
+
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       elevation: 0,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: Text(
-                  employee.initials,
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.backgroundSecondary,
+                    child: Text(
+                      employee.initials,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-                ),
+                  Positioned(
+                    left: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2.5),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      employee.fullName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
                     Row(
                       children: [
-                        if (employee.position != null) ...[
+                        Expanded(
+                          child: Text(
+                            employee.fullName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            isActive ? 'نشط' : 'غير نشط',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: statusColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        if (employee.position != null &&
+                            employee.position!.isNotEmpty) ...[
+                          const Icon(
+                            Icons.work_outline_rounded,
+                            size: 13,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(width: 4),
                           Flexible(
                             child: Text(
                               employee.position!,
@@ -565,12 +673,24 @@ class _CompactEmployeeTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
                         ],
-                        if (employee.department != null)
+                        if (employee.position != null &&
+                            employee.position!.isNotEmpty &&
+                            employee.department != null &&
+                            employee.department!.isNotEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text(
+                              '•',
+                              style:
+                                  TextStyle(color: AppColors.textTertiary),
+                            ),
+                          ),
+                        if (employee.department != null &&
+                            employee.department!.isNotEmpty)
                           Flexible(
                             child: Text(
-                              '• ${employee.department!}',
+                              employee.department!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppTextStyles.labelSmall.copyWith(
@@ -583,25 +703,12 @@ class _CompactEmployeeTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              if (employee.isActive == false)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'غير نشط',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.textTertiary, size: 22),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.chevron_left_rounded,
+                color: AppColors.textTertiary,
+                size: 22,
+              ),
             ],
           ),
         ),
