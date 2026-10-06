@@ -50,6 +50,14 @@ class PushNotificationService {
   Stream<NotificationAction> get onNotificationAction =>
       _notificationActionController.stream;
 
+  /// Fires for every FCM message received while the app is in the foreground,
+  /// BEFORE/ALONGSIDE the tray display. Screens with server-driven lists
+  /// (e.g. notifications) subscribe to refresh immediately so a just-arrived
+  /// item never sits stale/buried until the next manual pull-to-refresh.
+  final _foregroundMessageController = StreamController<void>.broadcast();
+  Stream<void> get onForegroundMessage =>
+      _foregroundMessageController.stream;
+
   final _tokenController = StreamController<String>.broadcast();
   Stream<String> get onTokenRefresh => _tokenController.stream;
 
@@ -237,7 +245,13 @@ class PushNotificationService {
           android?.imageUrl;
 
       final largeIconUrl = data['largeIcon'] as String? ?? imageUrl;
-      final groupKey = data['group'] as String? ?? 'mc_general_group';
+      // Group ONLY when the server asks for it. A forced shared group key
+      // bundles every push into one collapsed Android group row, so fresh
+      // notifications end up buried inside it and users never see them.
+      // Null = standalone row, newest on top.
+      final groupKey = (data['group'] as String?)?.trim().isNotEmpty == true
+          ? (data['group'] as String).trim()
+          : null;
       final colorHex = data['color'] as String?;
       final channelId = data['channel'] as String? ?? 'high_importance_channel';
       final channelName = channelId == 'promotions'
@@ -298,6 +312,10 @@ class PushNotificationService {
         );
       }
 
+      // True server time in the tray (not post time): each row shows when
+      // FCM actually sent it, and Android orders rows by this timestamp.
+      final sentTimeMillis = message.sentTime?.millisecondsSinceEpoch;
+
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
             channelId,
@@ -310,6 +328,7 @@ class PushNotificationService {
             enableVibration: true,
             styleInformation: styleInfo,
             showWhen: true,
+            when: sentTimeMillis,
             ticker: title,
             largeIcon: largeIconBitmap,
             color: colorHex != null ? _parseColor(colorHex) : null,
@@ -330,11 +349,12 @@ class PushNotificationService {
             ],
           );
 
-      const iosDetails = DarwinNotificationDetails(
+      final iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
         interruptionLevel: InterruptionLevel.active,
+        threadIdentifier: groupKey,
       );
 
       final notificationDetails = NotificationDetails(
@@ -342,8 +362,11 @@ class PushNotificationService {
         iOS: iosDetails,
       );
 
-      // FIX 2: Use unique ID based on timestamp to avoid overwriting notifications
-      final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+      // Stable unique ID per FCM message: redeliveries of the same message
+      // update it in place instead of duplicating, and distinct messages
+      // never collide (the old `% 100000` cycled every 100s, so a fresh
+      // notification could silently REPLACE another one — or vanish).
+      final notificationId = _notificationId(message);
 
       // Show notification
       await _localNotifications.show(
@@ -361,6 +384,13 @@ class PushNotificationService {
   }
 
   // ---- Helpers for rich notifications (Android) ----
+
+  /// Positive 31-bit ID, stable per FCM message within a process lifetime.
+  static int _notificationId(RemoteMessage message) {
+    final mid = message.messageId;
+    if (mid != null && mid.isNotEmpty) return mid.hashCode & 0x7fffffff;
+    return DateTime.now().millisecondsSinceEpoch & 0x7fffffff;
+  }
 
   String? _dataString(Map<String, dynamic> data, String key) {
     final value = data[key];
@@ -401,6 +431,9 @@ class PushNotificationService {
             '[NotificationNav:source=foreground] Foreground message: '
             '${message.messageId} data=${message.data}',
           );
+        }
+        if (!_foregroundMessageController.isClosed) {
+          _foregroundMessageController.add(null);
         }
         showNotification(message);
       });
@@ -636,6 +669,7 @@ class PushNotificationService {
   /// Dispose resources
   void dispose() {
     _notificationActionController.close();
+    _foregroundMessageController.close();
     _tokenController.close();
     _isInitialized = false;
     if (kDebugMode) debugPrint('PushNotificationService disposed');
