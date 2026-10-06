@@ -31,6 +31,7 @@ class RecentActivity {
   final double? totalHours;
   final double? amount;
   final String? deductionType;
+  final DateTime? createdAt;
 
   RecentActivity({
     required this.id,
@@ -53,6 +54,7 @@ class RecentActivity {
     this.totalHours,
     this.amount,
     this.deductionType,
+    this.createdAt,
   });
 
   RecentActivity copyWith({
@@ -76,6 +78,7 @@ class RecentActivity {
     double? totalHours,
     double? amount,
     String? deductionType,
+    DateTime? createdAt,
   }) {
     return RecentActivity(
       id: id ?? this.id,
@@ -99,8 +102,13 @@ class RecentActivity {
       totalHours: totalHours ?? this.totalHours,
       amount: amount ?? this.amount,
       deductionType: deductionType ?? this.deductionType,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  /// التاريخ الصحيح لإنشاء الطلب — يُستخدم في اتخاذ القرار
+  /// (يختلف عن تاريخ الإجازة/الإذن/المأمورية نفسها).
+  DateTime get effectiveCreatedAt => createdAt ?? date;
 
   String get typeText {
     switch (type) {
@@ -168,11 +176,12 @@ class RecentActivity {
       startTime: _formatTimeOfDay(permission.startTime.hour, permission.startTime.minute),
       endTime: _formatTimeOfDay(permission.endTime.hour, permission.endTime.minute),
       rejectionReason: permission.rejectionReason,
+      createdAt: permission.submittedDate,
     );
   }
 
   static String _formatTimeOfDay(int hour, int minute) {
-    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    return AppDateUtils.formatTime12h(DateTime(2026, 1, 1, hour, minute));
   }
 
   /// Convert LeaveRequestModel to RecentActivity
@@ -201,6 +210,7 @@ class RecentActivity {
       endDate: leave.endDateDateTime,
       leaveType: leave.leaveType,
       rejectionReason: leave.rejectionReason,
+      createdAt: leave.submittedDate,
     );
   }
 
@@ -230,6 +240,7 @@ class RecentActivity {
       startDate: mission.startDate,
       endDate: mission.endDate,
       rejectionReason: mission.rejectionReason,
+      createdAt: mission.submittedDate,
     );
   }
 
@@ -298,6 +309,7 @@ class RecentActivity {
     }
 
     final date = _resolveRequestDate(item);
+    final createdAt = _resolveCreatedAt(item);
     final startDate = _tryParseDate(item.startDate?.toString());
     final endDate = _tryParseDate(item.endDate?.toString());
 
@@ -329,6 +341,7 @@ class RecentActivity {
       totalHours: _toDouble(totalHoursValue),
       amount: _toDouble(amountValue),
       deductionType: deductionType,
+      createdAt: createdAt,
     );
   }
 
@@ -395,6 +408,7 @@ class RecentActivity {
         ? DateTime.tryParse(r.startDate!)
         : null;
     final endDate = r.endDate != null ? DateTime.tryParse(r.endDate!) : null;
+    final createdAt = _tryParseDate(r.createdAt);
 
     return RecentActivity(
       id: r.id.toString(),
@@ -411,6 +425,7 @@ class RecentActivity {
       startTime: r.startTime,
       endTime: r.endTime,
       location: r.where,
+      createdAt: createdAt,
     );
   }
 
@@ -462,6 +477,7 @@ class RecentActivity {
       date: notification.date,
       description: summary,
       userName: userName,
+      createdAt: notification.date,
     );
   }
 
@@ -493,6 +509,21 @@ class RecentActivity {
     return DateTime.now();
   }
 
+  static DateTime? _resolveCreatedAt(dynamic item) {
+    dynamic raw;
+    if (item is Map) {
+      raw = item['createdAt'];
+    } else {
+      try {
+        raw = item.createdAt;
+      } catch (_) {
+        raw = _readDynamicField(item, 'createdAt');
+      }
+    }
+    if (raw == null) return null;
+    return _tryParseDate(raw.toString());
+  }
+
   static DateTime? _tryParseDate(String? value) {
     if (value == null || value.trim().isEmpty) return null;
     return AppDateUtils.parseFlexible(value);
@@ -520,6 +551,8 @@ class RecentActivity {
     final dynamic source = item;
     try {
       switch (key) {
+        case 'createdAt':
+          return source.createdAt;
         case 'employeeNameAr':
           return source.employeeNameAr;
         case 'employeeNameEn':

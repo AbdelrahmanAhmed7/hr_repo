@@ -33,7 +33,16 @@ void main() {
     final now = DateTime.now();
     await _pumpCard(tester, DateTime(now.year, now.month, now.day, 8, 17));
 
-    expect(find.textContaining('08:17'), findsOneWidget);
+    // Header + explicit creation-date banner both show the time.
+    expect(find.textContaining('08:17'), findsWidgets);
+    expect(find.textContaining('تاريخ إنشاء الطلب'), findsOneWidget);
+  });
+
+  testWidgets('shows explicit creation date label', (tester) async {
+    final now = DateTime.now();
+    await _pumpCard(tester, DateTime(now.year, now.month, now.day, 8, 17));
+
+    expect(find.textContaining('تاريخ إنشاء الطلب:'), findsOneWidget);
   });
 
   testWidgets('hides midnight time for date-only sources', (tester) async {

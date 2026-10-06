@@ -6,6 +6,7 @@ import '../../core/services/attendance_handler.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/date_utils.dart';
 import '../../core/utils/egyptian_holidays.dart';
 import '../attendance/cubit/attendance_cubit.dart';
 import '../attendance/cubit/attendance_state.dart';
@@ -727,20 +728,30 @@ class _RequestCardState extends State<_RequestCard> {
               ],
             ),
           ],
-          // Created at timestamp
+          // Created at timestamp — التاريخ الصحيح لإنشاء الطلب (مؤثر على القرار)
           const SizedBox(height: 6),
           Row(
             children: [
               const Icon(
-                Icons.access_time_rounded,
+                Icons.add_circle_outline_rounded,
                 size: 14,
-                color: AppColors.textTertiary,
+                color: AppColors.primary,
               ),
               const SizedBox(width: 4),
               Text(
-                _formatCreatedAt(request.createdAt),
+                'تاريخ إنشاء الطلب: ',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textTertiary,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  _formatCreatedAt(request.createdAt),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -838,24 +849,15 @@ class _RequestCardState extends State<_RequestCard> {
     if ((type == 'permission' || type == 'overtime') &&
         request.startTime != null &&
         request.endTime != null) {
-      return 'من ${_trimSeconds(request.startTime!)} إلى ${_trimSeconds(request.endTime!)}';
+      return 'من ${AppDateUtils.formatTimeString12h(request.startTime!)} إلى ${AppDateUtils.formatTimeString12h(request.endTime!)}';
     }
     return request.date;
   }
 
-  String _trimSeconds(String time) {
-    final parts = time.split(':');
-    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
-    return time;
-  }
-
   String _formatCreatedAt(String createdAt) {
-    try {
-      final dt = DateTime.parse(createdAt);
-      return '${dt.year}/${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')}  ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return createdAt;
-    }
+    final parsed = AppDateUtils.parseFlexible(createdAt);
+    if (parsed != null) return AppDateUtils.formatDateTime12h(parsed);
+    return createdAt;
   }
 
   (IconData, Color, String) _typeInfo(String type) {

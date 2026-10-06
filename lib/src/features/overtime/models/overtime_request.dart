@@ -73,8 +73,11 @@ class OvertimeRequest {
   String get timeRangeText => '${_formatTime(startTime)} - ${_formatTime(endTime)}';
 
   static String _formatTime(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
+    final period = time.hour < 12 ? 'صباحاً' : 'مساءً';
+    var h = time.hour % 12;
+    if (h == 0) h = 12;
+    final hour = h.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    return '$hour:$minute $period';
   }
 }

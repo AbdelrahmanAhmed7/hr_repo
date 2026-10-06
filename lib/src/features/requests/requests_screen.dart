@@ -152,12 +152,16 @@ class _RequestsScreenState extends State<RequestsScreen>
 
     // Parse date
     DateTime date = DateTime.now();
+    DateTime? createdAt;
     final dateStr = item.createdAt.isNotEmpty
         ? item.createdAt
         : (item.startDate ?? '');
     if (dateStr.isNotEmpty) {
       final parsed = DateTime.tryParse(dateStr);
       if (parsed != null) date = parsed;
+    }
+    if (item.createdAt.isNotEmpty) {
+      createdAt = DateTime.tryParse(item.createdAt);
     }
 
     // Build description
@@ -189,6 +193,7 @@ class _RequestsScreenState extends State<RequestsScreen>
       location: item.where,
       leaveType: item.leaveType,
       rejectionReason: item.rejectionReason,
+      createdAt: createdAt ?? date,
     );
   }
 

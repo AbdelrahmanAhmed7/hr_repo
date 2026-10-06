@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/date_utils.dart';
 import '../cubit/admin_permissions_cubit.dart';
 import '../cubit/admin_permissions_state.dart';
 import '../models/department_permission.dart';
@@ -73,10 +74,11 @@ class DepartmentPermissionCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        _formatCreatedAt(permission.createdAt),
+                        'تاريخ إنشاء الطلب: ${_formatCreatedAt(permission.createdAt)}',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -121,8 +123,10 @@ class DepartmentPermissionCard extends StatelessWidget {
             _InfoRow(
               icon: Icons.schedule_rounded,
               label: 'الوقت',
-              value:
-                  '${_trimSeconds(permission.startTime)} - ${_trimSeconds(permission.endTime)}',
+              value: AppDateUtils.formatTimeRange12h(
+                permission.startTime,
+                permission.endTime,
+              ),
             ),
             const SizedBox(height: 8),
             _InfoRow(
@@ -225,12 +229,6 @@ class DepartmentPermissionCard extends StatelessWidget {
     );
   }
 
-  String _trimSeconds(String time) {
-    final parts = time.split(':');
-    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
-    return time;
-  }
-
   String _calcDuration(String start, String end) {
     try {
       final sp = start.split(':');
@@ -250,12 +248,9 @@ class DepartmentPermissionCard extends StatelessWidget {
   }
 
   String _formatCreatedAt(String createdAt) {
-    try {
-      final dt = DateTime.parse(createdAt);
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-    } catch (_) {
-      return createdAt;
-    }
+    final parsed = AppDateUtils.parseFlexible(createdAt);
+    if (parsed != null) return AppDateUtils.formatDateTime12h(parsed);
+    return createdAt;
   }
 
   (Color, String) _statusInfo(String status) {

@@ -163,9 +163,12 @@ class _CreateOvertimeBottomSheetState extends State<CreateOvertimeBottomSheet>
 
   String _formatTime(TimeOfDay? time) {
     if (time == null) return 'اختر الوقت';
-    final hour = time.hour.toString().padLeft(2, '0');
+    final period = time.hour < 12 ? 'صباحاً' : 'مساءً';
+    var h = time.hour % 12;
+    if (h == 0) h = 12;
+    final hour = h.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    return '$hour:$minute $period';
   }
 
   String _durationText() {
@@ -550,9 +553,12 @@ class _LiveSummaryCard extends StatelessWidget {
 
   String _formatTime(TimeOfDay? time) {
     if (time == null) return '--';
-    final hour = time.hour.toString().padLeft(2, '0');
+    final period = time.hour < 12 ? 'صباحاً' : 'مساءً';
+    var h = time.hour % 12;
+    if (h == 0) h = 12;
+    final hour = h.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    return '$hour:$minute $period';
   }
 
   @override

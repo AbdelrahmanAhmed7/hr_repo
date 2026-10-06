@@ -77,12 +77,12 @@ class TimePickerHelper {
   /// Format TimeOfDay to 12-hour format string
   static String formatTime12Hour(TimeOfDay? time) {
     if (time == null) return 'اختر الوقت';
-    
+
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final period = time.period == DayPeriod.am ? 'ص' : 'م';
+    final period = time.period == DayPeriod.am ? 'صباحاً' : 'مساءً';
     final minute = time.minute.toString().padLeft(2, '0');
-    
-    return '$hour:$minute $period';
+
+    return '${hour.toString().padLeft(2, '0')}:$minute $period';
   }
 }
 

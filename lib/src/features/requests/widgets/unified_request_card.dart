@@ -4,6 +4,7 @@ import '../../../core/services/service_locator.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_formatters.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../shared/components/custom_toast.dart';
 import '../../home/models/recent_activity.dart';
 import '../../leaves/repository/leaves_repository.dart';
@@ -72,13 +73,15 @@ class UnifiedRequestCard extends StatelessWidget {
       day = _formatShort(date);
     }
     if (date.hour == 0 && date.minute == 0) return day;
-    final time =
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    return '$day • $time';
+    return '$day • ${AppDateUtils.formatTime12h(date)}';
   }
 
   static String _formatShort(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  static String _formatCreatedAtFull(DateTime date) {
+    return AppDateUtils.formatDateTime12h(date);
   }
 
   static bool _isSameDay(DateTime a, DateTime b) {
@@ -107,7 +110,12 @@ class UnifiedRequestCard extends StatelessWidget {
       case RequestType.overtime:
         if (request.startTime?.trim().isNotEmpty == true &&
             request.endTime?.trim().isNotEmpty == true) {
-          chips.add('${request.startTime!.trim()} - ${request.endTime!.trim()}');
+          chips.add(
+            AppDateUtils.formatTimeRange12h(
+              request.startTime!.trim(),
+              request.endTime!.trim(),
+            ),
+          );
         }
         if (request.startDate != null) {
           chips.add(_formatShort(request.startDate!));
@@ -250,6 +258,54 @@ class UnifiedRequestCard extends StatelessWidget {
                   _RemindButton(request: request),
                 ],
               ],
+            ),
+            // ── تاريخ إنشاء الطلب (التاريخ الصحيح المؤثر على القرار) ──
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.add_circle_outline_rounded,
+                      color: AppColors.primary,
+                      size: 15,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'تاريخ إنشاء الطلب:',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _formatCreatedAtFull(request.effectiveCreatedAt),
+                      textAlign: TextAlign.end,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             if (request.userName?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 10),

@@ -103,7 +103,10 @@ class CreateMissionController extends ChangeNotifier {
 
   String formatTime(TimeOfDay? time) {
     if (time == null) return 'اختر الوقت';
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final period = time.hour < 12 ? 'صباحاً' : 'مساءً';
+    var h = time.hour % 12;
+    if (h == 0) h = 12;
+    return '${h.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')} $period';
   }
 
   bool isQuickDateSelected(String label) {

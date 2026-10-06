@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/date_utils.dart';
 import '../cubit/admin_assignments_cubit.dart';
 import '../cubit/admin_assignments_state.dart';
 import '../models/department_assignment.dart';
@@ -73,10 +74,11 @@ class DepartmentAssignmentCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        _formatCreatedAt(assignment.createdAt),
+                        'تاريخ إنشاء الطلب: ${_formatCreatedAt(assignment.createdAt)}',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -140,8 +142,10 @@ class DepartmentAssignmentCard extends StatelessWidget {
             _InfoRow(
               icon: Icons.schedule_rounded,
               label: 'الوقت',
-              value:
-                  '${_trimSeconds(assignment.startTime)} - ${_trimSeconds(assignment.endTime)}',
+              value: AppDateUtils.formatTimeRange12h(
+                assignment.startTime,
+                assignment.endTime,
+              ),
             ),
             const SizedBox(height: 8),
             _InfoRow(
@@ -238,19 +242,10 @@ class DepartmentAssignmentCard extends StatelessWidget {
     );
   }
 
-  String _trimSeconds(String time) {
-    final parts = time.split(':');
-    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
-    return time;
-  }
-
   String _formatCreatedAt(String createdAt) {
-    try {
-      final dt = DateTime.parse(createdAt);
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-    } catch (_) {
-      return createdAt;
-    }
+    final parsed = AppDateUtils.parseFlexible(createdAt);
+    if (parsed != null) return AppDateUtils.formatDateTime12h(parsed);
+    return createdAt;
   }
 
   (Color, String) _statusInfo(String status) {

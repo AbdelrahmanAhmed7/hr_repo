@@ -60,9 +60,14 @@ class PermissionRequest {
   }
 
   String get timeRangeText {
-    final startStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-    final endStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
-    return '$startStr - $endStr';
+    String fmt(TimeOfDay t) {
+      final period = t.hour < 12 ? 'صباحاً' : 'مساءً';
+      var h = t.hour % 12;
+      if (h == 0) h = 12;
+      return '${h.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')} $period';
+    }
+
+    return '${fmt(startTime)} - ${fmt(endTime)}';
   }
 
   String get statusText {
