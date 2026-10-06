@@ -14,10 +14,11 @@ import '../../permissions/repository/permission_repository.dart';
 /// The single request card used on every screen (employee lists, home,
 /// all-requests, admin lists, notification sheet).
 ///
-/// Renders the full request: status strip, header, per-type chips, applicant,
-/// reason, rejection note and structured extra details. Employee actions
-/// (remind) show for pending requests; admin decision buttons appear only
-/// when [onApprove]/[onReject] are provided by the parent.
+/// Same look as the department request cards: white card, icon header with
+/// employee/title + creation date + status badge, [_InfoRow] details,
+/// rejection note and decision buttons. Employee actions (remind) show for
+/// pending requests; admin decision buttons appear only when [onApprove] /
+/// [onReject] are provided by the parent.
 class UnifiedRequestCard extends StatelessWidget {
   final RecentActivity request;
   final VoidCallback? onApprove;
@@ -37,15 +38,24 @@ class UnifiedRequestCard extends StatelessWidget {
   IconData _getTypeIcon() {
     switch (request.type) {
       case RequestType.leave:
-        return Icons.calendar_month_rounded;
+        return Icons.beach_access_rounded;
       case RequestType.permission:
-        return Icons.access_time_rounded;
+        return Icons.exit_to_app_rounded;
       case RequestType.overtime:
         return Icons.schedule_rounded;
       case RequestType.assignment:
-        return Icons.directions_rounded;
+        return Icons.assignment_rounded;
       case RequestType.other:
         return Icons.description_rounded;
+    }
+  }
+
+  (Color, Color) _getIconColors() {
+    switch (request.type) {
+      case RequestType.assignment:
+        return (const Color(0xFFFFF3E0), const Color(0xFFFF9800));
+      default:
+        return (AppColors.primaryTint, AppColors.primary);
     }
   }
 
@@ -58,140 +68,203 @@ class UnifiedRequestCard extends StatelessWidget {
         request.type == RequestType.assignment;
   }
 
-  String _formatRelative(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    final String day;
-    if (difference.inDays == 0) {
-      day = 'اليوم';
-    } else if (difference.inDays == 1) {
-      day = 'أمس';
-    } else if (difference.inDays < 7) {
-      day = 'منذ ${difference.inDays} أيام';
-    } else {
-      day = _formatShort(date);
-    }
-    if (date.hour == 0 && date.minute == 0) return day;
-    return '$day • ${AppDateUtils.formatTime12h(date)}';
-  }
-
   static String _formatShort(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
-  }
-
-  static String _formatCreatedAtFull(DateTime date) {
-    return AppDateUtils.formatDateTime12h(date);
   }
 
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  List<String> _detailChips() {
-    final chips = <String>[];
+  static bool _hasTime(DateTime d) => d.hour != 0 || d.minute != 0;
 
-    switch (request.type) {
+  /// Ordered detail rows for this request type.
+  List<(IconData, String, String)> _detailRows() {
+    final r = request;
+    final rows = <(IconData, String, String)>[];
+
+    switch (r.type) {
       case RequestType.leave:
-        if (request.startDate != null && request.endDate != null) {
-          chips.add(
-            _isSameDay(request.startDate!, request.endDate!)
-                ? _formatShort(request.startDate!)
-                : '${_formatShort(request.startDate!)} → ${_formatShort(request.endDate!)}',
-          );
+        if (r.startDate != null && r.endDate != null) {
+          if (_isSameDay(r.startDate!, r.endDate!)) {
+            rows.add((
+              Icons.calendar_today_rounded,
+              'التاريخ',
+              _formatShort(r.startDate!),
+            ));
+          } else {
+            rows.add((
+              Icons.calendar_today_rounded,
+              'من',
+              _formatShort(r.startDate!),
+            ));
+            rows.add((
+              Icons.calendar_month_rounded,
+              'إلى',
+              _formatShort(r.endDate!),
+            ));
+          }
         }
-        if (request.leaveType?.trim().isNotEmpty == true) {
-          chips.add(request.leaveType!);
+        if (r.leaveType?.trim().isNotEmpty == true) {
+          rows.add((
+            Icons.category_outlined,
+            'نوع الإجازة',
+            r.leaveType!.trim(),
+          ));
         }
-        if (request.deductionType?.trim().isNotEmpty == true) {
-          chips.add('خصم ${request.deductionType}');
+        if (r.deductionType?.trim().isNotEmpty == true) {
+          rows.add((
+            Icons.money_off_outlined,
+            'الخصم',
+            r.deductionType!.trim(),
+          ));
+        }
+        if (r.remainingVacationBalance != null) {
+          rows.add((
+            Icons.account_balance_wallet_outlined,
+            'الرصيد المتبقي',
+            '${r.remainingVacationBalance} يوم',
+          ));
         }
       case RequestType.permission:
       case RequestType.overtime:
-        if (request.startTime?.trim().isNotEmpty == true &&
-            request.endTime?.trim().isNotEmpty == true) {
-          chips.add(
-            AppDateUtils.formatTimeRange12h(
-              request.startTime!.trim(),
-              request.endTime!.trim(),
-            ),
-          );
+        if (r.startDate != null) {
+          rows.add((
+            Icons.calendar_today_rounded,
+            'التاريخ',
+            _formatShort(r.startDate!),
+          ));
         }
-        if (request.startDate != null) {
-          chips.add(_formatShort(request.startDate!));
+        if (r.startTime?.trim().isNotEmpty == true &&
+            r.endTime?.trim().isNotEmpty == true) {
+          rows.add((
+            Icons.schedule_rounded,
+            'الوقت',
+            AppDateUtils.formatTimeRange12h(
+              r.startTime!.trim(),
+              r.endTime!.trim(),
+            ),
+          ));
+        }
+        if (r.deductionType?.trim().isNotEmpty == true) {
+          rows.add((
+            Icons.money_off_outlined,
+            'نوع الخصم',
+            r.deductionType!.trim(),
+          ));
+        }
+        if (r.totalHours != null) {
+          rows.add((
+            Icons.timer_outlined,
+            'عدد الساعات',
+            '${r.totalHours}',
+          ));
+        }
+        if (r.amount != null) {
+          rows.add((
+            Icons.payments_outlined,
+            'القيمة',
+            AppFormatters.currency(r.amount),
+          ));
         }
       case RequestType.assignment:
-        if (request.location?.trim().isNotEmpty == true) {
-          chips.add(request.location!);
+        if (r.location?.trim().isNotEmpty == true) {
+          rows.add((
+            Icons.location_on_rounded,
+            'الموقع',
+            r.location!.trim(),
+          ));
         }
-        if (request.startDate != null && request.endDate != null) {
-          chips.add(
-            '${_formatShort(request.startDate!)} → ${_formatShort(request.endDate!)}',
-          );
+        if (r.startDate != null && r.endDate != null) {
+          if (_isSameDay(r.startDate!, r.endDate!)) {
+            rows.add((
+              Icons.calendar_today_rounded,
+              'التاريخ',
+              _formatShort(r.startDate!),
+            ));
+          } else {
+            rows.add((
+              Icons.calendar_today_rounded,
+              'من',
+              _formatShort(r.startDate!),
+            ));
+            rows.add((
+              Icons.calendar_month_rounded,
+              'إلى',
+              _formatShort(r.endDate!),
+            ));
+          }
+          if (_hasTime(r.startDate!) || _hasTime(r.endDate!)) {
+            rows.add((
+              Icons.schedule_rounded,
+              'الوقت',
+              '${AppDateUtils.formatTime12h(r.startDate!)} - ${AppDateUtils.formatTime12h(r.endDate!)}',
+            ));
+          }
         }
       case RequestType.other:
         break;
     }
 
-    return chips;
-  }
+    if (r.userName?.trim().isNotEmpty == true) {
+      rows.add((
+        Icons.person_rounded,
+        'الموظف',
+        r.userName!.trim(),
+      ));
+    }
 
-  /// Structured rows for info NOT already shown in chips
-  /// (dates/times/location/type live in chips to avoid duplication).
-  List<(String, String)> _detailRows() {
-    final r = request;
-    return [
-      if (r.deductionType?.trim().isNotEmpty == true &&
-          r.type != RequestType.leave)
-        ('نوع الخصم', r.deductionType!.trim()),
-      if (r.totalHours != null) ('عدد الساعات', '${r.totalHours}'),
-      if (r.amount != null) ('القيمة', AppFormatters.currency(r.amount)),
-      if (r.type == RequestType.leave && r.remainingVacationBalance != null)
-        ('الرصيد المتبقي', '${r.remainingVacationBalance} يوم'),
-    ];
+    final reason = r.reason?.trim() ?? '';
+    if (reason.isNotEmpty) {
+      rows.add((Icons.description_outlined, 'السبب', reason));
+    } else {
+      final details = r.description?.trim() ?? '';
+      if (details.isNotEmpty) {
+        rows.add((Icons.notes_outlined, 'التفاصيل', details));
+      }
+    }
+
+    return rows;
   }
 
   @override
   Widget build(BuildContext context) {
     final statusColor = request.statusColor;
-    final chips = _detailChips();
+    final iconColors = _getIconColors();
     final rows = _detailRows();
     final showDecisions =
         _isPending && (onApprove != null || onReject != null);
 
     return Container(
       decoration: BoxDecoration(
-        color: statusColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-      ),
-      child: Container(
-        margin: const EdgeInsets.only(right: 4),
-        padding: const EdgeInsets.all(14),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(16),
-            bottomLeft: Radius.circular(16),
-            topRight: Radius.circular(12),
-            bottomRight: Radius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.border.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Header ──────────────────────────────────────────────
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.10),
+                    color: iconColors.$1,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     _getTypeIcon(),
-                    color: statusColor,
+                    color: iconColors.$2,
                     size: 20,
                   ),
                 ),
@@ -202,196 +275,104 @@ class UnifiedRequestCard extends StatelessWidget {
                     children: [
                       Text(
                         request.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.titleSmall.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
                       ),
-                      const SizedBox(height: 4),
                       Text(
-                        _formatRelative(request.date),
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                        'تاريخ إنشاء الطلب: ${AppDateUtils.formatDateTime12h(request.effectiveCreatedAt)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    request.statusText,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: statusColor,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _Chip(label: request.typeText),
-                      for (final chip in chips) _Chip(label: chip),
                     ],
                   ),
                 ),
                 if (_canRemind) ...[
-                  const SizedBox(width: 8),
                   _RemindButton(request: request),
+                  const SizedBox(width: 6),
                 ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    request.statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ],
             ),
-            // ── تاريخ إنشاء الطلب (التاريخ الصحيح المؤثر على القرار) ──
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.25),
+
+            if (rows.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Divider(height: 1),
+              const SizedBox(height: 14),
+              for (int i = 0; i < rows.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                _InfoRow(
+                  icon: rows[i].$1,
+                  label: rows[i].$2,
+                  value: rows[i].$3,
                 ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.add_circle_outline_rounded,
-                      color: AppColors.primary,
-                      size: 15,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'تاريخ إنشاء الطلب:',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _formatCreatedAtFull(request.effectiveCreatedAt),
-                      textAlign: TextAlign.end,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (request.userName?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryTint,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      color: AppColors.primary,
-                      size: 15,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      request.userName!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ],
-            if (request.reason?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 10),
-              _QuoteBlock(
-                title: 'السبب',
-                body: request.reason!,
-                color: AppColors.primary,
-              ),
-            ],
+
+            // Rejection reason
             if (request.rejectionReason?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 10),
-              _QuoteBlock(
-                title: 'ملاحظة الإدارة',
-                body: request.rejectionReason!,
-                color: AppColors.error,
-                isError: true,
-              ),
-            ],
-            if (rows.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Column(
-                children: [
-                  for (int i = 0; i < rows.length; i++) ...[
-                    if (i > 0)
-                      const Divider(
-                        height: 13,
-                        thickness: 0.5,
-                        color: AppColors.border,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.errorTint,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: AppColors.error,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'سبب الرفض: ${request.rejectionReason!.trim()}',
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    Row(
-                      children: [
-                        Text(
-                          rows[i].$1,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const Spacer(),
-                        Flexible(
-                          child: Text(
-                            rows[i].$2,
-                            textAlign: TextAlign.end,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ],
-                ],
+                ),
               ),
             ],
+
+            // ── Action buttons ───────────────────────────────────────
             if (showDecisions) ...[
+              const SizedBox(height: 14),
+              const Divider(height: 1),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -399,15 +380,15 @@ class UnifiedRequestCard extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: isLoading ? null : onReject,
-                        icon: const Icon(Icons.close_rounded, size: 18),
+                        icon: const Icon(Icons.close_rounded, size: 16),
                         label: const Text('رفض'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
                           side: const BorderSide(color: AppColors.error),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 11),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          textStyle: AppTextStyles.labelMedium,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
@@ -418,17 +399,17 @@ class UnifiedRequestCard extends StatelessWidget {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: isLoading ? null : onApprove,
-                        icon: const Icon(Icons.check_rounded, size: 18),
-                        label: const Text('موافقة'),
+                        icon: const Icon(Icons.check_rounded, size: 16),
+                        label: const Text('قبول'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                           foregroundColor: Colors.white,
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          textStyle: AppTextStyles.labelMedium,
                           elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -442,91 +423,45 @@ class UnifiedRequestCard extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
+// ─── Info Row (same as department cards) ──────────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
   final String label;
+  final String value;
 
-  const _Chip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _QuoteBlock extends StatelessWidget {
-  final String title;
-  final String body;
-  final Color color;
-  final bool isError;
-
-  const _QuoteBlock({
-    required this.title,
-    required this.body,
-    required this.color,
-    this.isError = false,
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: isError
-            ? color.withValues(alpha: 0.05)
-            : AppColors.backgroundSecondary.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 3,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: isError ? color : AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    body,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: isError ? color : AppColors.textSecondary,
-                      height: 1.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppColors.textTertiary),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-      ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
