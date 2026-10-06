@@ -188,6 +188,17 @@ class NotificationModel {
         return true;
       }());
     }
+    // Same sanity gate as the tray timestamp: a lenient parse of numeric
+    // junk (e.g. "20010103" → year 2001) must never surface as the item's
+    // date — it would display an ancient date AND sink the row to the
+    // bottom of a newest-first list. Fall back to now (visible on top).
+    if (parsed != null && !AppDateUtils.isSaneDateTime(parsed)) {
+      assert(() {
+        debugPrint('[Notifications] insane date value: "$rawDate"');
+        return true;
+      }());
+      parsed = null;
+    }
     final dateTime = parsed ?? DateTime.now();
 
     final messageRaw = json['message'] as String?;

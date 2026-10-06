@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/auth/services/auth_storage_service.dart';
 import '../network/dio_client.dart';
+import '../utils/date_utils.dart';
 import '../utils/device_fingerprint.dart';
 
 @pragma('vm:entry-point')
@@ -34,6 +35,43 @@ bool shouldShowLocalNotificationInBackground(RemoteMessage message) {
   return message.notification == null;
 }
 
+/// Tray timestamp for a push message, in priority order:
+///  1. The notification record's own server time from the data payload
+///     (createdAt/…). Identical on foreground, background and redelivery.
+///  2. FCM transport sentTime.
+///  3. Post time (never null → the tray can never show a stale date).
+@visibleForTesting
+int resolveTrayTimeMillis(RemoteMessage message) {
+  final data = message.data;
+  for (final key in const [
+    'createdAt',
+    'CreatedAt',
+    'sentAt',
+    'sent_at',
+    'timestamp',
+    'date',
+  ]) {
+    final raw = data[key];
+    if (raw is String && raw.trim().isNotEmpty) {
+      final parsed = AppDateUtils.parseFlexible(raw.trim());
+      // Reject absurd years (e.g. numeric junk "20010103" → year 2001):
+      // a stale tray timestamp also sinks the row to the bottom.
+      if (AppDateUtils.isSaneDateTime(parsed)) {
+        return parsed!.millisecondsSinceEpoch;
+      }
+    }
+  }
+  final sentTime = message.sentTime;
+  if (AppDateUtils.isSaneDateTime(sentTime)) {
+    return sentTime!.millisecondsSinceEpoch;
+  }
+
+  // `sentTime` comes from native FCM metadata. Treat it as untrusted too: a
+  // malformed value can otherwise reproduce the exact 2001 date when no
+  // usable createdAt value was supplied.
+  return DateTime.now().millisecondsSinceEpoch;
+}
+
 class PushNotificationService {
   PushNotificationService._();
   static final PushNotificationService instance = PushNotificationService._();
@@ -55,8 +93,7 @@ class PushNotificationService {
   /// (e.g. notifications) subscribe to refresh immediately so a just-arrived
   /// item never sits stale/buried until the next manual pull-to-refresh.
   final _foregroundMessageController = StreamController<void>.broadcast();
-  Stream<void> get onForegroundMessage =>
-      _foregroundMessageController.stream;
+  Stream<void> get onForegroundMessage => _foregroundMessageController.stream;
 
   final _tokenController = StreamController<String>.broadcast();
   Stream<String> get onTokenRefresh => _tokenController.stream;
@@ -312,9 +349,14 @@ class PushNotificationService {
         );
       }
 
-      // True server time in the tray (not post time): each row shows when
-      // FCM actually sent it, and Android orders rows by this timestamp.
-      final sentTimeMillis = message.sentTime?.millisecondsSinceEpoch;
+      // Tray timestamp, in priority order:
+      //  1. The notification record's own server time from the data payload
+      //     (createdAt/…). This is the user-visible truth and is identical
+      //     on foreground, background and redelivered messages.
+      //  2. FCM transport sentTime (wrong when a message is delayed in
+      //     transit while the app is killed — it would show a stale time).
+      //  3. Post time (never null → the tray can never show a stale date).
+      final trayTimeMillis = _resolveTrayTimeMillis(message);
 
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
@@ -328,7 +370,7 @@ class PushNotificationService {
             enableVibration: true,
             styleInformation: styleInfo,
             showWhen: true,
-            when: sentTimeMillis,
+            when: trayTimeMillis,
             ticker: title,
             largeIcon: largeIconBitmap,
             color: colorHex != null ? _parseColor(colorHex) : null,
@@ -384,6 +426,13 @@ class PushNotificationService {
   }
 
   // ---- Helpers for rich notifications (Android) ----
+
+  /// Resolve the exact millisecond timestamp shown in the system tray.
+  /// Prefers the notification record's server time from the data payload so
+  /// foreground, background, killed-app and redelivered messages all show
+  /// the same true date — never a stale transport/post time.
+  static int _resolveTrayTimeMillis(RemoteMessage message) =>
+      resolveTrayTimeMillis(message);
 
   /// Positive 31-bit ID, stable per FCM message within a process lifetime.
   static int _notificationId(RemoteMessage message) {

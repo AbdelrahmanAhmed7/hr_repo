@@ -73,22 +73,44 @@ void main() {
     expect(notifs[1].date, DateTime(2026, 3, 31, 16, 36, 23, 656, 424));
   });
 
-  test('cubit emits newest-first even when API returns oldest-first',
-      () async {
+  test('junk numeric dates never sink an item (fallback to now)', () {
+    final notifs = NotificationModel.fromApiList(const [
+      {
+        'id': 1,
+        'userId': 'u',
+        'type': 'Direct',
+        'requestId': 0,
+        'message': 'junk',
+        'isRead': false,
+        'createdAt': '20010103',
+      },
+    ]);
+    final now = DateTime.now();
+    // Falls back to ~now (visible on top) instead of year 2001 (bottom).
+    expect(notifs[0].date.year, now.year);
+    expect(
+      now.difference(notifs[0].date).abs(),
+      lessThan(const Duration(minutes: 5)),
+    );
+  });
+
+  test('cubit emits newest-first even when API returns oldest-first', () async {
     final cubit = NotificationsCubit(_FakeRepo());
     await cubit.loadNotifications();
 
-    expect(
-      cubit.state.notifications.map((n) => n.id).toList(),
-      ['12063', '12062', '1779'],
-    );
+    expect(cubit.state.notifications.map((n) => n.id).toList(), [
+      '12063',
+      '12062',
+      '1779',
+    ]);
 
     // Optimistic updates must not break the order either.
     cubit.markAsRead('12063');
-    expect(
-      cubit.state.notifications.map((n) => n.id).toList(),
-      ['12063', '12062', '1779'],
-    );
+    expect(cubit.state.notifications.map((n) => n.id).toList(), [
+      '12063',
+      '12062',
+      '1779',
+    ]);
     await cubit.close();
   });
 }

@@ -12,6 +12,24 @@ class AppDateUtils {
     return _displayFormat.format(date.toLocal());
   }
 
+  /// Sanity gate for parsed backend dates. Dart's [DateTime.tryParse] is
+  /// lenient with bare digit strings (`"20010103"` → 3 Jan 2001,
+  /// `"12345678"` → year 1238, `"00000000"` → year -1), so a numeric junk
+  /// value in a date field would otherwise surface as an ancient date —
+  /// e.g. a tray timestamp of 1/3/01 that also sinks the row to the bottom
+  /// of the notification shade (Android orders by `when`).
+  /// Only years in [minYear]..[maxYear] are trusted; anything else is
+  /// treated as unparseable by the caller (which then falls back to a
+  /// sensible default instead of displaying year 2001).
+  static bool isSaneDateTime(
+    DateTime? date, {
+    int minYear = 2020,
+    int maxYear = 2100,
+  }) {
+    if (date == null) return false;
+    return date.year >= minYear && date.year <= maxYear;
+  }
+
   static String formatTime12h(DateTime? date) {
     if (date == null) return '--';
     final local = date.toLocal();
