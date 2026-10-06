@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/skeleton/skeleton_list_item.dart';
+import '../../shared/widgets/status_tabs_bar.dart';
 import 'cubit/admin_leaves_cubit.dart';
 import 'cubit/admin_leaves_state.dart';
 import 'models/department_leave.dart';
+import 'widgets/admin_dept_list_header.dart';
 import 'widgets/department_leave_card.dart';
 
 class AdminLeavesScreen extends StatefulWidget {
@@ -69,85 +74,128 @@ class _AdminLeavesScreenState extends State<AdminLeavesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      body: BlocBuilder<AdminLeavesCubit, AdminLeavesState>(
-        builder: (context, state) {
-          return RefreshIndicator(
-            onRefresh: () =>
-                context.read<AdminLeavesCubit>().loadLeaves(refresh: true),
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(child: _buildHeader(state)),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _TabBarDelegate(
-                    TabBar(
-                      controller: _tabController,
-                      labelColor: AppColors.primary,
-                      unselectedLabelColor: AppColors.textTertiary,
-                      indicatorColor: AppColors.primary,
-                      indicatorWeight: 3,
-                      labelStyle: AppTextStyles.labelMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                      unselectedLabelStyle: AppTextStyles.labelMedium,
-                      tabs: [
-                        Tab(text: 'الكل (${state.allCount})'),
-                        Tab(text: 'معلقة (${state.pendingCount})'),
-                        Tab(text: 'مقبولة (${state.approvedCount})'),
-                        Tab(text: 'مرفوضة (${state.rejectedCount})'),
-                      ],
-                    ),
-                  ),
-                ),
-                if (state.isLoading && state.items.isEmpty)
-                  const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (state.error != null && state.items.isEmpty)
-                  SliverFillRemaining(child: _buildError(state.error!))
-                else if (state.items.isEmpty)
-                  const SliverFillRemaining(
-                    child: EmptyStateWidget(
-                      icon: Icons.beach_access_outlined,
-                      title: 'لا توجد إجازات',
-                      message: 'جرّب تغيير الفلتر أو الفترة الزمنية',
-                      iconColor: AppColors.textTertiary,
-                    ),
-                  )
-                else ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    sliver: SliverList.separated(
-                      itemCount: state.items.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) => DepartmentLeaveCard(
-                        leave: state.items[index],
-                        isUpdating: state.isUpdating,
-                        onApprove: () => _approve(context, state.items[index]),
-                        onReject: () => _reject(context, state.items[index]),
-                      ),
-                    ),
-                  ),
-                  if (state.isLoadingMore)
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: BlocBuilder<AdminLeavesCubit, AdminLeavesState>(
+          builder: (context, state) {
+            return RefreshIndicator(
+              onRefresh: () =>
+                  context.read<AdminLeavesCubit>().loadLeaves(refresh: true),
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // ── Header ──────────────────────────────────────────
                   SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: MediaQuery.of(context).padding.bottom + 24,
+                    child: AdminDeptListHeader(
+                      title: 'إجازات الموظفين',
+                      subtitle: 'إجمالي ${state.allCount} إجازة',
+                      icon: Icons.beach_access_rounded,
+                      iconBackground: const Color(0xFFF3E8FD),
+                      iconColor: const Color(0xFF9C27B0),
+                      pendingCount: state.pendingCount,
+                      approvedCount: state.approvedCount,
+                      rejectedCount: state.rejectedCount,
+                      searchController: _searchController,
+                      searchHint: 'بحث باسم الموظف...',
+                      onSearchChanged: _onSearchChanged,
+                      onClearSearch: () =>
+                          context.read<AdminLeavesCubit>().setSearch(null),
+                      hasActiveFilters:
+                          state.dateFromFilter != null ||
+                          state.dateToFilter != null,
+                      onOpenFilters: () => _showFiltersSheet(context, state),
                     ),
                   ),
+
+                  // ── Pinned segmented tabs ───────────────────────────
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: StatusTabsSliverDelegate(
+                      StatusTabsBar(
+                        controller: _tabController,
+                        style: StatusTabsStyle.segmented,
+                      ),
+                    ),
+                  ),
+
+                  // ── Content ─────────────────────────────────────────
+                  if (state.isLoading && state.items.isEmpty)
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        16,
+                        16,
+                        16 + MediaQuery.of(context).padding.bottom,
+                      ),
+                      sliver: SliverList.separated(
+                        itemCount: 6,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (_, _) =>
+                            const SkeletonListItem(showAvatar: true),
+                      ),
+                    )
+                  else if (state.error != null && state.items.isEmpty)
+                    SliverFillRemaining(child: _buildError(state.error!))
+                  else if (state.items.isEmpty)
+                    const SliverFillRemaining(
+                      child: EmptyStateWidget(
+                        icon: Icons.beach_access_outlined,
+                        title: 'لا توجد إجازات',
+                        message: 'جرّب تغيير الفلتر أو الفترة الزمنية',
+                        iconColor: AppColors.textTertiary,
+                      ),
+                    )
+                  else ...[
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      sliver: SliverList.separated(
+                        itemCount: state.items.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) => DepartmentLeaveCard(
+                          leave: state.items[index],
+                          isUpdating: state.isUpdating,
+                          onApprove: () =>
+                              _approve(context, state.items[index]),
+                          onReject: () => _reject(context, state.items[index]),
+                        ),
+                      ),
+                    ),
+                    if (state.isLoadingMore)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.of(context).padding.bottom + 24,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -189,196 +237,14 @@ class _AdminLeavesScreenState extends State<AdminLeavesScreen>
     );
   }
 
-  Widget _buildHeader(AdminLeavesState state) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.beach_access_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'إجازات الموظفين',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'إجمالي ${state.allCount} إجازة',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => _showFiltersSheet(context, state),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.tune_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        if (state.dateFromFilter != null ||
-                            state.dateToFilter != null)
-                          Positioned(
-                            right: -3,
-                            top: -3,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.orangeAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  _StatChip(
-                    label: 'معلقة',
-                    count: state.pendingCount,
-                    color: AppColors.warning,
-                  ),
-                  const SizedBox(width: 8),
-                  _StatChip(
-                    label: 'مقبولة',
-                    count: state.approvedCount,
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(width: 8),
-                  _StatChip(
-                    label: 'مرفوضة',
-                    count: state.rejectedCount,
-                    color: AppColors.error,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _searchController,
-                style: const TextStyle(color: Colors.white),
-                onChanged: _onSearchChanged,
-                decoration: InputDecoration(
-                  hintText: 'بحث باسم الموظف...',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                  suffixIcon: ValueListenableBuilder(
-                    valueListenable: _searchController,
-                    builder: (_, value, _) => value.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(
-                              Icons.clear_rounded,
-                              color: Colors.white,
-                            ),
-                            onPressed: () {
-                              _searchController.clear();
-                              context.read<AdminLeavesCubit>().setSearch(null);
-                            },
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.15),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _approve(BuildContext context, DepartmentLeave leave) async {
     final ok = await context.read<AdminLeavesCubit>().approveLeave(leave.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'تم قبول الإجازة' : 'فشل قبول الإجازة'),
-        backgroundColor: ok ? AppColors.success : AppColors.error,
-      ),
-    );
+    if (ok) {
+      CustomToast.showSuccess('تم قبول الإجازة');
+    } else {
+      CustomToast.showError('فشل قبول الإجازة');
+    }
   }
 
   Future<void> _reject(BuildContext context, DepartmentLeave leave) async {
@@ -434,12 +300,11 @@ class _AdminLeavesScreenState extends State<AdminLeavesScreen>
           : reasonController.text.trim(),
     );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'تم رفض الإجازة' : 'فشل رفض الإجازة'),
-        backgroundColor: AppColors.error,
-      ),
-    );
+    if (ok) {
+      CustomToast.showSuccess('تم رفض الإجازة');
+    } else {
+      CustomToast.showError('فشل رفض الإجازة');
+    }
   }
 
   void _showFiltersSheet(BuildContext context, AdminLeavesState state) {
@@ -455,60 +320,7 @@ class _AdminLeavesScreenState extends State<AdminLeavesScreen>
   }
 }
 
-// ─── Shared widgets ───────────────────────────────────────────────────────────
-
-class _StatChip extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-  const _StatChip({
-    required this.label,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        '$label $count',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
-  const _TabBarDelegate(this.tabBar);
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
-  @override
-  double get maxExtent => tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(color: Colors.white, child: tabBar);
-  }
-
-  @override
-  bool shouldRebuild(_TabBarDelegate old) => true;
-}
+// ─── Filters Sheet ────────────────────────────────────────────────────────────
 
 class _FiltersSheet extends StatefulWidget {
   final AdminLeavesState state;
