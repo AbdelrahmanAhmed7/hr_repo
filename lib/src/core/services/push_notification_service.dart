@@ -12,7 +12,6 @@ import '../../features/auth/services/auth_storage_service.dart';
 import '../network/dio_client.dart';
 import '../utils/device_fingerprint.dart';
 
-/// Background message handler - must be top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (kDebugMode) debugPrint('Background message: ${message.messageId}');
@@ -35,7 +34,6 @@ bool shouldShowLocalNotificationInBackground(RemoteMessage message) {
   return message.notification == null;
 }
 
-/// Production-ready notification service with comprehensive error handling
 class PushNotificationService {
   PushNotificationService._();
   static final PushNotificationService instance = PushNotificationService._();
@@ -47,21 +45,17 @@ class PushNotificationService {
 
   static const _cachedFcmTokenKey = 'cached_fcm_token';
 
-  /// Stream for notification actions (tap/interaction)
   final _notificationActionController =
       StreamController<NotificationAction>.broadcast();
   Stream<NotificationAction> get onNotificationAction =>
       _notificationActionController.stream;
 
-  /// Stream for FCM token updates
   final _tokenController = StreamController<String>.broadcast();
   Stream<String> get onTokenRefresh => _tokenController.stream;
 
   String? _currentToken;
   String? get currentToken => _currentToken;
 
-  /// Initialize notification service
-  /// Call this in main() before runApp()
   Future<bool> initialize() async {
     if (_isInitialized) {
       if (kDebugMode) debugPrint('PushNotificationService already initialized');
@@ -106,7 +100,6 @@ class PushNotificationService {
     }
   }
 
-  /// Request notification permissions
   Future<bool> _requestPermission() async {
     try {
       final settings = await _messaging.requestPermission(
