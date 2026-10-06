@@ -5,7 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/services/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../shared/components/custom_toast.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/skeleton/skeleton_list_item.dart';
 import 'cubit/admin_assignments_cubit.dart';
 import 'cubit/admin_assignments_state.dart';
 import 'cubit/admin_leaves_cubit.dart';
@@ -75,38 +78,39 @@ class _EmployeeDetailsContentState extends State<_EmployeeDetailsContent>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, _) => [
-          SliverToBoxAdapter(child: _buildHeader()),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _TabBarDelegate(
-              TabBar(
-                controller: _tabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textTertiary,
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 3,
-                labelStyle: AppTextStyles.labelMedium
-                    .copyWith(fontWeight: FontWeight.w700),
-                unselectedLabelStyle: AppTextStyles.labelMedium,
-                tabs: const [
-                  Tab(text: 'الأذونات'),
-                  Tab(text: 'الإجازات'),
-                  Tab(text: 'المأموريات'),
-                ],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: Text(
+          'تفاصيل الموظف',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, _) => [
+            SliverToBoxAdapter(child: _buildHeader()),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SegmentedTabsDelegate(
+                _SegmentedTypeTabs(controller: _tabController),
               ),
             ),
-          ),
-        ],
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            _PermissionsTab(employee: widget.employee),
-            _LeavesTab(employee: widget.employee),
-            _AssignmentsTab(employee: widget.employee),
           ],
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _PermissionsTab(employee: widget.employee),
+              _LeavesTab(employee: widget.employee),
+              _AssignmentsTab(employee: widget.employee),
+            ],
+          ),
         ),
       ),
     );
@@ -115,122 +119,88 @@ class _EmployeeDetailsContentState extends State<_EmployeeDetailsContent>
   Widget _buildHeader() {
     final emp = widget.employee;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-          child: Column(
-            children: [
-              // Back button row
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+        child: Column(
+          children: [
+            // Employee info
+            Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primaryTint,
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      width: 2,
+                    ),
+                  ),
+                  child: emp.imageUrl != null
+                      ? ClipOval(
+                          child: Image.network(
+                            emp.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                _buildDefaultAvatar(emp),
+                          ),
+                        )
+                      : _buildDefaultAvatar(emp),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        emp.fullNameAr,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          height: 1.3,
+                        ),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white, size: 18),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'تفاصيل الموظف',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Employee info
-              Row(
-                children: [
-                  // Avatar
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.2),
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.4), width: 2),
-                    ),
-                    child: emp.imageUrl != null
-                        ? ClipOval(
-                            child: Image.network(
-                              emp.imageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) =>
-                                  _buildDefaultAvatar(emp),
-                            ),
-                          )
-                        : _buildDefaultAvatar(emp),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          emp.fullNameAr,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        emp.jobTitleName ?? 'موظف',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          emp.jobTitleName ?? 'موظف',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            if (emp.employmentModeName != null)
-                              _InfoBadge(
-                                icon: Icons.work_outline_rounded,
-                                label: emp.employmentModeName!,
-                              ),
-                            if (emp.startDate != null)
-                              _InfoBadge(
-                                icon: Icons.calendar_today_rounded,
-                                label: emp.startDate!,
-                              ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (emp.employmentModeName != null)
                             _InfoBadge(
-                              icon: emp.isMale
-                                  ? Icons.male_rounded
-                                  : Icons.female_rounded,
-                              label: emp.isMale ? 'ذكر' : 'أنثى',
+                              icon: Icons.work_outline_rounded,
+                              label: emp.employmentModeName!,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          if (emp.startDate != null)
+                            _InfoBadge(
+                              icon: Icons.calendar_today_rounded,
+                              label: emp.startDate!,
+                            ),
+                          _InfoBadge(
+                            icon: emp.isMale
+                                ? Icons.male_rounded
+                                : Icons.female_rounded,
+                            label: emp.isMale ? 'ذكر' : 'أنثى',
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -242,7 +212,7 @@ class _EmployeeDetailsContentState extends State<_EmployeeDetailsContent>
       child: Text(
         initials,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.primary,
           fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
@@ -270,19 +240,18 @@ class _InfoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
+        color: AppColors.backgroundSecondary,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 12),
+          Icon(icon, color: AppColors.textSecondary, size: 12),
           const SizedBox(width: 4),
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textSecondary,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -295,21 +264,105 @@ class _InfoBadge extends StatelessWidget {
 
 // ─── Tab Bar Delegate ─────────────────────────────────────────────────────────
 
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
-  const _TabBarDelegate(this.tabBar);
+// ─── Segmented type tabs (same language as StatusTabsBar segmented) ───────────
+
+class _SegmentedTypeTabs extends StatelessWidget {
+  final TabController controller;
+  const _SegmentedTypeTabs({required this.controller});
+
+  static const _labels = ['الأذونات', 'الإجازات', 'المأموريات'];
 
   @override
-  double get minExtent => tabBar.preferredSize.height;
-  @override
-  double get maxExtent => tabBar.preferredSize.height;
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          return Row(
+            children: [
+              for (int i = 0; i < _labels.length; i++)
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => controller.animateTo(i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: controller.index == i
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: controller.index == i
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        _labels[i],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: controller.index == i
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          fontSize: 13,
+                          height: 1.2,
+                          color: controller.index == i
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SegmentedTabsDelegate extends SliverPersistentHeaderDelegate {
+  final _SegmentedTypeTabs tabs;
+  const _SegmentedTabsDelegate(this.tabs);
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
-      Container(color: Colors.white, child: tabBar);
+  double get minExtent => 70;
+  @override
+  double get maxExtent => 70;
 
   @override
-  bool shouldRebuild(_TabBarDelegate old) => true;
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.only(top: 8, bottom: 8, left: 16, right: 16),
+      child: tabs,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SegmentedTabsDelegate old) => true;
 }
 
 // ─── Permissions Tab ──────────────────────────────────────────────────────────
@@ -333,7 +386,12 @@ class _PermissionsTabState extends State<_PermissionsTab>
     return BlocBuilder<AdminPermissionsCubit, AdminPermissionsState>(
       builder: (context, state) {
         if (state.isLoading && state.items.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            itemCount: 5,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (_, _) => const SkeletonListItem(showAvatar: true),
+          );
         }
         if (state.error != null && state.items.isEmpty) {
           return _ErrorView(
@@ -394,10 +452,11 @@ class _PermissionsTabState extends State<_PermissionsTab>
         .read<AdminPermissionsCubit>()
         .approvePermission(permission.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? 'تم قبول الإذن' : 'فشل قبول الإذن'),
-      backgroundColor: ok ? AppColors.success : AppColors.error,
-    ));
+    if (ok) {
+      CustomToast.showSuccess('تم قبول الإذن');
+    } else {
+      CustomToast.showError('فشل قبول الإذن');
+    }
   }
 
   Future<void> _reject(
@@ -435,10 +494,11 @@ class _PermissionsTabState extends State<_PermissionsTab>
               : reasonController.text.trim(),
         );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? 'تم رفض الإذن' : 'فشل رفض الإذن'),
-      backgroundColor: AppColors.error,
-    ));
+    if (ok) {
+      CustomToast.showSuccess('تم رفض الإذن');
+    } else {
+      CustomToast.showError('فشل رفض الإذن');
+    }
   }
 }
 
@@ -463,7 +523,12 @@ class _LeavesTabState extends State<_LeavesTab>
     return BlocBuilder<AdminLeavesCubit, AdminLeavesState>(
       builder: (context, state) {
         if (state.isLoading && state.items.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            itemCount: 5,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (_, _) => const SkeletonListItem(showAvatar: true),
+          );
         }
         if (state.error != null && state.items.isEmpty) {
           return _ErrorView(
@@ -522,10 +587,11 @@ class _LeavesTabState extends State<_LeavesTab>
     final ok =
         await context.read<AdminLeavesCubit>().approveLeave(leave.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? 'تم قبول الإجازة' : 'فشل قبول الإجازة'),
-      backgroundColor: ok ? AppColors.success : AppColors.error,
-    ));
+    if (ok) {
+      CustomToast.showSuccess('تم قبول الإجازة');
+    } else {
+      CustomToast.showError('فشل قبول الإجازة');
+    }
   }
 
   Future<void> _reject(BuildContext context, DepartmentLeave leave) async {
@@ -562,10 +628,11 @@ class _LeavesTabState extends State<_LeavesTab>
               : reasonController.text.trim(),
         );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? 'تم رفض الإجازة' : 'فشل رفض الإجازة'),
-      backgroundColor: AppColors.error,
-    ));
+    if (ok) {
+      CustomToast.showSuccess('تم رفض الإجازة');
+    } else {
+      CustomToast.showError('فشل رفض الإجازة');
+    }
   }
 }
 
@@ -590,7 +657,12 @@ class _AssignmentsTabState extends State<_AssignmentsTab>
     return BlocBuilder<AdminAssignmentsCubit, AdminAssignmentsState>(
       builder: (context, state) {
         if (state.isLoading && state.items.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            itemCount: 5,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (_, _) => const SkeletonListItem(showAvatar: true),
+          );
         }
         if (state.error != null && state.items.isEmpty) {
           return _ErrorView(
@@ -651,10 +723,11 @@ class _AssignmentsTabState extends State<_AssignmentsTab>
         .read<AdminAssignmentsCubit>()
         .approveAssignment(assignment.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? 'تم قبول المأمورية' : 'فشل قبول المأمورية'),
-      backgroundColor: ok ? AppColors.success : AppColors.error,
-    ));
+    if (ok) {
+      CustomToast.showSuccess('تم قبول المأمورية');
+    } else {
+      CustomToast.showError('فشل قبول المأمورية');
+    }
   }
 
   Future<void> _reject(
@@ -692,10 +765,11 @@ class _AssignmentsTabState extends State<_AssignmentsTab>
               : reasonController.text.trim(),
         );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? 'تم رفض المأمورية' : 'فشل رفض المأمورية'),
-      backgroundColor: AppColors.error,
-    ));
+    if (ok) {
+      CustomToast.showSuccess('تم رفض المأمورية');
+    } else {
+      CustomToast.showError('فشل رفض المأمورية');
+    }
   }
 }
 
