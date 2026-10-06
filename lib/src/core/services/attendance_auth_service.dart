@@ -41,6 +41,11 @@ class AttendanceAuthResponse {
   /// Null for all other results.
   final BiometricResult? biometricResult;
 
+  /// True when location failed specifically because the OS permission is
+  /// permanently denied (no system dialog will ever appear again).
+  /// The UI should guide the user to app settings instead of retrying.
+  final bool isLocationPermanentlyDenied;
+
   const AttendanceAuthResponse({
     required this.result,
     required this.authMethod,
@@ -48,6 +53,7 @@ class AttendanceAuthResponse {
     this.location,
     this.distanceFromOffice,
     this.biometricResult,
+    this.isLocationPermanentlyDenied = false,
   });
 
   bool get isSuccess => result == AttendanceAuthResult.success;
@@ -172,6 +178,7 @@ class AttendanceAuthService {
         result: AttendanceAuthResult.permissionDenied,
         authMethod: authMethod,
         message: 'يرجى السماح بالوصول للموقع من إعدادات التطبيق',
+        isLocationPermanentlyDenied: true,
       ),
       LocationError.permissionDenied => AttendanceAuthResponse(
         result: AttendanceAuthResult.permissionDenied,

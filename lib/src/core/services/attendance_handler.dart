@@ -92,12 +92,12 @@ class AttendanceHandler {
         }
 
         // Fallback also failed (e.g. location error)
-        _showLocationError(fallbackResponse);
+        _showLocationError(context, fallbackResponse);
         return false;
       }
 
       // ── Location / permission errors ───────────────────────────────────
-      _showLocationError(response);
+      _showLocationError(context, response);
       return false;
     } catch (e) {
       if (!context.mounted) return false;
@@ -142,15 +142,75 @@ class AttendanceHandler {
     return result ?? false;
   }
 
-  // ── Toast helpers ──────────────────────────────────────────────────────────
+  // ── Toast / dialog helpers ───────────────────────────────────────────────
 
-  static void _showLocationError(AttendanceAuthResponse response) {
+  static void _showLocationError(
+    BuildContext context,
+    AttendanceAuthResponse response,
+  ) {
+    // Permanently denied: the OS will never show its dialog again, so
+    // guide the user to app settings instead of a dead-end toast.
+    if (response.isLocationPermanentlyDenied && context.mounted) {
+      _showLocationSettingsDialog(
+        context,
+        response.message ?? 'يرجى السماح بالوصول للموقع من إعدادات التطبيق',
+      );
+      return;
+    }
     final message =
         response.message ??
         (response.result == AttendanceAuthResult.gpsDisabled
             ? 'يرجى تفعيل GPS'
             : 'فشل الحصول على الموقع');
     CustomToast.showError(message);
+  }
+
+  /// Explains the permanent denial once and offers a one-tap path to the
+  /// app settings — shown at most once per failure, never in a loop.
+  static void _showLocationSettingsDialog(
+    BuildContext context,
+    String message,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.location_off_rounded,
+                color: AppColors.warning,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('إذن الموقع مطلوب'),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ليس الآن'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              LocationService.openPermissionSettings();
+            },
+            child: const Text('فتح الإعدادات'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

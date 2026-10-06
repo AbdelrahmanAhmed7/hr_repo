@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'location_errors.dart';
 
@@ -45,10 +46,39 @@ class LocationService {
   static const double officeLongitude = 31.194384;
   static const double allowedRadius = 50.0;
 
-  /// التحقق من أذونات الموقع وطلبها تلقائياً
+  /// Remembers that the system dialog was already shown once, so we never
+  /// nag the user with it on every check-in attempt after a denial.
+  static const _askedKey = 'location_permission_asked_v1';
+
+  static Future<bool> _askedBefore() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_askedKey) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> _markAsked() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_askedKey, true);
+    } catch (_) {}
+  }
+
+  /// التحقق من أذونات الموقع وطلبها عند الحاجة فقط.
+  ///
+  /// القواعد (عشان الديالوج ميظهرش في loop):
+  /// - granted/limited → تمام، من غير أي طلب.
+  /// - permanentlyDenied/restricted → رجوع فوري من غير `.request()`، لأن
+  ///   النظام مش هيعرض أي ديالوج أصلاً. الـ UI هو اللي يوجه للإعدادات.
+  /// - denied (قابل للسؤال) → النظام ديالوج **مرة واحدة بس** (أول مرة).
+  ///   بعد الرفض، المحاولات الجاية بترجع مرفوض من غير ديالوج، والـ UI
+  ///   بيعرض زرار الإعدادات. مرّر [forceRequest: true] لو المستخدم داس
+  ///   بنفسه على زرار "السماح" من عندنا.
   /// إرجاع: (hasPermission, isPermanentlyDenied)
   static Future<({bool hasPermission, bool isPermanentlyDenied})>
-  checkAndRequestLocationPermission() async {
+  checkAndRequestLocationPermission({bool forceRequest = false}) async {
     final status = await Permission.locationWhenInUse.status;
 
     // الإذن موجود (granted أو limited مثل "allow once")
@@ -56,9 +86,19 @@ class LocationService {
       return (hasPermission: true, isPermanentlyDenied: false);
     }
 
-    // نطلب الإذن في كل الحالات الأخرى (حتى لو كان permanently denied سابقاً، نحاول الطلب)
-    // نترك للنظام قرار عرض الديالوج أم لا
+    // مرفوض نهائياً: مستحيل النظام يعرض ديالوج — منطلبش أصلاً.
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      return (hasPermission: false, isPermanentlyDenied: true);
+    }
+
+    // مرفوض عادي: نسأل مرة واحدة بس، وبعد كده نسيب القرار للمستخدم
+    // (زرار الإعدادات) بدل ما الديالوج يطارده كل مرة.
+    if (!forceRequest && await _askedBefore()) {
+      return (hasPermission: false, isPermanentlyDenied: false);
+    }
+
     final result = await Permission.locationWhenInUse.request();
+    await _markAsked();
 
     if (result.isGranted || result.isLimited) {
       return (hasPermission: true, isPermanentlyDenied: false);
