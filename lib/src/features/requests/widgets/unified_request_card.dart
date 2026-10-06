@@ -61,10 +61,20 @@ class UnifiedRequestCard extends StatelessWidget {
     final now = DateTime.now();
     final difference = now.difference(date);
 
-    if (difference.inDays == 0) return 'اليوم';
-    if (difference.inDays == 1) return 'أمس';
-    if (difference.inDays < 7) return 'منذ ${difference.inDays} أيام';
-    return _formatShort(date);
+    final String day;
+    if (difference.inDays == 0) {
+      day = 'اليوم';
+    } else if (difference.inDays == 1) {
+      day = 'أمس';
+    } else if (difference.inDays < 7) {
+      day = 'منذ ${difference.inDays} أيام';
+    } else {
+      day = _formatShort(date);
+    }
+    if (date.hour == 0 && date.minute == 0) return day;
+    final time =
+        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '$day • $time';
   }
 
   static String _formatShort(DateTime date) {

@@ -1,21 +1,38 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../network/dio_client.dart';
+
 import '../../features/auth/services/auth_storage_service.dart';
+import '../network/dio_client.dart';
 import '../utils/device_fingerprint.dart';
 
 /// Background message handler - must be top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (kDebugMode) debugPrint('Background message: ${message.messageId}');
+
+  if (!shouldShowLocalNotificationInBackground(message)) {
+    if (kDebugMode) {
+      debugPrint(
+        'Skipping local background notification: already displayed by OS',
+      );
+    }
+    return;
+  }
+
   await PushNotificationService.instance.setupFlutterNotifications();
   await PushNotificationService.instance.showNotification(message);
+}
+
+@visibleForTesting
+bool shouldShowLocalNotificationInBackground(RemoteMessage message) {
+  return message.notification == null;
 }
 
 /// Production-ready notification service with comprehensive error handling
@@ -202,14 +219,22 @@ class PushNotificationService {
   Future<void> showNotification(RemoteMessage message) async {
     try {
       final notification = message.notification;
-      if (notification == null) {
-        if (kDebugMode) debugPrint('Message has no notification payload');
+      final data = message.data;
+      final title = notification?.title ?? _dataString(data, 'title');
+      final body =
+          notification?.body ??
+          _dataString(data, 'body') ??
+          _dataString(data, 'message');
+
+      if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
+        if (kDebugMode) {
+          debugPrint('Message has no displayable notification content');
+        }
         return;
       }
 
       // Check platform-specific notification data
-      final android = message.notification?.android;
-      final data = message.data;
+      final android = notification?.android;
 
       // Support multiple image field names
       final imageUrl =
@@ -259,23 +284,23 @@ class PushNotificationService {
           styleInfo = BigPictureStyleInformation(
             bigPicture,
             largeIcon: largeIconBitmap,
-            contentTitle: notification.title,
-            summaryText: notification.body,
+            contentTitle: title,
+            summaryText: body,
             hideExpandedLargeIcon: false,
           );
           if (kDebugMode) debugPrint('Big picture style loaded successfully');
         } catch (e) {
           if (kDebugMode) debugPrint('Failed to load big picture: $e');
           styleInfo = BigTextStyleInformation(
-            notification.body ?? '',
-            contentTitle: notification.title,
+            body ?? '',
+            contentTitle: title,
             summaryText: data['summary'],
           );
         }
       } else {
         styleInfo = BigTextStyleInformation(
-          notification.body ?? '',
-          contentTitle: notification.title,
+          body ?? '',
+          contentTitle: title,
           summaryText: data['summary'],
         );
       }
@@ -292,7 +317,7 @@ class PushNotificationService {
             enableVibration: true,
             styleInformation: styleInfo,
             showWhen: true,
-            ticker: notification.title,
+            ticker: title,
             largeIcon: largeIconBitmap,
             color: colorHex != null ? _parseColor(colorHex) : null,
             groupKey: groupKey,
@@ -330,19 +355,26 @@ class PushNotificationService {
       // Show notification
       await _localNotifications.show(
         notificationId,
-        notification.title,
-        notification.body,
+        title,
+        body,
         notificationDetails,
         payload: message.data.isNotEmpty ? jsonEncode(message.data) : null,
       );
 
-      if (kDebugMode) debugPrint('Notification shown: ${notification.title}');
+      if (kDebugMode) debugPrint('Notification shown: $title');
     } catch (e) {
       if (kDebugMode) debugPrint('Error showing notification: $e');
     }
   }
 
   // ---- Helpers for rich notifications (Android) ----
+
+  String? _dataString(Map<String, dynamic> data, String key) {
+    final value = data[key];
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
 
   // FIX 1: Added connection timeout + close timeout + client cleanup
   Future<Uint8List> _downloadBytes(String url) async {
