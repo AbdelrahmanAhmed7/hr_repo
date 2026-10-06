@@ -121,71 +121,95 @@ class _LoginScreenState extends State<LoginScreen> with KeyboardDismissMixin {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1734),
-      resizeToAvoidBottomInset: false,
+      // Keep the default (true) so the body shrinks with the keyboard AND
+      // the content below stays scrollable while typing phone/password.
       body: Stack(
         children: [
           // ── Hero layer: fills entire screen ──
           const Positioned.fill(child: _HeroBackground()),
 
-          // ── Content ──
+          // ── Content: scrollable so fields + button are always reachable ──
           SafeArea(
             bottom: false,
-            child: SizedBox(
-              height: screenHeight - MediaQuery.of(context).padding.top,
-              child: Column(
-                children: [
-                  // Hero area — shrinks when keyboard opens
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutCubic,
-                    height: isKeyboardOpen ? 80 : screenHeight * 0.40,
-                    child: _HeroSection(compact: isKeyboardOpen)
-                        .animate()
-                        .fadeIn(duration: 500.ms)
-                        .slideY(begin: -0.06, end: 0, duration: 500.ms),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          // Hero area — shrinks when keyboard opens
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 280),
+                            curve: Curves.easeOutCubic,
+                            height: isKeyboardOpen ? 80 : screenHeight * 0.40,
+                            child: _HeroSection(compact: isKeyboardOpen)
+                                .animate()
+                                .fadeIn(duration: 500.ms)
+                                .slideY(
+                                  begin: -0.06,
+                                  end: 0,
+                                  duration: 500.ms,
+                                ),
+                          ),
 
-                  // Form bottom sheet — takes remaining space
-                  Expanded(
-                    child:
-                        _LoginBottomSheet(
-                              isLoading: _isLoading,
-                              isPasswordVisible: _isPasswordVisible,
-                              phoneController: _phoneController,
-                              passController: _passController,
-                              phoneFocusNode: _phoneFocusNode,
-                              passwordFocusNode: _passwordFocusNode,
-                              phoneError: _phoneError,
-                              passError: _passError,
-                              onTogglePassword: () => setState(
-                                () => _isPasswordVisible = !_isPasswordVisible,
-                              ),
-                              onPhoneChanged: (_) {
-                                if (_phoneError != null) {
-                                  setState(() => _phoneError = null);
-                                }
-                              },
-                              onPasswordChanged: (_) {
-                                if (_passError != null) {
-                                  setState(() => _passError = null);
-                                }
-                              },
-                              onForgotPassword: () =>
-                                  context.push('/forgot-password'),
-                              onSubmit: (_) => _handleLogin(),
-                              onLogin: _handleLogin,
-                            )
-                            .animate()
-                            .fadeIn(duration: 560.ms, delay: 100.ms)
-                            .slideY(
-                              begin: 0.10,
-                              end: 0,
-                              duration: 560.ms,
-                              delay: 100.ms,
-                            ),
+                          // Form bottom sheet — fills remaining space
+                          Expanded(
+                            child:
+                                _LoginBottomSheet(
+                                      isLoading: _isLoading,
+                                      isPasswordVisible: _isPasswordVisible,
+                                      phoneController: _phoneController,
+                                      passController: _passController,
+                                      phoneFocusNode: _phoneFocusNode,
+                                      passwordFocusNode: _passwordFocusNode,
+                                      phoneError: _phoneError,
+                                      passError: _passError,
+                                      onTogglePassword: () => setState(
+                                        () => _isPasswordVisible =
+                                            !_isPasswordVisible,
+                                      ),
+                                      onPhoneChanged: (_) {
+                                        if (_phoneError != null) {
+                                          setState(
+                                            () => _phoneError = null,
+                                          );
+                                        }
+                                      },
+                                      onPasswordChanged: (_) {
+                                        if (_passError != null) {
+                                          setState(() => _passError = null);
+                                        }
+                                      },
+                                      onForgotPassword: () =>
+                                          context.push('/forgot-password'),
+                                      onSubmit: (_) => _handleLogin(),
+                                      onLogin: _handleLogin,
+                                    )
+                                    .animate()
+                                    .fadeIn(
+                                      duration: 560.ms,
+                                      delay: 100.ms,
+                                    )
+                                    .slideY(
+                                      begin: 0.10,
+                                      end: 0,
+                                      duration: 560.ms,
+                                      delay: 100.ms,
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
 
@@ -445,7 +469,9 @@ class _LoginBottomSheet extends StatelessWidget {
       ),
       child: AbsorbPointer(
         absorbing: isLoading,
-        child: SingleChildScrollView(
+        // No inner scroll: the screen-level SingleChildScrollView handles
+        // scrolling while the keyboard is open.
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
