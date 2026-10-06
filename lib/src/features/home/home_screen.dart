@@ -27,7 +27,11 @@ import '../notifications/cubit/notifications_cubit.dart';
 import '../employee_of_month/presentation/widgets/home_winner_banner.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// False when this screen is alive inside the bottom-nav stack but another
+  /// tab is selected — the periodic refresh stays parked then.
+  final bool isVisible;
+
+  const HomeScreen({super.key, this.isVisible = true});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -37,6 +41,9 @@ class _HomeScreenState extends State<HomeScreen>
     with WidgetsBindingObserver {
   bool _isProcessingAttendance = false;
   Timer? _resolveTimer;
+  // Guards the periodic/resume background refresh so ticks never pile up
+  // overlapping full home reloads (extra rebuild churn + wasted API calls).
+  bool _homeRefreshRunning = false;
 
   @override
   void initState() {
@@ -44,16 +51,41 @@ class _HomeScreenState extends State<HomeScreen>
     // Refresh notification badge count when home loads
     _refreshNotificationBadge();
     WidgetsBinding.instance.addObserver(this);
+    _startResolveTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Tab switched: park the timer when hidden, resume (with a fresh light
+    // tick) when the Home tab becomes visible again.
+    if (oldWidget.isVisible != widget.isVisible) {
+      if (widget.isVisible) {
+        _startResolveTimer();
+        _lightTick();
+      } else {
+        _stopResolveTimer();
+      }
+    }
+  }
+
+  void _startResolveTimer() {
+    _stopResolveTimer();
     _resolveTimer = Timer.periodic(
-      const Duration(seconds: 45),
-      (_) => _refreshTodayState(),
+      const Duration(seconds: 60),
+      (_) => _lightTick(),
     );
+  }
+
+  void _stopResolveTimer() {
+    _resolveTimer?.cancel();
+    _resolveTimer = null;
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _resolveTimer?.cancel();
+    _stopResolveTimer();
     super.dispose();
   }
 
@@ -64,22 +96,47 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _refreshTodayState() async {
-    if (!mounted) return;
-    try {
-      await CacheInterceptor.evictPath('/api/Home');
-    } catch (_) {}
-    if (!mounted) return;
+  /// Light periodic tick: attendance status + badge only. No home reload,
+  /// no cache evict, no GPS — cheap enough to run every minute. Skipped
+  /// unless the Home tab is actually visible and no refresh is running.
+  Future<void> _lightTick() async {
+    if (!mounted ||
+        !widget.isVisible ||
+        _homeRefreshRunning ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    _homeRefreshRunning = true;
     try {
       await context.read<AttendanceCubit>().refreshTodayAttendance();
-      if (!mounted) return;
-      final latestAttendance =
-          context.read<AttendanceCubit>().state.todayAttendance;
-      await context.read<HomeCubit>().refreshHomeData(
-        attendance: latestAttendance,
-      );
       _refreshNotificationBadge();
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      _homeRefreshRunning = false;
+    }
+  }
+
+  Future<void> _refreshTodayState() async {
+    if (!mounted || _homeRefreshRunning) return;
+    _homeRefreshRunning = true;
+    try {
+      try {
+        await CacheInterceptor.evictPath('/api/Home');
+      } catch (_) {}
+      if (!mounted) return;
+      try {
+        await context.read<AttendanceCubit>().refreshTodayAttendance();
+        if (!mounted) return;
+        final latestAttendance =
+            context.read<AttendanceCubit>().state.todayAttendance;
+        await context.read<HomeCubit>().refreshHomeData(
+          attendance: latestAttendance,
+        );
+        _refreshNotificationBadge();
+      } catch (_) {}
+    } finally {
+      _homeRefreshRunning = false;
+    }
   }
 
   void _refreshNotificationBadge() {
@@ -179,8 +236,9 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return BlocBuilder<HomeCubit, HomeState>(
       builder: (context, homeState) {
-        // Show shimmer while loading OR while employeeInfo is not yet available
-        if (homeState.isLoading || homeState.employeeInfo == null) {
+        // Full shimmer ONLY on cold start (no data yet). Background
+        // refreshes keep the loaded content on screen — never white out.
+        if (homeState.isLoading && homeState.employeeInfo == null) {
           return const Scaffold(
             backgroundColor: AppColors.backgroundSecondary,
             body: HomeShimmerLoading(),

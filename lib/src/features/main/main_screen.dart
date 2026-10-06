@@ -38,7 +38,7 @@ class _MainScreenState extends State<MainScreen> {
       homeScreen = const HRHomeScreen();
       attendanceScreen = const HrAttendanceManagementScreen();
     } else {
-      homeScreen = const HomeScreen();
+      homeScreen = HomeScreen(isVisible: _currentIndex == 0);
       attendanceScreen = const AttendanceScreen();
     }
 

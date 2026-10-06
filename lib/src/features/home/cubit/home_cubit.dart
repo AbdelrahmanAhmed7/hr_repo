@@ -43,7 +43,10 @@ class HomeCubit extends Cubit<HomeState> {
 
     // Don't show full loading if silent refresh and we already have data
     final shouldShowLoading = !silent || state.employeeInfo == null;
-    emit(state.copyWith(isLoading: shouldShowLoading, error: null));
+    emit(state.copyWith(
+      isLoading: shouldShowLoading,
+      clearError: true,
+    ));
 
     try {
       // Fetch data from API
@@ -216,8 +219,15 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
+  /// Background refresh: NEVER whites out loaded content. The caller
+  /// (45s timer, app-resume, pull-to-refresh, post-action) already has its
+  /// own progress affordance, so this stays silent when data exists.
   Future<void> refreshHomeData({TodayAttendance? attendance}) async {
-    await loadHomeData(attendance: attendance, awaitSupplementary: true);
+    await loadHomeData(
+      attendance: attendance,
+      awaitSupplementary: true,
+      silent: true,
+    );
     await loadDistanceFromOffice();
   }
 
