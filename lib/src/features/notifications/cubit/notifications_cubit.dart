@@ -10,6 +10,14 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   NotificationsCubit(this._repository) : super(const NotificationsState());
 
+  /// Newest-first. Single choke point so the list can never regress to
+  /// API order (which is not guaranteed) no matter which path emits.
+  static List<NotificationModel> _sorted(List<NotificationModel> items) {
+    final copy = items.toList();
+    copy.sort((a, b) => b.date.compareTo(a.date));
+    return copy;
+  }
+
   /// Load notifications and unread count from API.
   Future<void> loadNotifications() async {
     emit(state.copyWith(status: NotificationsStatus.loading));
@@ -26,7 +34,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       if (isClosed) return;
       emit(state.copyWith(
         status: NotificationsStatus.success,
-        notifications: notifications,
+        notifications: _sorted(notifications),
         unreadCount: unreadCount,
       ));
     } catch (e) {
@@ -52,7 +60,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   /// Mark a single notification as read (optimistic update).
   void markAsRead(String id) {
-    final updated = state.notifications.map((n) {
+    final updated = _sorted(state.notifications.map((n) {
       if (n.id == id && n.isUnread) {
         return NotificationModel(
           id: n.id,
@@ -65,7 +73,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         );
       }
       return n;
-    }).toList();
+    }).toList());
 
     final newUnread = updated.where((n) => n.isUnread).length;
     emit(state.copyWith(notifications: updated, unreadCount: newUnread));
@@ -78,7 +86,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   /// Mark a single notification as unread (optimistic update, local only).
   void markAsUnread(String id) {
-    final updated = state.notifications.map((n) {
+    final updated = _sorted(state.notifications.map((n) {
       if (n.id == id && n.isRead) {
         return NotificationModel(
           id: n.id,
@@ -91,7 +99,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         );
       }
       return n;
-    }).toList();
+    }).toList());
 
     final newUnread = updated.where((n) => n.isUnread).length;
     emit(state.copyWith(notifications: updated, unreadCount: newUnread));
@@ -99,7 +107,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   /// Mark all notifications as read (optimistic update).
   void markAllAsRead() {
-    final updated = state.notifications
+    final updated = _sorted(state.notifications
         .map((n) => NotificationModel(
               id: n.id,
               type: n.type,
@@ -109,7 +117,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
               date: n.date,
               actionId: n.actionId,
             ))
-        .toList();
+        .toList());
 
     emit(state.copyWith(notifications: updated, unreadCount: 0));
 

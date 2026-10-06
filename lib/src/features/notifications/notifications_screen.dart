@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/services/push_notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/empty_state_widget.dart';
@@ -26,11 +29,35 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   _NotificationFilter _activeFilter = _NotificationFilter.all;
+  StreamSubscription<void>? _foregroundSubscription;
+  DateTime? _lastForegroundRefresh;
 
   @override
   void initState() {
     super.initState();
     context.read<NotificationsCubit>().loadNotifications();
+    // A push arriving while this screen is open must appear on top
+    // immediately — without this the list stays stale until pull-to-refresh
+    // and the new item looks "buried".
+    _foregroundSubscription = PushNotificationService
+        .instance.onForegroundMessage
+        .listen((_) {
+          if (!mounted) return;
+          final now = DateTime.now();
+          if (_lastForegroundRefresh != null &&
+              now.difference(_lastForegroundRefresh!) <
+                  const Duration(seconds: 10)) {
+            return;
+          }
+          _lastForegroundRefresh = now;
+          context.read<NotificationsCubit>().loadNotifications();
+        });
+  }
+
+  @override
+  void dispose() {
+    _foregroundSubscription?.cancel();
+    super.dispose();
   }
 
   List<NotificationModel> _filterNotifications(NotificationsState state) {
