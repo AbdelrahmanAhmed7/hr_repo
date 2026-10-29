@@ -43,10 +43,7 @@ class HomeCubit extends Cubit<HomeState> {
 
     // Don't show full loading if silent refresh and we already have data
     final shouldShowLoading = !silent || state.employeeInfo == null;
-    emit(state.copyWith(
-      isLoading: shouldShowLoading,
-      clearError: true,
-    ));
+    emit(state.copyWith(isLoading: shouldShowLoading, clearError: true));
 
     try {
       // Fetch data from API

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:go_router/go_router.dart';
+
 import '../../core/network/cache_interceptor.dart';
 import '../../core/services/attendance_handler.dart';
 import '../../core/services/service_locator.dart';
@@ -13,18 +13,18 @@ import '../../shared/components/custom_toast.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../attendance/cubit/attendance_cubit.dart';
 import '../attendance/cubit/attendance_state.dart';
-import '../leaves/create_leave_request_screen.dart';
 import '../auth/services/auth_storage_service.dart';
+import '../employee_of_month/presentation/widgets/home_winner_banner.dart';
+import '../leaves/create_leave_request_screen.dart';
+import '../notifications/cubit/notifications_cubit.dart';
 import '../requests/services/requests_refresh_service.dart';
 import '../requests/widgets/create_permission_bottom_sheet.dart';
+import '../requests/widgets/unified_request_card.dart';
 import 'cubit/home_cubit.dart';
 import 'cubit/home_state.dart';
 import 'models/attendance_status.dart';
 import 'models/recent_activity.dart';
 import 'widgets/employee_dashboard_sections.dart';
-import '../requests/widgets/unified_request_card.dart';
-import '../notifications/cubit/notifications_cubit.dart';
-import '../employee_of_month/presentation/widgets/home_winner_banner.dart';
 
 class HomeScreen extends StatefulWidget {
   /// False when this screen is alive inside the bottom-nav stack but another
@@ -37,8 +37,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isProcessingAttendance = false;
   Timer? _resolveTimer;
   // Guards the periodic/resume background refresh so ticks never pile up
@@ -127,8 +126,10 @@ class _HomeScreenState extends State<HomeScreen>
       try {
         await context.read<AttendanceCubit>().refreshTodayAttendance();
         if (!mounted) return;
-        final latestAttendance =
-            context.read<AttendanceCubit>().state.todayAttendance;
+        final latestAttendance = context
+            .read<AttendanceCubit>()
+            .state
+            .todayAttendance;
         await context.read<HomeCubit>().refreshHomeData(
           attendance: latestAttendance,
         );
@@ -272,9 +273,7 @@ class _HomeScreenState extends State<HomeScreen>
           },
           child: BlocBuilder<AttendanceCubit, AttendanceState>(
             builder: (context, attendanceState) {
-              final attendanceInfo = _buildAttendanceInfo(
-                attendanceState,
-              );
+              final attendanceInfo = _buildAttendanceInfo(attendanceState);
 
               final notifState = context.watch<NotificationsCubit>().state;
               final badgeCount = notifState.unreadCount;
@@ -339,9 +338,7 @@ class _HomeScreenState extends State<HomeScreen>
                             onViewTasks: _handleViewTasks,
                           ),
                         ),
-                        const SliverToBoxAdapter(
-                          child: HomeWinnerBanner(),
-                        ),
+                        const SliverToBoxAdapter(child: HomeWinnerBanner()),
                         SliverToBoxAdapter(
                           child: _EmployeeOfMonthBanner(
                             onTap: () => context.push('/employee-of-month'),
@@ -367,9 +364,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  AttendanceInfo _buildAttendanceInfo(
-    AttendanceState state,
-  ) {
+  AttendanceInfo _buildAttendanceInfo(AttendanceState state) {
     final attendance = state.todayAttendance;
 
     return AttendanceInfo(

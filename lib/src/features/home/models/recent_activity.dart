@@ -173,8 +173,14 @@ class RecentActivity {
       description: permission.durationText,
       reason: permission.reason,
       startDate: permission.date,
-      startTime: _formatTimeOfDay(permission.startTime.hour, permission.startTime.minute),
-      endTime: _formatTimeOfDay(permission.endTime.hour, permission.endTime.minute),
+      startTime: _formatTimeOfDay(
+        permission.startTime.hour,
+        permission.startTime.minute,
+      ),
+      endTime: _formatTimeOfDay(
+        permission.endTime.hour,
+        permission.endTime.minute,
+      ),
       rejectionReason: permission.rejectionReason,
       createdAt: permission.submittedDate,
     );

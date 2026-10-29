@@ -13,6 +13,7 @@ import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/app_colors.dart';
 import 'src/core/network/dio_client.dart';
 import 'src/core/services/notification_navigation_service.dart';
+import 'src/core/services/app_update_reauthentication_service.dart';
 import 'src/shared/components/custom_toast.dart';
 import 'src/core/widgets/network_connectivity_banner.dart';
 
@@ -28,6 +29,11 @@ Future<void> main() async {
       // Must run BEFORE setupServiceLocator(): on iOS the Keychain survives
       // app deletion, so a reinstall would otherwise restore the old session.
       await AuthStorageService.clearSecureStorageIfFreshInstall();
+
+      // TestFlight updates keep both SharedPreferences and the iOS Keychain.
+      // Invalidate the previous build's session before AuthCubit can restore
+      // its token, including when only the TestFlight build number changed.
+      await AppUpdateReauthenticationService.enforce();
 
       await setupServiceLocator();
 

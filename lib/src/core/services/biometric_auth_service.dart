@@ -54,7 +54,13 @@ enum BiometricCapability {
 /// - Translates every PlatformException into a typed [BiometricResult] so
 ///   callers never have to inspect raw error-code strings.
 class BiometricAuthService {
-  static final LocalAuthentication _auth = LocalAuthentication();
+  static LocalAuthentication _auth = LocalAuthentication();
+
+  @visibleForTesting
+  static set authForTesting(LocalAuthentication auth) => _auth = auth;
+
+  @visibleForTesting
+  static void resetAuthForTesting() => _auth = LocalAuthentication();
 
   /// Guard against concurrent authenticate() calls.
   static bool _isAuthenticating = false;
@@ -102,8 +108,10 @@ class BiometricAuthService {
   /// Returns a typed [BiometricResult] — never throws.
   ///
   /// Notes:
-  ///   - [biometricOnly] is `true` to prevent the OS from falling back to
-  ///     PIN/pattern. We provide our own "Use another method" UX instead.
+  ///   - Android/iOS may fall back to the device credential (PIN, pattern,
+  ///     password, or passcode) when a biometric cannot be used.
+  ///   - The OS chooses among every eligible enrolled biometric, including
+  ///     fingerprint and face authentication. The app does not force a type.
   ///   - [stickyAuth] keeps the dialog alive if the app is briefly backgrounded.
   ///   - When the user cancels or dismisses, `authenticate()` returns `false`
   ///     (no PlatformException) → maps to [BiometricResult.userCancelled].
@@ -120,7 +128,7 @@ class BiometricAuthService {
       final authenticated = await _auth.authenticate(
         localizedReason: localizedReason,
         options: const AuthenticationOptions(
-          biometricOnly: true,
+          biometricOnly: false,
           useErrorDialogs: true,
           stickyAuth: true,
         ),

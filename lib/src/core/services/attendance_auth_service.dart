@@ -69,12 +69,13 @@ class AttendanceAuthResponse {
 /// Orchestrates biometric authentication + location retrieval for attendance.
 ///
 /// Decision tree:
-/// 1. Check biometric capability.
-///    - noHardware / notEnrolled  → skip biometric, proceed as fallback.
-///    - available                 → attempt biometric authentication.
+/// 1. Ask the OS to authenticate with any eligible enrolled biometric
+///    (fingerprint / face) or the device credential (PIN / pattern / password).
+///    Calling authenticate directly is intentional: on Android versions below
+///    API 29, pre-checking getAvailableBiometrics can miss face authentication.
 ///       • success   → proceed, mark authMethod = biometric.
 ///       • any other → return biometricFailed/biometricCancelled so the UI
-///                     can offer "Use another method".
+///                     can offer the explicit attendance fallback.
 /// 2. Get location.
 /// 3. Return success with the resolved location + authMethod.
 class AttendanceAuthService {
@@ -90,39 +91,28 @@ class AttendanceAuthService {
         ? 'يرجى المصادقة لتسجيل الدخول'
         : 'يرجى المصادقة لتسجيل الخروج';
 
-    // ── Step 1: Biometric gate ─────────────────────────────────────────────
-    final capability = await BiometricAuthService.getCapability();
+    // ── Step 1: OS authentication gate ────────────────────────────────────
+    // Do not pre-gate this call with getAvailableBiometrics(). Android's
+    // system prompt is the source of truth for face/fingerprint/credentials.
+    final biometricResult = await BiometricAuthService.authenticate(
+      localizedReason: reason,
+    );
 
-    if (capability == BiometricCapability.available) {
-      // Device has enrolled biometrics — require verification.
-      final biometricResult = await BiometricAuthService.authenticate(
-        localizedReason: reason,
-      );
-
-      if (biometricResult != BiometricResult.success) {
-        // Biometric could not complete → let the UI offer a fallback.
-        final isCancelled = biometricResult == BiometricResult.userCancelled;
-        return AttendanceAuthResponse(
-          result: isCancelled
-              ? AttendanceAuthResult.biometricCancelled
-              : AttendanceAuthResult.biometricFailed,
-          authMethod: AttendanceAuthMethod.fallback,
-          message: BiometricAuthService.arabicMessageFor(biometricResult),
-          biometricResult: biometricResult,
-        );
-      }
-
-      // Biometric OK → get location and succeed.
-      return await _fetchLocationAndSucceed(
-        isCheckIn: isCheckIn,
-        authMethod: AttendanceAuthMethod.biometric,
+    if (biometricResult != BiometricResult.success) {
+      final isCancelled = biometricResult == BiometricResult.userCancelled;
+      return AttendanceAuthResponse(
+        result: isCancelled
+            ? AttendanceAuthResult.biometricCancelled
+            : AttendanceAuthResult.biometricFailed,
+        authMethod: AttendanceAuthMethod.fallback,
+        message: BiometricAuthService.arabicMessageFor(biometricResult),
+        biometricResult: biometricResult,
       );
     }
 
-    // No hardware or nothing enrolled → proceed directly as fallback.
     return await _fetchLocationAndSucceed(
       isCheckIn: isCheckIn,
-      authMethod: AttendanceAuthMethod.fallback,
+      authMethod: AttendanceAuthMethod.biometric,
     );
   }
 

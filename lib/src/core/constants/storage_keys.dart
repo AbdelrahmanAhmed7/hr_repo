@@ -18,14 +18,14 @@ class StorageKeys {
   static const String orgChartViewMode = 'org_chart_view_mode';
   static const String orgChartIsHorizontal = 'org_chart_is_horizontal';
   static const String orgChartIsCompactMode = 'org_chart_is_compact_mode';
-  
+
   // Profile keys
   static const String userProfile = 'user_profile';
-  
+
   // Settings keys
   static const String language = 'language';
   static const String theme = 'theme';
-  
+
   // HR keys
   static const String hrEmployeesList = 'hr_employees_list';
 
@@ -37,4 +37,10 @@ class StorageKeys {
   // a fresh install (e.g. after delete on iOS) since SharedPreferences is
   // wiped on uninstall while the iOS Keychain (secure storage) survives.
   static const String appInstallFlag = 'app_install_flag';
+
+  // The exact app version/build whose authentication session was last
+  // accepted. A different (or missing) value forces a one-time logout before
+  // auth state is restored. Including the build number is important for
+  // TestFlight builds that share the same marketing version.
+  static const String authenticatedAppBuild = 'authenticated_app_build';
 }
